@@ -10,13 +10,19 @@ import java.io.File;
 import java.io.IOException;
 
 public class Neo4jDB {
-    public static GraphDatabaseService graphDB;
+    public GraphDatabaseService graphDB;
     private String DB_PATH;
     private ProgramProperty prop = new ProgramProperty();
 
 
     public Neo4jDB() {
         this.DB_PATH = prop.params.get("neo4jdb");
+        System.out.println(this.DB_PATH);
+
+    }
+
+    public Neo4jDB(String subDBName) {
+        this.DB_PATH = prop.params.get("neo4jdb")+"/"+subDBName;
         System.out.println(this.DB_PATH);
 
     }
