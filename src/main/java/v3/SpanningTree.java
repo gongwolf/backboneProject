@@ -50,7 +50,9 @@ public class SpanningTree {
         }
 
         StringBuilder sb = new StringBuilder();
+        StringBuilder sb1 = new StringBuilder();
         sb.append("[").append(current_start_id).append(",").append(current_end_id).append("],");
+        sb1.append(current_start_id).append(",");
 
         //Todo: Termination Condition
         //1) All the outgoing edges are visited.
@@ -66,10 +68,12 @@ public class SpanningTree {
             }
             System.out.println((adjList[src_id].getFirstUnvisitedOutgoingEdge() == null) + "   " + (current_end_id == src_id));
             sb.append("[").append(current_start_id).append(",").append(current_end_id).append("],");
+            sb1.append(current_start_id).append(",");
             System.out.println("--------------------------------------------------------");
         }
 
-        System.out.println(sb);
+        System.out.println(sb.toString().substring(0,sb.length()-1));
+        System.out.println(sb1.append(src_id));
 
     }
 
