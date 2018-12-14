@@ -50,7 +50,7 @@ public class ProgramProperty {
                 } else {
                     value = prop.getProperty(key);
                 }
-                System.out.println("Key : " + key + ", Value : " + value);
+//                System.out.println("Key : " + key + ", Value : " + value);
                 this.params.put(key, value);
             }
 

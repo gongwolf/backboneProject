@@ -1,5 +1,6 @@
 package Neo4jTools;
 
+import javafx.util.Pair;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -10,6 +11,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CreateDB {
     private final String home_folder = System.getProperty("user.home");
@@ -17,11 +20,11 @@ public class CreateDB {
 
     public static void main(String args[]) {
         CreateDB c = new CreateDB();
-        c.createBusLineDataBase(1000, 7);
+        c.createBusLineDataBase(12,     0);
     }
 
     public void createBusLineDataBase(int graph_size, double samnode_t) {
-        String sub_db_name = graph_size + "-" + samnode_t + "-" + "Lvevl0";
+        String sub_db_name = graph_size + "-" + samnode_t + "-" + "Level0";
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);
         neo4j.deleleDB();
         System.out.println("====================================================================");
@@ -46,7 +49,7 @@ public class CreateDB {
                 String id = attrs[0];
                 double lat = Double.parseDouble(attrs[1]);
                 double log = Double.parseDouble(attrs[2]);
-                Node n = createNode(id, lat, log,graphdb);
+                Node n = createNode(id, lat, log, graphdb);
                 num_node++;
                 if (num_node % 10000 == 0) {
                     System.out.println(num_node + " nodes was created");
@@ -60,36 +63,73 @@ public class CreateDB {
         }
 
 
+        HashMap<Pair<Integer, Integer>, double[]> edges = new HashMap<>();
         BufferedReader br = null;
         try {
             br = new BufferedReader(new FileReader(EdgeFilePath));
             String line = null;
 
-            ArrayList<String> ss = new ArrayList<>();
 
             while ((line = br.readLine()) != null) {
-                ss.add(line);
                 num_edge++;
+                int sid = Integer.parseInt(line.split(" ")[0]);
+                int did = Integer.parseInt(line.split(" ")[1]);
+                double c1 = Double.parseDouble(line.split(" ")[2]);
+                double c2 = Double.parseDouble(line.split(" ")[3]);
+                double c3 = Double.parseDouble(line.split(" ")[4]);
+                double[] costs = new double[]{c1, c2, c3};
+                Pair<Integer, Integer> relations = new Pair<>(sid, did);
+                if (!existedEdges(relations, edges)) {
+                    edges.put(relations, costs);
 
-                if (num_edge % 100000 == 0) {
-                    process_batch_edges(ss,graphdb);
-                    ss.clear();
-                    System.out.println(num_edge+" edges were created");
                 }
             }
-            process_batch_edges(ss, graphdb);
-            ss.clear();
-            System.out.println(num_edge+" edges were created");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        System.out.println("there are total " + num_node + " nodes and " + num_edge + " edges");
+        System.out.println("number of total edges:" + num_edge + ", number of undirected edges:" + edges.size());
+
+        int idx_i = 0;
+        ArrayList<String> ss = new ArrayList<>();
+        for (Map.Entry<Pair<Integer, Integer>, double[]> e : edges.entrySet()) {
+            idx_i++;
+            StringBuilder str = new StringBuilder();
+            str.append(e.getKey().getKey()).append(" "); //sid
+            str.append(e.getKey().getValue()).append(" "); //did
+            str.append(e.getValue()[0]).append(" "); //c1
+            str.append(e.getValue()[1]).append(" "); //c2
+            str.append(e.getValue()[2]); //c3
+            ss.add(str.toString());
+            if (idx_i % 100000 == 0) {
+                process_batch_edges(ss, graphdb);
+                ss.clear();
+                System.out.println(idx_i + " edges were created");
+            }
+        }
+        process_batch_edges(ss, graphdb);
+        ss.clear();
+        System.out.println(idx_i + " edges were created");
+
+        System.out.println("there are total " + num_node + " nodes and " + num_edge + " edges" + " and undirected edges " + idx_i);
         System.out.println("====================================================================");
         neo4j.closeDB();
 
+    }
+
+    private boolean existedEdges(Pair<Integer, Integer> relations, HashMap<Pair<Integer, Integer>, double[]> edges) {
+        int sid = relations.getKey();
+        int did = relations.getValue();
+        for (Map.Entry<Pair<Integer, Integer>, double[]> e : edges.entrySet()) {
+            if (e.getKey().getKey() == sid && e.getKey().getValue() == did) {
+                return true;
+            } else if (e.getKey().getKey() == did && e.getKey().getValue() == sid) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Node createNode(String id, double lat, double log, GraphDatabaseService graphdb) {
@@ -112,13 +152,13 @@ public class CreateDB {
                 double EDistence = Double.parseDouble(attrs[2]);
                 double MetersDistance = Double.parseDouble(attrs[3]);
                 double RunningTime = Double.parseDouble(attrs[4]);
-                createRelation(src, des, EDistence, MetersDistance, RunningTime,graphdb);
+                createRelation(src, des, EDistence, MetersDistance, RunningTime, graphdb);
             }
             tx.success();
         }
     }
 
-    private void createRelation(String src, String des, double eDistence, double metersDistance, double runningTime,GraphDatabaseService graphdb) {
+    private void createRelation(String src, String des, double eDistence, double metersDistance, double runningTime, GraphDatabaseService graphdb) {
         try {
             Node srcNode = graphdb.getNodeById(Long.valueOf(src));
             Node desNode = graphdb.getNodeById(Long.valueOf(des));
