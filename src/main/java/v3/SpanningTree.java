@@ -5,6 +5,7 @@ import configurations.ProgramProperty;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
+import v3.Bag.*;
 
 public class SpanningTree {
     public ProgramProperty prop = new ProgramProperty();
@@ -40,10 +41,6 @@ public class SpanningTree {
     }
 
     private void FindEulerTourString(int src_id) {
-        Boolean[] visitied_ary = new Boolean[N]; //default all the nodes are un-visited
-        for (int i = 0; i < visitied_ary.length; i++) {
-            visitied_ary[i] = false;
-        }
 
         RelationshipExt iter_edge = adjList[src_id].getFirstUnvisitedOutgoingEdge();
         int current_start_id = -1, current_end_id = -1;
@@ -52,22 +49,74 @@ public class SpanningTree {
             current_end_id = iter_edge.end_id;
         }
 
+        StringBuilder sb = new StringBuilder();
+        sb.append("[").append(current_start_id).append(",").append(current_end_id).append("],");
+
         //Todo: Termination Condition
         //1) All the outgoing edges are visited.
         //2) The current_end_id is the src node
         while (adjList[src_id].getFirstUnvisitedOutgoingEdge() != null || current_end_id != src_id) {
             System.out.println(iter_edge.relationship + "  " + current_start_id + " " + current_end_id);
             iter_edge.visited = true;
-            iter_edge = adjList[current_end_id].getFirstUnvisitedOutgoingEdge();
+            iter_edge = getProperUnvisitedOutgoingEdge(current_end_id);
             System.out.println(iter_edge.relationship + "  " + iter_edge.start_id + " " + iter_edge.end_id);
             if (iter_edge != null) {
                 current_start_id = iter_edge.start_id;
                 current_end_id = iter_edge.end_id;
             }
             System.out.println((adjList[src_id].getFirstUnvisitedOutgoingEdge() == null) + "   " + (current_end_id == src_id));
+            sb.append("[").append(current_start_id).append(",").append(current_end_id).append("],");
             System.out.println("--------------------------------------------------------");
         }
 
+        System.out.println(sb);
+
+    }
+
+    /**
+     * First priority: unvisited edge
+     * Second priority: have coming edge from other node, but no outgoing edge, which means the traverse
+     *                  finished in the sub-tree of the current_end_id node. It goes back to the parent of the node.
+     * @param current_end_id: the end node id of the node which wants find the proper edge to continuous the expansion.
+     * @return the proper edge needs to do the expansion in next step.
+     */
+    private RelationshipExt getProperUnvisitedOutgoingEdge(int current_end_id) {
+        Node<RelationshipExt> current = adjList[current_end_id].first;
+        RelationshipExt next_edge = new RelationshipExt();
+        System.out.println(adjList[current_end_id].size());
+        while (current != null) {
+            boolean forward_visited = current.item.visited;
+            boolean backward_visited = IsBackVisited(current.item.end_id, current.item.start_id);
+            System.out.println(current.item+"    "+forward_visited+"  "+backward_visited+" ");
+            System.out.println(current.next);
+            if (!forward_visited && !backward_visited) {
+                next_edge = current.item;
+                break;
+//            } else if(forward_visited && next_edge.relationship==null && !backward_visited){
+//                next_edge = current.item;
+            } else if(!forward_visited && next_edge.relationship==null && backward_visited){
+                next_edge = current.item;
+            }
+            current = current.next;
+            System.out.println(current);
+        }
+        return next_edge;
+
+    }
+
+    private boolean IsBackVisited(int start_id, int end_id) {
+        Node<RelationshipExt> current = adjList[start_id].first;
+        while (current != null) {
+            if (current.item.end_id == end_id) {
+                if (current.item.visited) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            current = current.next;
+        }
+        return false;
     }
 
     private void FindAdjList() {
@@ -121,12 +170,6 @@ public class SpanningTree {
             }
             tx.success();
         }
-
-
-//        for (i = 0; i < rels.length; i++) {
-//            System.out.println(i + "  " + rels[i].getStartNodeId() + "  ----->  " + rels[i].getEndNodeId());
-//        }
-
 
         neo4j.closeDB();
     }

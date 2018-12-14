@@ -5,8 +5,8 @@ import java.util.NoSuchElementException;
 
 public class Bag implements Iterable<RelationshipExt> {
 
-    private Node<RelationshipExt> first;
-    private int n;
+    Node<RelationshipExt> first;
+    int n;
 
     public Bag() {
         first = null;
@@ -45,13 +45,36 @@ public class Bag implements Iterable<RelationshipExt> {
         return null;
     }
 
-    private static class Node<Item> {
 
-        private Item item;
-        private Node<Item> next;
+    public RelationshipExt getNextUnvisitedOutgoingEdge() {
+        Node<RelationshipExt> current = this.first;
+
+        RelationshipExt next_edge = new RelationshipExt();
+
+        while (current != null) {
+            if (!current.item.visited) {
+                return current.item;
+            } else {
+                current = current.next;
+            }
+        }
+        return next_edge;
     }
 
-    private class ListIterator<Item> implements Iterator<Item> {
+    public static class Node<Item> {
+        Item item;
+        Node<Item> next;
+
+        @Override
+        public String toString() {
+            return "Node{" +
+                    "item=" + item +
+                    ", next=" + next +
+                    '}';
+        }
+    }
+
+    public class ListIterator<Item> implements Iterator<Item> {
 
         private Node<Item> current;
 

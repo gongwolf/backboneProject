@@ -9,6 +9,10 @@ public class RelationshipExt {
     int start_id;
     int end_id;
 
+    public RelationshipExt(){
+
+    }
+
     public RelationshipExt(Relationship relationship, int src_id, int dest_id) {
         this.relationship = relationship;
         this.level = 0;
@@ -25,5 +29,16 @@ public class RelationshipExt {
 
     public int getOtherId(int from_id){
         return (int) this.relationship.getOtherNodeId(from_id);
+    }
+
+    @Override
+    public String toString() {
+        return "RelationshipExt{" +
+                "visited=" + visited +
+                ", relationship=" + relationship +
+                ", level=" + level +
+                ", start_id=" + start_id +
+                ", end_id=" + end_id +
+                '}';
     }
 }
