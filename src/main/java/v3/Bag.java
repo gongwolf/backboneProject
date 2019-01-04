@@ -3,9 +3,9 @@ package v3;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class Bag implements Iterable<RelationshipExt> {
+public class Bag<T> implements Iterable<T> {
 
-    Node<RelationshipExt> first;
+    Node<T> first;
     int n;
 
     public Bag() {
@@ -21,23 +21,23 @@ public class Bag implements Iterable<RelationshipExt> {
         return n;
     }
 
-    public void add(RelationshipExt item) {
-        Node<RelationshipExt> oldfirst = first;
-        first = new Node<RelationshipExt>();
+    public void add(T item) {
+        Node<T> oldfirst = first;
+        first = new Node<T>();
         first.item = item;
         first.next = oldfirst;
         n++;
     }
 
-    public Iterator<RelationshipExt> iterator() {
-        return new ListIterator<RelationshipExt>(first);
+    public Iterator<T> iterator() {
+        return new ListIterator<>(first);
     }
 
     public RelationshipExt getFirstUnvisitedOutgoingEdge() {
-        Node<RelationshipExt> current = this.first;
+        Node<T> current = this.first;
         while (current != null) {
-            if (!current.item.visited) {
-                return current.item;
+            if (!((RelationshipExt)current.item).visited) {
+                return (RelationshipExt)current.item;
             } else {
                 current = current.next;
             }

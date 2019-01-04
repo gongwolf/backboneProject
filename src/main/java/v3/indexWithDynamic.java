@@ -21,13 +21,9 @@ public class indexWithDynamic {
     double samnode_t = 0;
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
-
-    private Neo4jDB neo4j;
-
-
     DynamicForests dforests;
     long cn;
-
+    private Neo4jDB neo4j;
 
     public static void main(String args[]) {
         indexWithDynamic index = new indexWithDynamic();
@@ -71,6 +67,8 @@ public class indexWithDynamic {
         getDegreePairs();
         long cn = neo4j.getNumberofNodes();
         neo4j.closeDB();
+        //initialize the data structure that store multi-layer spanning forest.
+        this.dforests = new DynamicForests();
     }
 
 
@@ -90,8 +88,7 @@ public class indexWithDynamic {
             dforests = new DynamicForests();
             SpanningTree sptree_base = new SpanningTree(neo4j);
             System.out.println("=======================================");
-//            sptree_base.rbtree.printTree(sptree_base.rbtree.root);
-            TreeMap<Long, GraphNode> graph_node_spanning_rb_map = new TreeMap<Long, GraphNode>();
+            TreeMap<Long, GraphNode> graph_node_spanning_rb_map = new TreeMap<>();
             System.out.println(graph_node_spanning_rb_map.size());
             System.out.println(sptree_base.EulerTourString(graph_node_spanning_rb_map));
             System.out.println(graph_node_spanning_rb_map.size() + "\n------------------\nSingle pair degree in tree:");
@@ -104,25 +101,33 @@ public class indexWithDynamic {
             System.out.println("------------------");
 //            sptree_base.rbtree.printTree(sptree_base.rbtree.root);
             removeSingletonEdges(graph_node_spanning_rb_map, sptree_base);
+            System.out.println("------------------");
+            System.out.println("root");
+            sptree_base.rbtree.root.print();
+
+            this.dforests.createBase(sptree_base);
         }
 
 
-//        while (deleted) {
-//            //find bridges on this graph
-//            FindTheBridges();
-//            //remove edges less than threshold
-//            deleted = removeLowerDegreePairEdgesByThreshold(threshold_p, threshold_t);
+        while (deleted) {
+            //remove edges less than threshold
+            deleted = removeLowerDegreePairEdgesByThreshold(threshold_p, threshold_t);
 //            getDegreePairs();
-//            removeSingletonEdges();
-//            int post_cc_num_node = FindTheBridges();
+//            removeSingletonEdges(graph_node_spanning_rb_map, sptree_base);
+
+            /**
+             * Compare the number of components before the deletion and after the deletion
+             */
 //            int total_num_node = Math.toIntExact(neo4j.getNumberofNodes());
 //            System.out.println((total_num_node == post_cc_num_node) + "     " + total_num_node + "  " + post_cc_num_node);
 //            if (total_num_node != post_cc_num_node) {
 //                System.out.println("terminated the program");
 //                System.exit(0);
 //            }
-//
-//        }
+
+        }
+
+
         long numberOfNodes = neo4j.getNumberofNodes();
         long post_n = neo4j.getNumberofNodes();
         long post_e = neo4j.getNumberofEdges();
@@ -178,8 +183,6 @@ public class indexWithDynamic {
                     "single_edges:" + sum_single + " " +
                     "post:" + neo4j.getNumberofNodes() + " " + neo4j.getNumberofEdges() + " " +
                     "dgr_paris:" + degree_pairs.size());
-            sptree_base.rbtree.printTree(sptree_base.rbtree.root);
-
         }
     }
 
@@ -253,6 +256,54 @@ public class indexWithDynamic {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+
+    private boolean removeLowerDegreePairEdgesByThreshold(Pair<Integer, Integer> threshold_p, int threshold_t) {
+        boolean deleted = false;
+
+        try (Transaction tx = graphdb.beginTx()) {
+            for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> dp : this.degree_pairs.entrySet()) {
+                int sd = dp.getKey().getKey(); // the first number of the degree pair
+                int ed = dp.getKey().getValue(); // the second number of the degree pair
+                int ct = sd + ed; //summation of the degree pair.
+
+                /**
+                 * Four case pair of degree needs to be deleted
+                 * 1) the summation of the degree pair (ct) is less than the summation of the given threshold degree pair (threshold_t).
+                 * 2) if threshold_t is equal to ct, the first number of the degree pair is less than the first number of the the given degree pair
+                 * 3) the given degree pair is equal to the degree pair dp.
+                 */
+
+                if ((ct < threshold_t) ||
+                        (threshold_t == ct && sd < threshold_p.getKey()) ||
+                        (sd == threshold_p.getKey() && ed == threshold_p.getValue()) ||
+                        (ed == threshold_p.getKey() && sd == threshold_p.getValue())) {
+
+                    for (long rel : dp.getValue()) {
+                        Relationship r = graphdb.getRelationshipById(rel);
+                        Node sNode = r.getStartNode();
+                        Node eNode = r.getEndNode();
+
+                        r.delete();
+                        System.out.println(r);
+
+                        if (sNode.getDegree(Direction.BOTH) == 0) {
+                            sNode.delete();
+                        }
+                        if (eNode.getDegree(Direction.BOTH) == 0) {
+                            eNode.delete();
+                        }
+                        deleted = true;
+                    }
+                }
+                //test ternination
+                return false;
+            }
+        }
+
+
+        return deleted;
     }
 
 

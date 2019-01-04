@@ -301,7 +301,7 @@ public class SpanningTree {
         try (Transaction tx = neo4j.graphDB.beginTx()) {
             ResourceIterable<Relationship> allRelsIterable = neo4j.graphDB.getAllRelationships();
             for (Relationship r : allRelsIterable) {
-                r.setProperty("level", 0); //initialize the edge level to be 0
+                r.setProperty("level", 1); //initialize the edge level to be 0
                 rels[i++] = r;
             }
             tx.success();

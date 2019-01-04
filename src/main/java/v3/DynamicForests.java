@@ -9,4 +9,12 @@ public class DynamicForests {
     public DynamicForests(){
         dforests = new HashMap<>();
     }
+
+    public void createBase(SpanningTree sptree_base) {
+        int initLevel = 1;
+        SpanningForsts sp = new SpanningForsts(initLevel);
+        sp.trees.add(sptree_base);
+        dforests.put(initLevel,sp);
+    }
+
 }

@@ -1,10 +1,15 @@
 package v3;
 
 public class SpanningForsts {
-    Bag trees=new Bag();
+    Bag<SpanningTree> trees=new Bag<>();
     int level;
 
-    public SpanningForsts(){
+    public SpanningForsts(int level){
+        this.level = level;
+    }
 
+
+    public void addNewTrees(SpanningTree sptree){
+        trees.add(sptree);
     }
 }
