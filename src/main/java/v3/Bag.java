@@ -45,22 +45,6 @@ public class Bag implements Iterable<RelationshipExt> {
         return null;
     }
 
-
-    public RelationshipExt getNextUnvisitedOutgoingEdge() {
-        Node<RelationshipExt> current = this.first;
-
-        RelationshipExt next_edge = new RelationshipExt();
-
-        while (current != null) {
-            if (!current.item.visited) {
-                return current.item;
-            } else {
-                current = current.next;
-            }
-        }
-        return next_edge;
-    }
-
     public static class Node<Item> {
         Item item;
         Node<Item> next;
@@ -69,7 +53,6 @@ public class Bag implements Iterable<RelationshipExt> {
         public String toString() {
             return "Node{" +
                     "item=" + item +
-                    ", next=" + next +
                     '}';
         }
     }

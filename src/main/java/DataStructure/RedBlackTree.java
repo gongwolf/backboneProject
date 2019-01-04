@@ -1,10 +1,53 @@
 package DataStructure;
 
+import static DataStructure.STATIC.*;
+
 public class RedBlackTree<T> {
-    public final TNode nil = new TNode();
-    private final int RED = 0;
-    private final int BLACK = 1;
     public TNode<T> root = nil;
+
+
+    private TNode<T> findNode(TNode<T> findNode, TNode<T> node) {
+        if (root == nil) {
+            return null;
+        }
+
+        if (findNode.key < node.key) {
+            if (node.left != nil) {
+                return findNode(findNode, node.left);
+            }
+        } else if (findNode.key > node.key) {
+            if (node.right != nil) {
+                return findNode(findNode, node.right);
+            }
+        } else if (findNode.key == node.key) {
+            return node;
+        }
+        return null;
+    }
+
+
+    private TNode<T> findNodeByKey(int key, TNode<T> node) {
+        if (root == nil) {
+            return null;
+        }
+        if (key < node.key) {
+            if (node.left != nil) {
+                return findNodeByKey(key, node.left);
+            }
+        } else if (key > node.key) {
+            if (node.right != nil) {
+                return findNodeByKey(key, node.right);
+            }
+        } else if (key == node.key) {
+            return node;
+        }
+        return null;
+    }
+
+    public boolean insert(int key, T item) {
+        TNode<T> node = new TNode<>(key, item);
+        return insert(node);
+    }
 
     public boolean insert(TNode<T> newnode) {
 
@@ -145,35 +188,156 @@ public class RedBlackTree<T> {
         v.parent = u.parent;
     }
 
-    private void delete(TNode<T> node) {
+    public boolean delete(int key, T item) {
+        TNode<T> node = new TNode<>(key, item);
+        return delete(node);
+    }
+
+
+    public boolean delete(int key) {
+        TNode<T> node = findNodeByKey(key,root);
+        return delete(node);
+    }
+
+    public boolean delete(TNode<T> node) {
+        if ((node = findNode(node, root)) == null) return false;
+//        System.out.println("delete " + node.key + "   " + (node.color == RED ? "RED" : "BLACK") + "  " + node.parent.key);
+        TNode<T> x;
         TNode<T> y = node;
         int y_org_color = y.color;
-        TNode<T> x;
+
+        //if either node's left or right child is null, delete node. so x point to the no-nil child of the node.
+        //if node has two children, y is the successor of the node. so x point to the right child of y.
+        //delete y, replace y with x.
+        //replace z with y.
         if (node.left == nil) {
             x = node.right;
             transplant(node, node.right);
         } else if (node.right == nil) {
             x = node.left;
             transplant(node, node.left);
+        } else {
+            y = treeMinimun(node.right);
+//            System.out.println("replace with  " + y.key + "   " + (y.color == RED ? "RED" : "BLACK") + "  " + y.parent.key);
+            y_org_color = y.color;
+            x = y.right;
+//            if (x == nil) {
+//                System.out.println("nil leaf node");
+//            } else {
+//                System.out.println("x:  " + x.key + "   " + (x.color == RED ? "RED" : "BLACK") + "  " + x.parent.key);
+//            }
+
+            if (y.parent == node) {
+                x.parent = y;
+            } else {
+                transplant(y, y.right); //y's right child replace the place of y.
+                y.right = node.right;
+                y.right.parent = y;
+            }
+            transplant(node, y);
+            y.left = node.left;
+            y.left.parent = y;
+            y.color = node.color;
+
         }
+        if (y_org_color == BLACK) {
+//            System.out.println("fix color");
+            deleteFix(x);
+        }
+
+//        System.out.println("==============================");
+        return false;
     }
 
-    class TNode<T> {
-        int key = -1;
-        T item = null;
-        int color = BLACK;
-        TNode<T> left = nil, right = nil, parent = nil;
-
-        TNode(int key, T item) {
-            this.key = key;
-            this.item = item;
+    private void deleteFix(TNode<T> x) {
+        while (x != root && x.color == BLACK) {
+            if (x == x.parent.left) {
+//                System.out.println("x is left child of its parent");
+                TNode<T> w = x.parent.right; //sibling of x
+                /** case 1: x's sibling is red **/
+                if (w.color == RED) {
+                    w.color = BLACK;
+                    x.parent.color = RED;
+                    leftRotation(x.parent);
+                    w = x.parent.right;
+                }
+                /** after dealing with case 1, it transfers to case 2, 3 and 4**/
+                if (w.left.color == BLACK && w.right.color == BLACK) {
+                    /** case 2: w is black that has two black children **/
+                    w.color = RED;
+                    x = x.parent;
+                    continue;
+                } else if (w.right.color == BLACK) {
+                    /** case 3: w is black that only the right child is black **/
+                    w.left.color = BLACK;
+                    w.color = RED;
+                    rightRotation(w);
+                    w = x.parent.right;
+                }
+                /** after dealing with case 3, it may transfer to case 4**/
+                if (w.right.color == RED) {
+                    /** case 4: w is black whose right child is red **/
+                    w.color = x.parent.color;
+                    x.parent.color = BLACK;
+                    w.right.color = BLACK;
+                    leftRotation(x.parent);
+                    x = root;
+                }
+            } else if (x == x.parent.right) {
+                TNode<T> w = x.parent.left; //sibling of x
+//                System.out.println("x is right child of its parent");
+                /** case 1: x's sibling is red **/
+                if (w.color == RED) {
+//                    System.out.println("case 1");
+                    w.color = BLACK;
+                    x.parent.color = RED;
+                    rightRotation(x.parent);
+                    w = x.parent.left;
+                }
+                /** after dealing with case 1, it transfers to case 2, 3 and 4**/
+                if (w.left.color == BLACK && w.right.color == BLACK) {
+                    /** case 2: w is black that has two black children **/
+//                    System.out.println("case 2");
+                    w.color = RED;
+                    x = x.parent;
+                    continue;
+                } else if (w.left.color == BLACK) {
+                    /** case 3: w is black that only the right child is black **/
+                    w.right.color = BLACK;
+                    w.color = RED;
+                    leftRotation(w);
+                    w = x.parent.left;
+                }
+                /** after dealing with case 3, it may transfer to case 4**/
+                if (w.left.color == RED) {
+                    /** case 4: w is black whose right child is red **/
+                    w.color = x.parent.color;
+                    x.parent.color = BLACK;
+                    w.left.color = BLACK;
+                    rightRotation(x.parent);
+                    x = root;
+                }
+            }
         }
-
-        public TNode() {
-            this.key = -1;
-        }
+        x.color = BLACK;
     }
 
+    private TNode<T> treeMinimun(TNode<T> node) {
+        while (node.left != nil) {
+            node = node.left;
+        }
+        return node;
+    }
 
+    public void printTree(TNode<T> node) {
+        if (node == nil) {
+            return;
+        }
+        printTree(node.left);
+        System.out.print(((node.color == RED) ? "Color: Red " : "Color: Black ") +
+                "Key: " + node.key + " Parent: " + node.parent.key +
+                " content:"+node.item +"\n");
+        printTree(node.right);
+    }
 }
 
