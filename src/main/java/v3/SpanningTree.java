@@ -1,22 +1,26 @@
 package v3;
 
-import DataStructure.*;
+import DataStructure.RedBlackTree;
+import DataStructure.TNode;
 import Neo4jTools.Neo4jDB;
 import configurations.ProgramProperty;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
-import v3.Bag.*;
+import v3.Bag.Node;
 
+import java.util.Stack;
 import java.util.TreeMap;
+
+import static DataStructure.STATIC.nil;
 
 public class SpanningTree {
     public int level;
     public ProgramProperty prop = new ProgramProperty();
+    public Neo4jDB neo4j = null;
     int E = 0; // number of edges
     int N = 0; // number of nodes
     String DBPath;
-
     long graphsize;
     double samenode_t;
     int connect_component_number = 0; // number of the connect component found in the graph
@@ -26,9 +30,7 @@ public class SpanningTree {
     Relationship SpTree[];
     //the adjacent list of the spanning tree
     Bag adjList[];
-
     RedBlackTree rbtree = new RedBlackTree();
-    public Neo4jDB neo4j = null;
 
 
     public SpanningTree(int graphsize, double samenode_t) {
@@ -274,7 +276,7 @@ public class SpanningTree {
             neo4j = new Neo4jDB(sub_db_name);
             System.out.println("connected to db " + neo4j.DB_PATH);
             neo4j.startDB();
-            needtoCloseDB=true;
+            needtoCloseDB = true;
         }
         System.out.println(neo4j.DB_PATH);
         long nn = neo4j.getNumberofNodes();
@@ -301,7 +303,7 @@ public class SpanningTree {
         try (Transaction tx = neo4j.graphDB.beginTx()) {
             ResourceIterable<Relationship> allRelsIterable = neo4j.graphDB.getAllRelationships();
             for (Relationship r : allRelsIterable) {
-                r.setProperty("level", 1); //initialize the edge level to be 0
+                r.setProperty("level", 0); //initialize the edge level to be 0
                 rels[i++] = r;
             }
             tx.success();
@@ -323,7 +325,7 @@ public class SpanningTree {
             neo4j = new Neo4jDB(sub_db_name);
             neo4j.startDB();
             needtoCloseDB = true;
-            System.out.println("connected to db "+neo4j.DB_PATH);
+            System.out.println("connected to db " + neo4j.DB_PATH);
         }
 
         try (Transaction tx = neo4j.graphDB.beginTx()) {
@@ -331,10 +333,10 @@ public class SpanningTree {
             System.out.print(r);
             if (!r.hasProperty("pFirstID")) {
                 r.setProperty("pFirstID", et_edge_id);
-                System.out.println("  add property pFirstID "+et_edge_id);
+                System.out.println("  add property pFirstID " + et_edge_id);
             } else {
                 r.setProperty("pSecondID", et_edge_id);
-                System.out.println("  add property pSecondID "+et_edge_id);
+                System.out.println("  add property pSecondID " + et_edge_id);
 
             }
             tx.success();
@@ -414,6 +416,32 @@ public class SpanningTree {
         return src_id;
     }
 
+
+    public boolean hasEdge(Relationship r) {
+        TNode<RelationshipExt> n = this.rbtree.root;
+        if (n == nil) {
+            System.out.println("the root is empty ------ " + this.getClass() + " function: hasEdge    parameters--> r:" + r);
+            return false;
+        }
+        Stack<TNode<RelationshipExt>> s = new Stack<>();
+        while (n != nil || s.size() > 0) {
+            while (n != null) {
+                s.push(n);
+                n = n.left;
+            }
+
+            n = s.pop();
+//            if(n!=nil){
+//                System.out.println(n.item);
+//            }
+            if (n!=nil && n.item.relationship.getId() == r.getId()) {
+                return true;
+            }
+            n = n.right;
+        }
+
+        return false;
+    }
 }
 
 class UFnode {

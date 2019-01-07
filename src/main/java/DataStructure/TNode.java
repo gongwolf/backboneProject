@@ -6,7 +6,9 @@ public class TNode<T> {
     public T item = null;
     int key = -1;
     int color = BLACK;
-    TNode<T> left = nil, right = nil, parent = nil;
+    public TNode<T> left = nil;
+    public TNode<T> right = nil;
+    TNode<T> parent = nil;
 
     public TNode(int key, T item) {
         this.key = key;

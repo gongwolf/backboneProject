@@ -152,17 +152,17 @@ public class indexWithDynamic {
                             Node sNode = r.getStartNode();
                             Node eNode = r.getEndNode();
 
-                            //Todo:delete single edge from spanning tree
-                            System.out.println(r);
-                            System.out.println(r.getProperty("pFirstID") + "     " + r.getProperty("pSecondID"));
+//                            Todo:delete single edge from spanning tree
+//                            System.out.println(r);
+//                            System.out.println(r.getProperty("pFirstID") + "     " + r.getProperty("pSecondID"));
                             sptree_base.rbtree.delete((Integer) r.getProperty("pFirstID"));
                             sptree_base.rbtree.delete((Integer) r.getProperty("pSecondID"));
-
-                            System.out.println(sNode.getId() + " first " + graph_node_spanning_rb_map.get(sNode.getId()).frist.item);
-                            System.out.println(sNode.getId() + " last  " + graph_node_spanning_rb_map.get(sNode.getId()).last.item);
-                            System.out.println(eNode.getId() + " first " + graph_node_spanning_rb_map.get(eNode.getId()).frist.item);
-                            System.out.println(eNode.getId() + " last  " + graph_node_spanning_rb_map.get(eNode.getId()).last.item);
-                            System.out.println("====");
+//
+//                            System.out.println(sNode.getId() + " first " + graph_node_spanning_rb_map.get(sNode.getId()).frist.item);
+//                            System.out.println(sNode.getId() + " last  " + graph_node_spanning_rb_map.get(sNode.getId()).last.item);
+//                            System.out.println(eNode.getId() + " first " + graph_node_spanning_rb_map.get(eNode.getId()).frist.item);
+//                            System.out.println(eNode.getId() + " last  " + graph_node_spanning_rb_map.get(eNode.getId()).last.item);
+//                            System.out.println("====");
 
                             r.delete();
 
@@ -285,8 +285,13 @@ public class indexWithDynamic {
                         Node sNode = r.getStartNode();
                         Node eNode = r.getEndNode();
 
+                        int level_r = (int)r.getProperty("level");
+
+                        System.out.println(r+" is a tree edge ? "+dforests.isTreeEdge(r)+"  level:"+level_r);
+                        dforests.replacement(r,level_r);
+
                         r.delete();
-                        System.out.println(r);
+
 
                         if (sNode.getDegree(Direction.BOTH) == 0) {
                             sNode.delete();

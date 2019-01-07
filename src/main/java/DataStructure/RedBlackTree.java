@@ -5,45 +5,6 @@ import static DataStructure.STATIC.*;
 public class RedBlackTree<T> {
     public TNode<T> root = nil;
 
-
-    private TNode<T> findNode(TNode<T> findNode, TNode<T> node) {
-        if (root == nil) {
-            return null;
-        }
-
-        if (findNode.key < node.key) {
-            if (node.left != nil) {
-                return findNode(findNode, node.left);
-            }
-        } else if (findNode.key > node.key) {
-            if (node.right != nil) {
-                return findNode(findNode, node.right);
-            }
-        } else if (findNode.key == node.key) {
-            return node;
-        }
-        return null;
-    }
-
-
-    private TNode<T> findNodeByKey(int key, TNode<T> node) {
-        if (root == nil) {
-            return null;
-        }
-        if (key < node.key) {
-            if (node.left != nil) {
-                return findNodeByKey(key, node.left);
-            }
-        } else if (key > node.key) {
-            if (node.right != nil) {
-                return findNodeByKey(key, node.right);
-            }
-        } else if (key == node.key) {
-            return node;
-        }
-        return null;
-    }
-
     public boolean insert(int key, T item) {
         TNode<T> node = new TNode<>(key, item);
         return insert(node);
@@ -195,7 +156,7 @@ public class RedBlackTree<T> {
 
 
     public boolean delete(int key) {
-        TNode<T> node = findNodeByKey(key,root);
+        TNode<T> node = findNodeByKey(key, root);
         return delete(node);
     }
 
@@ -336,8 +297,47 @@ public class RedBlackTree<T> {
         printTree(node.left);
         System.out.print(((node.color == RED) ? "Color: Red " : "Color: Black ") +
                 "Key: " + node.key + " Parent: " + node.parent.key +
-                " content:"+node.item +"\n");
+                " content:" + node.item + "\n");
         printTree(node.right);
+    }
+
+
+    private TNode<T> findNode(TNode<T> findNode, TNode<T> node) {
+        if (root == nil) {
+            return null;
+        }
+
+        if (findNode.key < node.key) {
+            if (node.left != nil) {
+                return findNode(findNode, node.left);
+            }
+        } else if (findNode.key > node.key) {
+            if (node.right != nil) {
+                return findNode(findNode, node.right);
+            }
+        } else if (findNode.key == node.key) {
+            return node;
+        }
+        return null;
+    }
+
+
+    private TNode<T> findNodeByKey(int key, TNode<T> node) {
+        if (root == nil) {
+            return null;
+        }
+        if (key < node.key) {
+            if (node.left != nil) {
+                return findNodeByKey(key, node.left);
+            }
+        } else if (key > node.key) {
+            if (node.right != nil) {
+                return findNodeByKey(key, node.right);
+            }
+        } else if (key == node.key) {
+            return node;
+        }
+        return null;
     }
 }
 
