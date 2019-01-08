@@ -1,6 +1,8 @@
 package v3;
 
+import DataStructure.TNode;
 import org.neo4j.graphdb.Relationship;
+
 import java.util.HashMap;
 
 public class DynamicForests {
@@ -20,6 +22,7 @@ public class DynamicForests {
     /**
      * Check whether the edge is a tree edge in the first level of spanning trees.
      * Todo: May could be optimized by finding the highest level where the given edge @rel belongs to .
+     *
      * @param rel given edge
      * @return if the given edge rel is the tree edge return true, otherwise return false.
      */
@@ -38,6 +41,15 @@ public class DynamicForests {
 
     public boolean replacement(Relationship r, int level_r) {
         SpanningTree sp_tree = this.dforests.get(level_r).findTree(r);
+        TNode<RelationshipExt> min_node = sp_tree.findMinimum();
+        System.out.println("minimum node +" + min_node.item);
+        TNode<RelationshipExt> firstSplitor = sp_tree.findLeftSubTree(min_node, r);
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+        TNode<RelationshipExt> secondSplitor = sp_tree.findMiddleSubTree(firstSplitor, r);
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+        sp_tree.findRightSubTree(secondSplitor);
+
+
         return false;
     }
 }

@@ -18,12 +18,13 @@ public class SpanningForests {
         while (current_tree != null) {
             if(current_tree.item.hasEdge(r)){
                 System.out.println("find spanning tree whose contains the edge "+r);
+                return current_tree.item;
             }
             current_tree = current_tree.next;
         }
 
         //find process until the last element return false
-        return current_tree == null ? null : current_tree.item;
+        return null;
     }
 
 

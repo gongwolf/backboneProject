@@ -442,6 +442,40 @@ public class SpanningTree {
 
         return false;
     }
+
+    public TNode<RelationshipExt> findMinimum() {
+        return rbtree.findMinimum(rbtree.root);
+    }
+
+    public TNode<RelationshipExt> findLeftSubTree(TNode<RelationshipExt> min_node, Relationship r) {
+        System.out.println(min_node.item);
+        TNode<RelationshipExt> suc_node = rbtree.successor(min_node);
+        while(suc_node.item.relationship.getId()!=r.getId()){
+            System.out.println(suc_node.item);
+            suc_node = rbtree.successor(suc_node);
+        }
+        return suc_node;
+    }
+
+    public TNode<RelationshipExt> findMiddleSubTree(TNode<RelationshipExt> min_node, Relationship r) {
+        System.out.println(min_node.item);
+        TNode<RelationshipExt> suc_node = rbtree.successor(min_node);
+        while(suc_node.item.relationship.getId()!=r.getId()){
+            System.out.println(suc_node.item);
+            suc_node = rbtree.successor(suc_node);
+        }
+        System.out.println(suc_node.item);
+        return suc_node;
+    }
+
+    public void findRightSubTree(TNode<RelationshipExt> Splitor) {
+        TNode<RelationshipExt> suc_node = rbtree.successor(Splitor);
+        while(suc_node!=nil){
+            System.out.println(suc_node.item);
+            suc_node = rbtree.successor(suc_node);
+        }
+
+    }
 }
 
 class UFnode {

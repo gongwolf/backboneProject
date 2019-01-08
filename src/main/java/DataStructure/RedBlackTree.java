@@ -339,5 +339,26 @@ public class RedBlackTree<T> {
         }
         return null;
     }
+
+    public TNode<T> findMinimum(TNode<T> subroot) {
+        TNode<T> n = subroot;
+        while (n.left != nil) {
+            n = n.left;
+        }
+        return n;
+    }
+
+    public TNode<T> successor(TNode<T> node){
+        if(node.right!=nil){
+            return findMinimum(node.right);
+        }
+        TNode<T> y = node.parent;
+        while(y!=nil && node==y.right){
+            node = y;
+            y = y.parent;
+        }
+
+        return y;
+    }
 }
 
