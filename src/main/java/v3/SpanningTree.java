@@ -4,13 +4,14 @@ import DataStructure.RedBlackTree;
 import DataStructure.TNode;
 import Neo4jTools.Neo4jDB;
 import configurations.ProgramProperty;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import v3.Bag.Node;
 
-import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Stack;
 import java.util.TreeMap;
 
@@ -49,7 +50,7 @@ public class SpanningTree {
         this.graphsize = graphsize;
         this.samenode_t = samenode_t;
         this.level = 0;
-        initiliztion();
+        initialization();
     }
 
 
@@ -57,12 +58,21 @@ public class SpanningTree {
         this.graphsize = graphsize;
         this.samenode_t = samenode_t;
         this.level = current_level;
-        initiliztion();
+        initialization();
     }
 
-    public SpanningTree(Neo4jDB neo4j) {
+    /**
+     * @param neo4j
+     * @param init  if it is true, call the initialization() function that gets the information by reading the graph database from disk;
+     */
+    public SpanningTree(Neo4jDB neo4j, boolean init) {
         this.neo4j = neo4j;
-        initiliztion();
+        SpTree = new HashSet<>();
+        N_nodes = new HashSet<>();
+
+        if (init) {
+            initialization();
+        }
     }
 
 
@@ -279,7 +289,7 @@ public class SpanningTree {
      * The init number of connect components is the number of the nodes
      * each node whose root is the node id
      */
-    private void initiliztion() {
+    private void initialization() {
         boolean needtoCloseDB = false;
         this.N_nodes = new HashSet<>();
 
@@ -343,13 +353,13 @@ public class SpanningTree {
 
         try (Transaction tx = neo4j.graphDB.beginTx()) {
             Relationship r = iter_edge.relationship;
-            System.out.print(r);
+//            System.out.print(r);
             if (!r.hasProperty("pFirstID")) {
                 r.setProperty("pFirstID", et_edge_id);
-                System.out.println("  add property pFirstID " + et_edge_id);
+//                System.out.println("  add property pFirstID " + et_edge_id);
             } else {
                 r.setProperty("pSecondID", et_edge_id);
-                System.out.println("  add property pSecondID " + et_edge_id);
+//                System.out.println("  add property pSecondID " + et_edge_id);
 
             }
             tx.success();
@@ -483,11 +493,10 @@ public class SpanningTree {
 
     public TNode<RelationshipExt> findLeftSubTree(TNode<RelationshipExt> min_node, Relationship r, SpanningTree left_sub_tree) {
         TNode<RelationshipExt> node = new TNode<>(min_node);
-
-        left_sub_tree.rbtree.insert(node);
-        left_sub_tree.N++;
+        left_sub_tree.insert(node);
 
         System.out.println(min_node.item);
+
         TNode<RelationshipExt> suc_node = rbtree.successor(min_node);
         while (suc_node.item.relationship.getId() != r.getId()) {
             node = new TNode<>(suc_node);
@@ -587,6 +596,37 @@ public class SpanningTree {
             this.insert(node);
             suc_node = rbtree.successor(suc_node);
         }
+    }
+
+    public void updateTreeEdgeLevel() {
+        for (Relationship rel : SpTree) {
+            int level = (int) rel.getProperty("level");
+            rel.setProperty("level", level++);
+        }
+    }
+
+    public Relationship findReplacementEdge(SpanningTree another_sub_tree, int level) {
+//        System.out.println("findReplacementEdge function : "+ this.neo4j.DB_PATH);
+        for (long nid : this.N_nodes) {
+            Iterable<Relationship> iterable = neo4j.graphDB.getNodeById(nid).getRelationships(Direction.BOTH);
+            Iterator<Relationship> iterator = iterable.iterator();
+            while (iterator.hasNext()) {
+                Relationship rel = iterator.next();
+                int org_level = (int) rel.getProperty("level");
+                /**
+                 * rel is a relationship whose level is equal to specific level, and its end nodes is a tree node of this spanning tree.
+                 * If rel connected this spanning tree to another_sub_tree, return it and connect those two subtree later
+                 * else, increment the edge level by one
+                 */
+                System.out.println(rel);
+                if (org_level == level && another_sub_tree.N_nodes.contains(rel.getOtherNodeId(nid))) {
+                    return rel;
+                }else if(org_level == level && this.SpTree.contains(rel)){
+                    rel.setProperty("level",org_level++);
+                }
+            }
+        }
+        return null;
     }
 }
 

@@ -86,7 +86,7 @@ public class indexWithDynamic {
 
         if (currentLevel == 1) {
             dforests = new DynamicForests();
-            SpanningTree sptree_base = new SpanningTree(neo4j);
+            SpanningTree sptree_base = new SpanningTree(neo4j,true);
             System.out.println("=======================================");
             TreeMap<Long, GraphNode> graph_node_spanning_rb_map = new TreeMap<>();
             System.out.println(graph_node_spanning_rb_map.size());

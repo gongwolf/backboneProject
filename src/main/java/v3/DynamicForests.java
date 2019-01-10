@@ -44,7 +44,9 @@ public class DynamicForests {
         TNode<RelationshipExt> min_node = sp_tree.findMinimum();
         System.out.println("minimum node +" + min_node.item);
 
-        SpanningTree left_sub_tree = new SpanningTree();
+        System.out.println(sp_tree.neo4j.DB_PATH);
+
+        SpanningTree left_sub_tree = new SpanningTree(sp_tree.neo4j,false);
         TNode<RelationshipExt> firstSplitor = sp_tree.findLeftSubTree(min_node, r, left_sub_tree);
         System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         left_sub_tree.rbtree.root.print();
@@ -53,7 +55,7 @@ public class DynamicForests {
 
         System.out.println("==============================================================");
 
-        SpanningTree middle_sub_tree = new SpanningTree();
+        SpanningTree middle_sub_tree = new SpanningTree(sp_tree.neo4j,false);
         TNode<RelationshipExt> secondSplitor = sp_tree.findMiddleSubTree(firstSplitor, r, middle_sub_tree);
         System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         middle_sub_tree.rbtree.root.print();
@@ -61,10 +63,9 @@ public class DynamicForests {
         System.out.println(middle_sub_tree.N);
 
 
-
         System.out.println("==============================================================");
-        SpanningTree right_sub_tree = new SpanningTree();
-        sp_tree.findRightSubTree(secondSplitor,right_sub_tree);
+        SpanningTree right_sub_tree = new SpanningTree(sp_tree.neo4j,false);
+        sp_tree.findRightSubTree(secondSplitor, right_sub_tree);
         System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         right_sub_tree.rbtree.root.print();
         right_sub_tree.fixIfSingle();
@@ -83,6 +84,18 @@ public class DynamicForests {
         System.out.println(right_sub_tree.N);
 
 
+        //update edge level in the smaller tree
+        if (left_sub_tree.N < right_sub_tree.N) {
+            left_sub_tree.updateTreeEdgeLevel();
+            left_sub_tree.findReplacementEdge(right_sub_tree,level_r);
+        } else {
+            right_sub_tree.updateTreeEdgeLevel();
+            Relationship replacement_relationship = right_sub_tree.findReplacementEdge(left_sub_tree, level_r);
+            if(replacement_relationship!=null){
+
+            }
+//            System.out.println("!!!!!! "+replacement_relationship);
+        }
         return false;
     }
 }
