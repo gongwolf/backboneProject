@@ -300,6 +300,7 @@ public class indexWithDynamic {
                             eNode.delete();
                         }
                         deleted = true;
+                        break;
                     }
                 }
                 //test ternination

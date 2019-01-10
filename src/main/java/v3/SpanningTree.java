@@ -9,6 +9,8 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import v3.Bag.Node;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Stack;
 import java.util.TreeMap;
 
@@ -27,11 +29,21 @@ public class SpanningTree {
     Relationship[] rels;
     UFnode unionfind[];
     //Store the relationships that consists the spanning tree.
-    Relationship SpTree[];
+//    Relationship SpTree[];
+    HashSet<Relationship> SpTree;
     //the adjacent list of the spanning tree
     Bag adjList[];
     RedBlackTree rbtree = new RedBlackTree();
 
+    HashSet<Long> N_nodes;
+
+    boolean isSingle = false;
+
+
+    public SpanningTree() {
+        SpTree = new HashSet<>();
+        N_nodes = new HashSet<>();
+    }
 
     public SpanningTree(int graphsize, double samenode_t) {
         this.graphsize = graphsize;
@@ -269,6 +281,7 @@ public class SpanningTree {
      */
     private void initiliztion() {
         boolean needtoCloseDB = false;
+        this.N_nodes = new HashSet<>();
 
         if (neo4j == null) {
             DBPath = prop.params.get("neo4jdb");
@@ -353,7 +366,8 @@ public class SpanningTree {
      * Get the relationships that consists of the spanning tree
      */
     public void KruskalMST() {
-        SpTree = new Relationship[N - 1];
+//        SpTree = new Relationship[N - 1];
+        SpTree = new HashSet<>();
         int e = 0;
         int i = 0;
         while (e < N - 1) {
@@ -365,7 +379,12 @@ public class SpanningTree {
             int dest_root = find(dest_id);
 //            System.out.println(src_id + " " + src_root + "  " + dest_id + "  " + dest_root + " " + rel);
             if (src_root != dest_root) {
-                SpTree[e++] = rel;
+//                SpTree[e++] = rel;
+                SpTree.add(rel);
+
+                updateNodesIDInformation(rel);
+
+                e++;
                 union(src_root, dest_root);
                 connect_component_number--;
             }
@@ -381,6 +400,21 @@ public class SpanningTree {
 //        }
 
         System.out.println("================Finish the First Round Spanning Tree Finding==================");
+    }
+
+    private void updateNodesIDInformation(Relationship rel) {
+        if (rel != null) {
+            Long sid = rel.getStartNodeId();
+            Long eid = rel.getEndNodeId();
+
+            if (!N_nodes.contains(sid)) {
+                N_nodes.add(sid);
+            }
+
+            if (!N_nodes.contains(eid)) {
+                N_nodes.add(eid);
+            }
+        }
     }
 
     /**
@@ -434,7 +468,7 @@ public class SpanningTree {
 //            if(n!=nil){
 //                System.out.println(n.item);
 //            }
-            if (n!=nil && n.item.relationship.getId() == r.getId()) {
+            if (n != nil && n.item.relationship.getId() == r.getId()) {
                 return true;
             }
             n = n.right;
@@ -447,34 +481,112 @@ public class SpanningTree {
         return rbtree.findMinimum(rbtree.root);
     }
 
-    public TNode<RelationshipExt> findLeftSubTree(TNode<RelationshipExt> min_node, Relationship r) {
+    public TNode<RelationshipExt> findLeftSubTree(TNode<RelationshipExt> min_node, Relationship r, SpanningTree left_sub_tree) {
+        TNode<RelationshipExt> node = new TNode<>(min_node);
+
+        left_sub_tree.rbtree.insert(node);
+        left_sub_tree.N++;
+
         System.out.println(min_node.item);
         TNode<RelationshipExt> suc_node = rbtree.successor(min_node);
-        while(suc_node.item.relationship.getId()!=r.getId()){
+        while (suc_node.item.relationship.getId() != r.getId()) {
+            node = new TNode<>(suc_node);
+            left_sub_tree.insert(node);
+
             System.out.println(suc_node.item);
             suc_node = rbtree.successor(suc_node);
         }
         return suc_node;
     }
 
-    public TNode<RelationshipExt> findMiddleSubTree(TNode<RelationshipExt> min_node, Relationship r) {
+    public TNode<RelationshipExt> findMiddleSubTree(TNode<RelationshipExt> min_node, Relationship r, SpanningTree middle_sub_tree) {
+
+        TNode<RelationshipExt> node = new TNode<>(min_node);
         System.out.println(min_node.item);
+        middle_sub_tree.insert(node);
+
         TNode<RelationshipExt> suc_node = rbtree.successor(min_node);
-        while(suc_node.item.relationship.getId()!=r.getId()){
+        while (suc_node.item.relationship.getId() != r.getId()) {
+            node = new TNode<>(suc_node);
+            middle_sub_tree.insert(node);
+
             System.out.println(suc_node.item);
             suc_node = rbtree.successor(suc_node);
         }
+
         System.out.println(suc_node.item);
+        node = new TNode<>(suc_node);
+        middle_sub_tree.insert(node);
         return suc_node;
     }
 
-    public void findRightSubTree(TNode<RelationshipExt> Splitor) {
+    public void findRightSubTree(TNode<RelationshipExt> Splitor, SpanningTree last_sub_tree) {
         TNode<RelationshipExt> suc_node = rbtree.successor(Splitor);
-        while(suc_node!=nil){
+        while (suc_node != nil) {
+            TNode<RelationshipExt> node = new TNode<>(suc_node);
+            last_sub_tree.insert(node);
+
             System.out.println(suc_node.item);
             suc_node = rbtree.successor(suc_node);
         }
 
+    }
+
+
+    private void insert(TNode<RelationshipExt> node) {
+        this.rbtree.insert(node);
+        updateNodesIDInformation(node.item.relationship);
+        if (!this.SpTree.contains(node.item.relationship)) {
+            this.SpTree.add(node.item.relationship);
+        }
+        this.N = N_nodes.size();
+    }
+
+    public void fixIfSingle() {
+        if (this.N == 2) {
+            isSingle = true;
+            TNode<RelationshipExt> f, s;
+            if (rbtree.root.left != nil) {
+                f = rbtree.root.left;
+                s = rbtree.root;
+            } else {
+                f = rbtree.root;
+                s = rbtree.root.right;
+            }
+
+            System.out.println(f.item);
+            System.out.println(s.item);
+
+            RelationshipExt ext_r = new RelationshipExt(null, f.item.end_id, f.item.end_id);
+            TNode<RelationshipExt> dummyRoot = new TNode<>(0, ext_r);
+
+
+            this.rbtree.root = nil; //empty the tree
+            this.insert(dummyRoot); //insert the dummy node as the new root
+
+            //update information of this spanning tree
+            this.N_nodes.clear();
+            this.N_nodes.add((long) f.item.end_id);
+            this.SpTree.clear();
+
+            this.N = 1;
+            this.E = 0;
+
+            this.rbtree.root.print();
+        }
+    }
+
+    public void combineTree(SpanningTree right_sub_tree) {
+        TNode<RelationshipExt> right_min = right_sub_tree.findMinimum();
+        TNode<RelationshipExt> node = new TNode<>(right_min);
+        this.insert(node);
+
+        TNode<RelationshipExt> suc_node = rbtree.successor(right_min);
+        while (suc_node != nil) {
+            node = new TNode<>(suc_node);
+            this.insert(node);
+            suc_node = rbtree.successor(suc_node);
+        }
     }
 }
 

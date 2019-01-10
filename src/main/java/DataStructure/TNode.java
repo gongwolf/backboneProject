@@ -19,6 +19,15 @@ public class TNode<T> {
         this.key = -1;
     }
 
+    public TNode(TNode<T> old_node) {
+        this.item = old_node.item;
+        this.key = old_node.key;
+        this.color = old_node.color;
+        this.left = old_node.left;
+        this.right = old_node.right;
+        this.parent = old_node.parent;
+    }
+
 
     public void print() {
         print("", true);
