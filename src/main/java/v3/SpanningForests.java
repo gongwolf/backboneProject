@@ -1,9 +1,13 @@
 package v3;
 
+import javafx.util.Pair;
 import org.neo4j.graphdb.Relationship;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+
 public class SpanningForests {
-    Bag<SpanningTree> trees = new Bag<>();
+    ArrayList<SpanningTree> trees = new ArrayList<>();
     int level;
 
     public SpanningForests(int level) {
@@ -11,24 +15,74 @@ public class SpanningForests {
     }
 
     public SpanningTree findTree(Relationship r) {
-        Bag.Node<SpanningTree> current_tree = trees.first;
-        if (current_tree == null) {
-            System.out.println("there is no spanning tree in level " + level);
-        }
-        while (current_tree != null) {
-            if(current_tree.item.hasEdge(r)){
-                System.out.println("find spanning tree whose contains the edge "+r);
-                return current_tree.item;
+        for (SpanningTree current_tree : trees) {
+            if (current_tree.hasEdge(r)) {
+                System.out.println("find spanning tree whose contains the edge " + r);
+                return current_tree;
             }
-            current_tree = current_tree.next;
         }
-
-        //find process until the last element return false
         return null;
     }
 
 
     public void addNewTrees(SpanningTree sptree) {
         trees.add(sptree);
+    }
+
+    public boolean merge() {
+        if (trees.size() == 1) {
+            return true;
+        }
+
+        Pair<Integer, Integer> tree_idx;
+        while ((tree_idx = hasCouldMergedTree()) != null) {
+            int i = tree_idx.getKey();
+            int j = tree_idx.getValue();
+            SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j));
+
+            trees.remove(i);
+            trees.remove(j);
+            trees.add(new_tree);
+
+        }
+        return false;
+    }
+
+    private SpanningTree mergeTree(SpanningTree spanningTree, SpanningTree spanningTree1) {
+        SpanningTree new_tree = new SpanningTree();
+        new_tree.N_nodes.addAll(spanningTree.N_nodes);
+        new_tree.N_nodes.addAll(spanningTree1.N_nodes);
+
+        new_tree.SpTree.addAll(spanningTree.SpTree);
+        new_tree.SpTree.addAll(spanningTree1.SpTree);
+
+        new_tree.N = new_tree.N_nodes.size();
+        new_tree.FindAdjList();
+        new_tree.EulerTourString();
+
+        return new_tree;
+
+    }
+
+    private Pair<Integer, Integer> hasCouldMergedTree() {
+        for (int i = 0; i < trees.size(); i++) {
+            for (int j = i + 1; j < trees.size(); j++) {
+                if (hasCommonNodes(trees.get(i), trees.get(j))) {
+                    return new Pair<>(i, j);
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean hasCommonNodes(SpanningTree spanningTree, SpanningTree spanningTree1) {
+        HashSet<Long> nodes_1 = spanningTree.N_nodes;
+        HashSet<Long> nodes_2 = spanningTree1.N_nodes;
+        for (long nid1 : nodes_1) {
+            if (nodes_2.contains(nid1)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

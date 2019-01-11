@@ -263,7 +263,7 @@ public class SpanningTree {
         return false;
     }
 
-    private void FindAdjList() {
+    public void FindAdjList() {
         adjList = new Bag[N];
 
         for (int i = 0; i < N; i++) {
@@ -598,10 +598,16 @@ public class SpanningTree {
         }
     }
 
-    public void updateTreeEdgeLevel() {
+    /**
+     * Update the tree edge level whose level is equal to i by increasing one
+     * @param i the given level
+     */
+    public void updateTreeEdgeLevel(int i) {
         for (Relationship rel : SpTree) {
             int level = (int) rel.getProperty("level");
-            rel.setProperty("level", level++);
+            if (i == level) {
+                rel.setProperty("level", level++);
+            }
         }
     }
 
@@ -618,15 +624,17 @@ public class SpanningTree {
                  * If rel connected this spanning tree to another_sub_tree, return it and connect those two subtree later
                  * else, increment the edge level by one
                  */
-                System.out.println(rel);
                 if (org_level == level && another_sub_tree.N_nodes.contains(rel.getOtherNodeId(nid))) {
                     return rel;
-                }else if(org_level == level && this.SpTree.contains(rel)){
-                    rel.setProperty("level",org_level++);
+                } else if (org_level == level && this.SpTree.contains(rel)) {
+                    rel.setProperty("level", org_level++);
                 }
             }
         }
         return null;
+    }
+
+    public void reroot(long nid) {
     }
 }
 

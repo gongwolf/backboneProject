@@ -86,7 +86,7 @@ public class indexWithDynamic {
 
         if (currentLevel == 1) {
             dforests = new DynamicForests();
-            SpanningTree sptree_base = new SpanningTree(neo4j,true);
+            SpanningTree sptree_base = new SpanningTree(neo4j, true);
             System.out.println("=======================================");
             TreeMap<Long, GraphNode> graph_node_spanning_rb_map = new TreeMap<>();
             System.out.println(graph_node_spanning_rb_map.size());
@@ -285,11 +285,17 @@ public class indexWithDynamic {
                         Node sNode = r.getStartNode();
                         Node eNode = r.getEndNode();
 
-                        int level_r = (int)r.getProperty("level");
+                        int level_r = (int) r.getProperty("level");
 
-                        System.out.println(r+" is a tree edge ? "+dforests.isTreeEdge(r)+"  level:"+level_r);
-                        dforests.replacement(r,level_r);
-
+                        System.out.println(r + " is a tree edge ? " + dforests.isTreeEdge(r) + "  level:" + level_r);
+                        int l_idx = level_r;
+                        while (l_idx >= 0) {
+                            if(!dforests.replacement(r, l_idx)){
+                                l_idx--;
+                            }else{
+                                break;
+                            }
+                        }
                         r.delete();
 
 
