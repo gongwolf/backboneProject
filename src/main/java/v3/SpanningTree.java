@@ -491,6 +491,10 @@ public class SpanningTree {
         return rbtree.findMinimum(rbtree.root);
     }
 
+    public int findMaximumKeyValue() {
+        return rbtree.findMaximumKeyValue(rbtree.root);
+    }
+
     public TNode<RelationshipExt> findLeftSubTree(TNode<RelationshipExt> min_node, Relationship r, SpanningTree left_sub_tree) {
         TNode<RelationshipExt> node = new TNode<>(min_node);
         left_sub_tree.insert(node);
@@ -600,6 +604,7 @@ public class SpanningTree {
 
     /**
      * Update the tree edge level whose level is equal to i by increasing one
+     *
      * @param i the given level
      */
     public void updateTreeEdgeLevel(int i) {
@@ -635,6 +640,39 @@ public class SpanningTree {
     }
 
     public void reroot(long nid) {
+        rbtree.root.print();
+
+        if (!this.isSingle) {
+            TNode<RelationshipExt> min_node = findMinimum();
+            System.out.println("min node in the tree " + min_node.item);
+
+            int max_key = findMaximumKeyValue();
+            System.out.println("max Key Value : " + max_key);
+
+            TNode<RelationshipExt> node_temp = new TNode<>(min_node);
+            rbtree.delete(node_temp);
+
+            TNode<RelationshipExt> node = new TNode<>(min_node);
+            node.key = ++max_key;
+            rbtree.insert(node);
+
+            TNode<RelationshipExt> suc_node = rbtree.successor(min_node);
+            while (suc_node.item.start_id != nid) {
+
+                node_temp = new TNode<>(suc_node);
+                rbtree.delete(node_temp);
+
+                node = new TNode<>(suc_node);
+                node.key = ++max_key;
+                rbtree.insert(node);
+
+
+                System.out.println(suc_node.item);
+                suc_node = rbtree.successor(suc_node);
+            }
+            System.out.println("============================================="+max_key);
+            this.rbtree.root.print();
+        }
     }
 }
 

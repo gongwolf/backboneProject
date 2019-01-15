@@ -360,5 +360,12 @@ public class RedBlackTree<T> {
 
         return y;
     }
+
+    public int findMaximumKeyValue(TNode node) {
+        while (node.right != nil) {
+            node = node.right;
+        }
+        return node.key;
+    }
 }
 

@@ -285,17 +285,19 @@ public class indexWithDynamic {
                         Node sNode = r.getStartNode();
                         Node eNode = r.getEndNode();
 
+
                         int level_r = (int) r.getProperty("level");
 
                         System.out.println(r + " is a tree edge ? " + dforests.isTreeEdge(r) + "  level:" + level_r);
                         int l_idx = level_r;
                         while (l_idx >= 0) {
-                            if(!dforests.replacement(r, l_idx)){
+                            if (!dforests.replacement(r, l_idx)) {
                                 l_idx--;
-                            }else{
+                            } else {
                                 break;
                             }
                         }
+
                         r.delete();
 
 

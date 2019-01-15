@@ -39,9 +39,13 @@ public class SpanningForests {
             int i = tree_idx.getKey();
             int j = tree_idx.getValue();
             SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j));
-
+            /**
+             * because i is always less than j, i is deleted before j.
+             * After deletion of tree i, the index of tree j needs to decrease 1.
+             * **/
             trees.remove(i);
-            trees.remove(j);
+
+            trees.remove(j - 1);
             trees.add(new_tree);
 
         }
@@ -84,5 +88,21 @@ public class SpanningForests {
             }
         }
         return false;
+    }
+
+    public void findTrees(Relationship replacement_relationship, SpanningTree left_sub_tree, SpanningTree right_sub_tree) {
+        boolean findLeft = false, findRight = false;
+        for (SpanningTree t : trees) {
+            if (findLeft && findRight) {
+                return;
+            }
+            if (t.N_nodes.contains(replacement_relationship.getStartNodeId())) {
+                left_sub_tree = t;
+                findLeft = true;
+            } else if (t.N_nodes.contains(replacement_relationship.getEndNodeId())) {
+                right_sub_tree = t;
+                findRight = true;
+            }
+        }
     }
 }

@@ -4,7 +4,7 @@ import static DataStructure.STATIC.*;
 
 public class TNode<T> {
     public T item = null;
-    int key = -1;
+    public int key = -1;
     int color = BLACK;
     public TNode<T> left = nil;
     public TNode<T> right = nil;
