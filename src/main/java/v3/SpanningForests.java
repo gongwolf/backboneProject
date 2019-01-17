@@ -17,11 +17,23 @@ public class SpanningForests {
     public SpanningTree findTree(Relationship r) {
         for (SpanningTree current_tree : trees) {
             if (current_tree.hasEdge(r)) {
-                System.out.println("find spanning tree whose contains the edge " + r);
+//                System.out.println("find spanning tree whose contains the edge " + r);
                 return current_tree;
             }
         }
         return null;
+    }
+
+
+    public int findTreeIndex(Relationship r) {
+        for (int i = 0; i < trees.size(); i++) {
+            SpanningTree current_tree = trees.get(i);
+            if (current_tree.hasEdge(r)) {
+                System.out.println("the index of the spanning tree whose contains the edge " + r + " is " + i);
+                return i;
+            }
+        }
+        return -1;
     }
 
 

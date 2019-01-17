@@ -15,7 +15,6 @@ public class RelationshipExt {
 
     public RelationshipExt(Relationship relationship, int src_id, int dest_id) {
         this.relationship = relationship;
-        this.level = 0;
         this.visited = false;
         this.start_id = src_id;
         this.end_id = dest_id;

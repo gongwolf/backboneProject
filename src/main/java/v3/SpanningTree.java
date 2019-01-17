@@ -10,10 +10,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import v3.Bag.Node;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Stack;
-import java.util.TreeMap;
+import java.util.*;
 
 import static DataStructure.STATIC.nil;
 
@@ -102,6 +99,7 @@ public class SpanningTree {
 
         RelationshipExt iter_edge = adjList[src_id].getFirstUnvisitedOutgoingEdge();
         int current_start_id = -1, current_end_id = -1;
+
         if (iter_edge != null) {
             current_start_id = iter_edge.start_id;
             current_end_id = iter_edge.end_id;
@@ -340,7 +338,7 @@ public class SpanningTree {
     }
 
 
-    private void updateRelationshipRBPointer(RelationshipExt iter_edge, int et_edge_id) {
+    public void updateRelationshipRBPointer(RelationshipExt iter_edge, int et_edge_id) {
         boolean needtoCloseDB = false;
         if (neo4j == null) {
             DBPath = prop.params.get("neo4jdb");
@@ -353,13 +351,19 @@ public class SpanningTree {
 
         try (Transaction tx = neo4j.graphDB.beginTx()) {
             Relationship r = iter_edge.relationship;
-//            System.out.print(r);
             if (!r.hasProperty("pFirstID")) {
                 r.setProperty("pFirstID", et_edge_id);
-//                System.out.println("  add property pFirstID " + et_edge_id);
-            } else {
+            } else if (!r.hasProperty("pSecondID")) {
                 r.setProperty("pSecondID", et_edge_id);
-//                System.out.println("  add property pSecondID " + et_edge_id);
+            } else {
+                int firstID = (int) r.getProperty("pFirstID");
+                int secondID = (int) r.getProperty("pSecondID");
+
+                if (firstID == et_edge_id) {
+                    r.setProperty("pFirstID", et_edge_id);
+                } else if (secondID == et_edge_id) {
+                    r.setProperty("secondID", et_edge_id);
+                }
 
             }
             tx.success();
@@ -409,7 +413,7 @@ public class SpanningTree {
 //            System.out.println(r);
 //        }
 
-        System.out.println("================Finish the First Round Spanning Tree Finding==================");
+//        System.out.println("================Finish the First Round Spanning Tree Finding==================");
     }
 
     private void updateNodesIDInformation(Relationship rel) {
@@ -475,10 +479,7 @@ public class SpanningTree {
             }
 
             n = s.pop();
-//            if(n!=nil){
-//                System.out.println(n.item);
-//            }
-            if (n != nil && n.item.relationship.getId() == r.getId()) {
+            if (n != nil && n.item.relationship != null && n.item.relationship.getId() == r.getId()) {
                 return true;
             }
             n = n.right;
@@ -499,14 +500,10 @@ public class SpanningTree {
         TNode<RelationshipExt> node = new TNode<>(min_node);
         left_sub_tree.insert(node);
 
-        System.out.println(min_node.item);
-
         TNode<RelationshipExt> suc_node = rbtree.successor(min_node);
         while (suc_node.item.relationship.getId() != r.getId()) {
             node = new TNode<>(suc_node);
             left_sub_tree.insert(node);
-
-            System.out.println(suc_node.item);
             suc_node = rbtree.successor(suc_node);
         }
         return suc_node;
@@ -515,7 +512,7 @@ public class SpanningTree {
     public TNode<RelationshipExt> findMiddleSubTree(TNode<RelationshipExt> min_node, Relationship r, SpanningTree middle_sub_tree) {
 
         TNode<RelationshipExt> node = new TNode<>(min_node);
-        System.out.println(min_node.item);
+//        System.out.println(min_node.item);
         middle_sub_tree.insert(node);
 
         TNode<RelationshipExt> suc_node = rbtree.successor(min_node);
@@ -523,11 +520,11 @@ public class SpanningTree {
             node = new TNode<>(suc_node);
             middle_sub_tree.insert(node);
 
-            System.out.println(suc_node.item);
+//            System.out.println(suc_node.item);
             suc_node = rbtree.successor(suc_node);
         }
 
-        System.out.println(suc_node.item);
+//        System.out.println(suc_node.item);
         node = new TNode<>(suc_node);
         middle_sub_tree.insert(node);
         return suc_node;
@@ -539,14 +536,14 @@ public class SpanningTree {
             TNode<RelationshipExt> node = new TNode<>(suc_node);
             last_sub_tree.insert(node);
 
-            System.out.println(suc_node.item);
+//            System.out.println(suc_node.item);
             suc_node = rbtree.successor(suc_node);
         }
 
     }
 
 
-    private void insert(TNode<RelationshipExt> node) {
+    public void insert(TNode<RelationshipExt> node) {
         this.rbtree.insert(node);
         updateNodesIDInformation(node.item.relationship);
         if (!this.SpTree.contains(node.item.relationship)) {
@@ -567,8 +564,8 @@ public class SpanningTree {
                 s = rbtree.root.right;
             }
 
-            System.out.println(f.item);
-            System.out.println(s.item);
+//            System.out.println("fix single node in tree : " + f.item);
+//            System.out.println("fix single node in tree : " + s.item);
 
             RelationshipExt ext_r = new RelationshipExt(null, f.item.end_id, f.item.end_id);
             TNode<RelationshipExt> dummyRoot = new TNode<>(0, ext_r);
@@ -585,7 +582,7 @@ public class SpanningTree {
             this.N = 1;
             this.E = 0;
 
-            this.rbtree.root.print();
+//            this.rbtree.root.print();
         }
     }
 
@@ -639,39 +636,57 @@ public class SpanningTree {
         return null;
     }
 
-    public void reroot(long nid) {
-        rbtree.root.print();
-
+    public void reroot(long nid, HashMap<Integer, Integer> keyUpdatesMap, long level) {
+        System.out.println("-------------------  reroot  --------------------------");
+        this.rbtree.root.print();
+        System.out.println("0-0--0-0-0-0-0-0-0-0-0-0-0-0-0-0-0--00-0-0-0-0-0-0-0-0-0--");
         if (!this.isSingle) {
             TNode<RelationshipExt> min_node = findMinimum();
             System.out.println("min node in the tree " + min_node.item);
 
-            int max_key = findMaximumKeyValue();
-            System.out.println("max Key Value : " + max_key);
+            int max_key = -1;
+            if (level == 0) {
+                max_key = findMaximumKeyValue();
+                System.out.println("max Key Value : " + max_key);
+            }
 
             TNode<RelationshipExt> node_temp = new TNode<>(min_node);
             rbtree.delete(node_temp);
+            int org_key = node_temp.key;
+            if (level == 0) {
+                node_temp.key = ++max_key;
+                int new_key = node_temp.key;
+                keyUpdatesMap.put(org_key, new_key);
+            } else {
+                node_temp.key = keyUpdatesMap.get(org_key);                    //find the updated key for the node
+            }
+            rbtree.insert(node_temp);
+            updateRelationshipRBPointer(node_temp.item, node_temp.key);
 
-            TNode<RelationshipExt> node = new TNode<>(min_node);
-            node.key = ++max_key;
-            rbtree.insert(node);
 
             TNode<RelationshipExt> suc_node = rbtree.successor(min_node);
             while (suc_node.item.start_id != nid) {
 
                 node_temp = new TNode<>(suc_node);
                 rbtree.delete(node_temp);
+                org_key = node_temp.key;
 
-                node = new TNode<>(suc_node);
-                node.key = ++max_key;
-                rbtree.insert(node);
-
+                if (level == 0) {
+                    //new node that is used to insert to the end of the tree
+                    node_temp.key = ++max_key;
+                    int new_key = node_temp.key;
+                    keyUpdatesMap.put(org_key, new_key);
+                } else {
+                    node_temp.key = keyUpdatesMap.get(org_key);
+                }
+                rbtree.insert(node_temp);
 
                 System.out.println(suc_node.item);
                 suc_node = rbtree.successor(suc_node);
             }
-            System.out.println("============================================="+max_key);
+            System.out.println("=============================================" + max_key);
             this.rbtree.root.print();
+
         }
     }
 }
