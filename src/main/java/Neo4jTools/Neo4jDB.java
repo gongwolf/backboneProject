@@ -46,9 +46,9 @@ public class Neo4jDB {
         GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(new File(this.DB_PATH));
         graphDB = builder.newGraphDatabase();
         if (this.graphDB != null) {
-//            System.out.println("Connect the neo4j db (" + this.DB_PATH + ") success !!!!");
+            System.out.println("Connect the neo4j db (" + this.DB_PATH + ") success !!!!");
         } else {
-//            System.out.println("Connect the neo4j db (" + this.DB_PATH + ") Failure !!!!");
+            System.out.println("Connect the neo4j db (" + this.DB_PATH + ") Failure !!!!");
         }
     }
 

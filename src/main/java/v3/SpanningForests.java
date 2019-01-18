@@ -41,7 +41,7 @@ public class SpanningForests {
         trees.add(sptree);
     }
 
-    public boolean merge() {
+    public boolean merge(int level_r) {
         if (trees.size() == 1) {
             return true;
         }
@@ -50,7 +50,7 @@ public class SpanningForests {
         while ((tree_idx = hasCouldMergedTree()) != null) {
             int i = tree_idx.getKey();
             int j = tree_idx.getValue();
-            SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j));
+            SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j),level_r);
             /**
              * because i is always less than j, i is deleted before j.
              * After deletion of tree i, the index of tree j needs to decrease 1.
@@ -64,7 +64,7 @@ public class SpanningForests {
         return false;
     }
 
-    private SpanningTree mergeTree(SpanningTree spanningTree, SpanningTree spanningTree1) {
+    private SpanningTree mergeTree(SpanningTree spanningTree, SpanningTree spanningTree1, int level_r) {
         SpanningTree new_tree = new SpanningTree();
         new_tree.N_nodes.addAll(spanningTree.N_nodes);
         new_tree.N_nodes.addAll(spanningTree1.N_nodes);

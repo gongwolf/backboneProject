@@ -20,7 +20,7 @@ public class CreateDB {
 
     public static void main(String args[]) {
         CreateDB c = new CreateDB();
-        c.createBusLineDataBase(12,     0);
+        c.createBusLineDataBase(16,     0);
     }
 
     public void createBusLineDataBase(int graph_size, double samnode_t) {
@@ -29,6 +29,7 @@ public class CreateDB {
         neo4j.deleleDB();
         System.out.println("====================================================================");
         neo4j.startDB();
+        System.out.println(neo4j.DB_PATH);
         System.out.println("====================================================================");
         String nodeFilePath = home_folder + "/mydata/projectData/BackBone/busline_" + graph_size + "_" + samnode_t + "/data/NodeInfo.txt";
         String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/busline_" + graph_size + "_" + samnode_t + "/data/SegInfo.txt";

@@ -90,7 +90,7 @@ public class indexWithDynamic {
             System.out.println("=======================================");
             TreeMap<Long, GraphNode> graph_node_spanning_rb_map = new TreeMap<>();
             System.out.println("size of the graph_node_spanning_rb_map before finding the euler tour : " + graph_node_spanning_rb_map.size());
-            System.out.println(sptree_base.EulerTourString(graph_node_spanning_rb_map));
+            System.out.println(sptree_base.EulerTourString(graph_node_spanning_rb_map, 0));
             System.out.println("size of the graph_node_spanning_rb_map after finding the euler tour : " + graph_node_spanning_rb_map.size());
             System.out.println("------------------");
             removeSingletonEdges(sptree_base);
@@ -149,14 +149,14 @@ public class indexWithDynamic {
                             Node sNode = r.getStartNode();
                             Node eNode = r.getEndNode();
                             System.out.print("deleted single relationship  ");
-                            System.out.println(r + "   " + r.getProperty("pFirstID") + "   " +  r.getProperty("pSecondID"));
 
                             for (Map.Entry<Integer, SpanningForests> sp_forest : this.dforests.dforests.entrySet()) {
-//                                System.out.println(sp_forest.getValue().trees.size()+"   "+sp_forest.getValue().level);
+                                int level = sp_forest.getKey();
+                                System.out.println(r + "   " + r.getProperty("pFirstID" + level) + "   " + r.getProperty("pSecondID" + level));
                                 SpanningTree sp_tree;
                                 if ((sp_tree = sp_forest.getValue().findTree(r)) != null) {
-                                    sp_tree.rbtree.delete((Integer) r.getProperty("pFirstID"));
-                                    sp_tree.rbtree.delete((Integer) r.getProperty("pSecondID"));
+                                    sp_tree.rbtree.delete((Integer) r.getProperty("pFirstID" + level));
+                                    sp_tree.rbtree.delete((Integer) r.getProperty("pSecondID" + level));
 
                                 }
                             }
@@ -204,8 +204,8 @@ public class indexWithDynamic {
                              * The order of the key will be kept the increase order.
                              * Also, it will not affect the connectivity of the graph.
                              *****/
-                            sptree_base.rbtree.delete((Integer) r.getProperty("pFirstID"));
-                            sptree_base.rbtree.delete((Integer) r.getProperty("pSecondID"));
+                            sptree_base.rbtree.delete((Integer) r.getProperty("pFirstID0"));
+                            sptree_base.rbtree.delete((Integer) r.getProperty("pSecondID0"));
                             System.out.println(r + " was removed");
                             r.delete();
 

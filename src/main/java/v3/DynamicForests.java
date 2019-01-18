@@ -161,17 +161,17 @@ public class DynamicForests {
 
             if (left_sub_tree.N_nodes.contains(sid)) {
                 System.out.println("re-root left sub-tree on node " + sid);
-                left_sub_tree.reroot(sid, keyUpdatesMap, i);
+                left_sub_tree.reroot(sid, keyUpdatesMap, eid, i);
                 System.out.println("re-root right sub-tree on node " + eid);
-                right_sub_tree.reroot(sid, keyUpdatesMap, eid);
+                right_sub_tree.reroot(sid, keyUpdatesMap, eid, i);
                 connectTwoTree(left_sub_tree, right_sub_tree, replacement_relationship, keyUpdatesMap, i);
                 System.out.println("************************************************");
                 left_sub_tree.rbtree.root.print();
             } else {
                 System.out.println("re-root left sub-tree on node " + eid);
-                left_sub_tree.reroot(sid, keyUpdatesMap, eid);
+                left_sub_tree.reroot(sid, keyUpdatesMap, eid, i);
                 System.out.println("re-root right sub-tree on node " + sid);
-                right_sub_tree.reroot(sid, keyUpdatesMap, sid);
+                right_sub_tree.reroot(sid, keyUpdatesMap, sid, i);
                 connectTwoTree(left_sub_tree, right_sub_tree, replacement_relationship, keyUpdatesMap, i);
                 left_sub_tree.rbtree.root.print();
             }
@@ -225,7 +225,7 @@ public class DynamicForests {
         //insert first appears of replacement_relationship into the tree
         TNode<RelationshipExt> sNode = new TNode<>(++max_key, rel_ext);
         left_sub_tree.insert(sNode);
-        left_sub_tree.updateRelationshipRBPointer(sNode.item, sNode.key);
+        left_sub_tree.updateRelationshipRBPointer(sNode.item, sNode.key,level);
 
         if (!right_sub_tree.isSingle) {
             TNode<RelationshipExt> min_node = right_sub_tree.findMinimum();
@@ -236,7 +236,7 @@ public class DynamicForests {
                 node.key = keyUpdatesMap.get(min_node.key);
             }
             left_sub_tree.insert(node);
-            left_sub_tree.updateRelationshipRBPointer(node.item, node.key);
+            left_sub_tree.updateRelationshipRBPointer(node.item, node.key,level);
 
 
             TNode<RelationshipExt> suc_node = right_sub_tree.rbtree.successor(min_node);
@@ -250,7 +250,7 @@ public class DynamicForests {
                 }
 
                 right_sub_tree.insert(node);
-                left_sub_tree.updateRelationshipRBPointer(node.item, node.key);
+                left_sub_tree.updateRelationshipRBPointer(node.item, node.key,level);
                 suc_node = right_sub_tree.rbtree.successor(suc_node);
             }
 
@@ -259,7 +259,7 @@ public class DynamicForests {
 
         TNode<RelationshipExt> eNode = new TNode<>(++max_key, reverse_rel_ext);
         left_sub_tree.insert(eNode);
-        left_sub_tree.updateRelationshipRBPointer(eNode.item, eNode.key);
+        left_sub_tree.updateRelationshipRBPointer(eNode.item, eNode.key,level);
 
         right_sub_tree.rbtree.root = nil; //empty right_tree
     }
@@ -290,7 +290,7 @@ public class DynamicForests {
 
         System.out.println("put new spanning tree to level " + new_level + " forests");
         System.out.println("Starting to merge the level " + new_level + " forest ............. ");
-        dforests.get(new_level).merge();
+        dforests.get(new_level).merge(new_level);
         System.out.println("Finished merge the level " + new_level + " forest .............");
 
     }
