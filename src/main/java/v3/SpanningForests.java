@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 public class SpanningForests {
-    ArrayList<SpanningTree> trees = new ArrayList<>();
-    int level;
+    public ArrayList<SpanningTree> trees = new ArrayList<>();
+    public int level;
 
     public SpanningForests(int level) {
         this.level = level;

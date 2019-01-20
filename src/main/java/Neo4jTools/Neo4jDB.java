@@ -62,11 +62,11 @@ public class Neo4jDB {
             File f = new File(this.DB_PATH);
             if (f.exists()) {
                 FileUtils.deleteDirectory(new File(this.DB_PATH));
-//                System.out.println("Delete the neo4j db (" + this.DB_PATH + ") success !!!!");
+                System.out.println("Delete the neo4j db (" + this.DB_PATH + ") success !!!!");
             }
         } catch (IOException e) {
 //            e.printStackTrace();
-//            System.err.println("Delete the neo4j db (" + this.DB_PATH + ") fail !!!!");
+            System.err.println("Delete the neo4j db (" + this.DB_PATH + ") fail !!!!");
         }
     }
 

@@ -2,6 +2,7 @@ package v3;
 
 import DataStructure.TNode;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +11,7 @@ import static DataStructure.STATIC.nil;
 
 
 public class DynamicForests {
-    HashMap<Integer, SpanningForests> dforests;
+    public HashMap<Integer, SpanningForests> dforests;
 
     public DynamicForests() {
         dforests = new HashMap<>();
@@ -87,6 +88,8 @@ public class DynamicForests {
         right_sub_tree = middle_sub_tree;
         right_sub_tree.fixIfSingle();
 
+        System.out.println(left_sub_tree.N+"  "+right_sub_tree.N);
+
 
         //update edge level in the smaller tree
         if (left_sub_tree.N < right_sub_tree.N) {
@@ -95,22 +98,26 @@ public class DynamicForests {
                 HashMap<Integer, Integer> keyUpdatesMap = new HashMap<>();
                 System.out.println("Found replacement relationship " + replacement_relationship + " and push left sub tree to higher level");
                 addNewTreeEdge(replacement_relationship, r, level_r, keyUpdatesMap); // add new edge from level 0 to level_r forests
-                for (Map.Entry<Integer, Integer> e : keyUpdatesMap.entrySet()) {
-                    System.out.println(e.getKey() + "  <--->   " + e.getValue());
-                }
+//                for (Map.Entry<Integer, Integer> e : keyUpdatesMap.entrySet()) {
+//                    System.out.println(e.getKey() + "  <--->   " + e.getValue());
+//                }
                 updateDynamicInformation(left_sub_tree, level_r); //push the left tree to higher level
                 return true;
             }
         } else {
             Relationship replacement_relationship = right_sub_tree.findReplacementEdge(left_sub_tree, level_r);
+            right_sub_tree.printEdges();
+            //Todo: remove the deleted edge if there is a replacement edge
+            System.out.println("----------dsalkdl;ad;-----------");
             if (replacement_relationship != null) {
                 HashMap<Integer, Integer> keyUpdatesMap = new HashMap<>();
                 System.out.println("Found replacement relationship " + replacement_relationship + " and push right sub tree to higher level");
                 addNewTreeEdge(replacement_relationship, r, level_r, keyUpdatesMap); // add new edge from level 0 to level_r forests
-                for (Map.Entry<Integer, Integer> e : keyUpdatesMap.entrySet()) {
-                    System.out.println(e.getKey() + "  <--->   " + e.getValue());
-                }
+//                for (Map.Entry<Integer, Integer> e : keyUpdatesMap.entrySet()) {
+//                    System.out.println(e.getKey() + "  <--->   " + e.getValue());
+//                }
                 updateDynamicInformation(right_sub_tree, level_r); //push the right tree to higher level
+                right_sub_tree.rbtree.root.print();
                 return true;
             }
         }
@@ -163,15 +170,27 @@ public class DynamicForests {
                 System.out.println("re-root left sub-tree on node " + sid);
                 left_sub_tree.reroot(sid, keyUpdatesMap, eid, i);
                 System.out.println("re-root right sub-tree on node " + eid);
-                right_sub_tree.reroot(sid, keyUpdatesMap, eid, i);
+                try(Transaction tx = sp_tree.neo4j.graphDB.beginTx()){
+                    for(Map.Entry<String, Object> ssss:sp_tree.neo4j.graphDB.getRelationshipById(13).getAllProperties().entrySet()){
+                        System.out.println(ssss.getKey()+"    "+ ssss.getValue());
+                    }
+                    tx.success();
+                }
+                right_sub_tree.reroot(eid, keyUpdatesMap, sid, i);
+                try(Transaction tx = sp_tree.neo4j.graphDB.beginTx()){
+                    for(Map.Entry<String, Object> ssss:sp_tree.neo4j.graphDB.getRelationshipById(13).getAllProperties().entrySet()){
+                        System.out.println(ssss.getKey()+"    "+ ssss.getValue());
+                    }
+                    tx.success();
+                }
                 connectTwoTree(left_sub_tree, right_sub_tree, replacement_relationship, keyUpdatesMap, i);
                 System.out.println("************************************************");
                 left_sub_tree.rbtree.root.print();
             } else {
                 System.out.println("re-root left sub-tree on node " + eid);
-                left_sub_tree.reroot(sid, keyUpdatesMap, eid, i);
+                left_sub_tree.reroot(eid, keyUpdatesMap, sid, i);
                 System.out.println("re-root right sub-tree on node " + sid);
-                right_sub_tree.reroot(sid, keyUpdatesMap, sid, i);
+                right_sub_tree.reroot(sid, keyUpdatesMap, eid, i);
                 connectTwoTree(left_sub_tree, right_sub_tree, replacement_relationship, keyUpdatesMap, i);
                 left_sub_tree.rbtree.root.print();
             }
@@ -186,6 +205,7 @@ public class DynamicForests {
         System.out.println("connecting two tree");
         int src_id = (int) replacement_relationship.getStartNodeId();
         int dest_id = (int) replacement_relationship.getEndNodeId();
+
 
         int left_id = -1, right_id = -1;
 
@@ -222,24 +242,35 @@ public class DynamicForests {
         int max_key;
         max_key = left_sub_tree.findMaximumKeyValue();
 
+//        left_sub_tree.rbtree.root.print();
+//        right_sub_tree.rbtree.root.print();
+        System.out.println(max_key);
+
         //insert first appears of replacement_relationship into the tree
         TNode<RelationshipExt> sNode = new TNode<>(++max_key, rel_ext);
         left_sub_tree.insert(sNode);
-        left_sub_tree.updateRelationshipRBPointer(sNode.item, sNode.key,level);
+//        System.out.println("insert the node "+sNode.key+"  "+sNode.item);
+        left_sub_tree.updateRelationshipRBPointer(sNode.item, sNode.key, level);
+
+
 
         if (!right_sub_tree.isSingle) {
             TNode<RelationshipExt> min_node = right_sub_tree.findMinimum();
             TNode<RelationshipExt> node = new TNode<>(min_node);
+
             if (level == 0) {
                 node.key = ++max_key;
             } else {
                 node.key = keyUpdatesMap.get(min_node.key);
             }
+
             left_sub_tree.insert(node);
-            left_sub_tree.updateRelationshipRBPointer(node.item, node.key,level);
+            left_sub_tree.updateRelationshipRBPointer(node.item, node.key, level);
+//            System.out.println("insert the min node of the right sub_tree "+node.key+"  "+node.item);
 
 
             TNode<RelationshipExt> suc_node = right_sub_tree.rbtree.successor(min_node);
+            int k = 0 ;
             while (suc_node != nil) {
                 node = new TNode<>(suc_node);
 
@@ -249,9 +280,12 @@ public class DynamicForests {
                     node.key = keyUpdatesMap.get(suc_node.key);
                 }
 
-                right_sub_tree.insert(node);
-                left_sub_tree.updateRelationshipRBPointer(node.item, node.key,level);
+                left_sub_tree.insert(node);
+                left_sub_tree.updateRelationshipRBPointer(node.item, node.key, level);
                 suc_node = right_sub_tree.rbtree.successor(suc_node);
+//                System.out.println("insert the node of the right sub_tree "+node.key+"  "+node.item +" to left sub tree");
+//                k++;
+//                if(k==20) break;
             }
 
 
@@ -259,7 +293,7 @@ public class DynamicForests {
 
         TNode<RelationshipExt> eNode = new TNode<>(++max_key, reverse_rel_ext);
         left_sub_tree.insert(eNode);
-        left_sub_tree.updateRelationshipRBPointer(eNode.item, eNode.key,level);
+        left_sub_tree.updateRelationshipRBPointer(eNode.item, eNode.key, level);
 
         right_sub_tree.rbtree.root = nil; //empty right_tree
     }
@@ -271,6 +305,7 @@ public class DynamicForests {
      * @param level_r  the given level forest that the sub_tree needs to be added
      */
     private void updateDynamicInformation(SpanningTree sub_tree, int level_r) {
+
         //If it's a single node, do not need to push to higher level
         if (sub_tree.isSingle) {
             return;
