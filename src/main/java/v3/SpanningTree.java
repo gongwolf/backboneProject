@@ -18,6 +18,11 @@ public class SpanningTree {
     public int level;
     public ProgramProperty prop = new ProgramProperty();
     public Neo4jDB neo4j = null;
+    //Store the relationships that consists the spanning tree.
+//    Relationship SpTree[];
+    public HashSet<Relationship> SpTree;
+    public RedBlackTree rbtree = new RedBlackTree();
+    public HashSet<Long> N_nodes;
     int E = 0; // number of edges
     int N = 0; // number of nodes
     String DBPath;
@@ -26,15 +31,8 @@ public class SpanningTree {
     int connect_component_number = 0; // number of the connect component found in the graph
     Relationship[] rels;
     UFnode unionfind[];
-    //Store the relationships that consists the spanning tree.
-//    Relationship SpTree[];
-    public HashSet<Relationship> SpTree;
     //the adjacent list of the spanning tree
     Bag adjList[];
-    public RedBlackTree rbtree = new RedBlackTree();
-
-    public HashSet<Long> N_nodes;
-
     boolean isSingle = false;
 
 
@@ -546,10 +544,10 @@ public class SpanningTree {
     public TNode<RelationshipExt> findLeftSubTree(TNode<RelationshipExt> min_node, Relationship r, SpanningTree left_sub_tree) {
 
         //if the minimum node is the node needs to be deleted, left_sub_tree is empty, the splitor is the minimum node.
-        if (min_node.item.relationship.getId() == r.getId()) {
-            left_sub_tree.isSingle = true;
-            return min_node;
-        }
+//        if (min_node.item.relationship.getId() == r.getId()) {
+//            left_sub_tree.isSingle = true;
+//            return min_node;
+//        }
 
         TNode<RelationshipExt> node = new TNode<>(min_node);
         left_sub_tree.insert(node);
@@ -573,6 +571,8 @@ public class SpanningTree {
         // middle_sub_tree is empty, the splitor is the successor of the splitor.
         // the while loop would not run
         if (suc_node.item.relationship.getId() == r.getId()) {
+            node = new TNode<>(splitor);
+            middle_sub_tree.insert(node);
             middle_sub_tree.isSingle = true;
         }
 
@@ -586,6 +586,7 @@ public class SpanningTree {
 
     public void findRightSubTree(TNode<RelationshipExt> Splitor, SpanningTree last_sub_tree) {
         TNode<RelationshipExt> suc_node = rbtree.successor(Splitor);
+
 
         //If there is not successor follow the given Splitor, the last_sub_tree is a single tree
         if (suc_node == nil) {
@@ -617,7 +618,11 @@ public class SpanningTree {
         if (this.N == 2) {
             isSingle = true;
             System.out.println("Fix single tree");
-//            TNode<RelationshipExt> f, s;
+            TNode<RelationshipExt> f = null;
+
+            if (rbtree.root != nil) {
+                f = rbtree.root;
+            }
 //            if (rbtree.root.left != nil) {
 //                f = rbtree.root.left;
 //                s = rbtree.root;
@@ -625,31 +630,29 @@ public class SpanningTree {
 //                f = rbtree.root;
 //                s = rbtree.root.right;
 //            }
-//
-////            System.out.println("fix single node in tree : " + f.item);
-////            System.out.println("fix single node in tree : " + s.item);
-//
-//            RelationshipExt ext_r = new RelationshipExt(null, f.item.end_id, f.item.end_id);
-//            TNode<RelationshipExt> dummyRoot = new TNode<>(0, ext_r);
-//
-//
-//            this.rbtree.root = nil; //empty the tree
-//            this.insert(dummyRoot); //insert the dummy node as the new root
-//
-//            //update information of this spanning tree
-//            this.N_nodes.clear();
-//            this.N_nodes.add((long) f.item.end_id);
-//            this.SpTree.clear();
-//
-//            this.N = 1;
-//            this.E = 0;
 
-//            this.rbtree.root.print();
+//            System.out.println("fix single node in tree : " + f.item);
+//            System.out.println("fix single node in tree : " + s.item);
+
+            RelationshipExt ext_r = new RelationshipExt(null, f.item.end_id, f.item.end_id);
+            TNode<RelationshipExt> dummyRoot = new TNode<>(0, ext_r);
+
+
+            this.rbtree.root = nil; //empty the tree
+            this.insert(dummyRoot); //insert the dummy node as the new root
+
+            //update information of this spanning tree
+            this.N_nodes.clear();
+            this.N_nodes.add((long) f.item.end_id);
+            this.SpTree.clear();
+
+            this.N = 1;
+            this.E = 0;
         }
     }
 
     public void combineTree(SpanningTree right_sub_tree) {
-        if (right_sub_tree.rbtree.root!=nil) {
+        if (right_sub_tree.rbtree.root != nil) {
             System.out.println("The current tree is a single tree");
             TNode<RelationshipExt> right_min = right_sub_tree.findMinimum();
             TNode<RelationshipExt> node = new TNode<>(right_min);
@@ -673,28 +676,30 @@ public class SpanningTree {
         for (Relationship rel : SpTree) {
             int level = (int) rel.getProperty("level");
             if (i == level) {
-                rel.setProperty("level", level++);
+                rel.setProperty("level", ++level);
             }
         }
     }
 
-    public Relationship findReplacementEdge(SpanningTree another_sub_tree, int level) {
+    public Relationship findReplacementEdge(SpanningTree another_sub_tree, int level, Relationship deletedRel) {
 //        System.out.println("findReplacementEdge function : "+ this.neo4j.DB_PATH);
+
         for (long nid : this.N_nodes) {
             Iterable<Relationship> iterable = neo4j.graphDB.getNodeById(nid).getRelationships(Direction.BOTH);
             Iterator<Relationship> iterator = iterable.iterator();
             while (iterator.hasNext()) {
                 Relationship rel = iterator.next();
                 int org_level = (int) rel.getProperty("level");
+
+
                 /**
                  * rel is a relationship whose level is equal to specific level, and its end nodes is a tree node of this spanning tree.
                  * If rel connected this spanning tree to another_sub_tree, return it and connect those two subtree later
                  * else, increment the edge level by one
                  */
-                if (org_level == level && another_sub_tree.N_nodes.contains(rel.getOtherNodeId(nid))) {
+                if (org_level == level && another_sub_tree.N_nodes.contains(rel.getOtherNodeId(nid)) && rel.getId() != deletedRel.getId()) {
+                    System.out.println(org_level + " <----->  " + level + "   " + rel);
                     return rel;
-                } else if (org_level == level && this.SpTree.contains(rel)) {
-                    rel.setProperty("level", ++org_level);
                 }
             }
         }
@@ -760,7 +765,6 @@ public class SpanningTree {
 
 
     public void printNodes() {
-        System.out.println("==========================================================");
         for (Long n : this.N_nodes) {
             System.out.print(n + " ");
         }
@@ -768,7 +772,6 @@ public class SpanningTree {
     }
 
     public void printEdges() {
-        System.out.println("==========================================================");
         for (Relationship r : this.SpTree) {
             System.out.println(r + " ");
         }

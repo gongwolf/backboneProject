@@ -54,13 +54,14 @@ public class testDynamicForests {
         deleteTest(13, neo4j);
 //        System.out.println(this.dforests.dforests.get(0).trees.size());
 //        this.dforests.dforests.get(0).trees.get(0).rbtree.root.print();
-//        this.dforests.dforests.get(0).trees.get(0).printEdges();
+        this.dforests.dforests.get(0).trees.get(0).printEdges();
+        System.out.println("------------------------------");
 //
 //
 //        System.out.println(this.dforests.dforests.get(1).trees.size());
 //        this.dforests.dforests.get(1).trees.get(0).rbtree.root.print();
-//        this.dforests.dforests.get(1).trees.get(0).printEdges();
-//
+        this.dforests.dforests.get(1).trees.get(0).printEdges();
+        System.out.println("------------------------------");
 //
 //        try(Transaction tx = neo4j.graphDB.beginTx()){
 //            for(Map.Entry<String, Object> ssss:neo4j.graphDB.getRelationshipById(13).getAllProperties().entrySet()){

@@ -3,7 +3,6 @@ package v3;
 import DataStructure.TNode;
 import javafx.util.Pair;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -55,17 +54,15 @@ public class SpanningForests {
         while ((tree_idx = hasCouldMergedTree()) != null) {
             int i = tree_idx.getKey();
             int j = tree_idx.getValue();
-//            trees.get(i).rbtree.root.print();
-//            trees.get(j).rbtree.root.print();
-
             trees.get(i).printNodes();
             trees.get(i).printEdges();
 
-            System.out.println("---------------------------------------------");
+            System.out.println(i + "---------------------------------------------" + j);
             trees.get(j).printNodes();
             trees.get(j).printEdges();
 
             SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j), level_r);
+            System.out.println("finished merge in one iteration   ");
             /**
              * because i is always less than j, i is deleted before j.
              * After deletion of tree i, the index of tree j needs to decrease 1.
@@ -99,13 +96,9 @@ public class SpanningForests {
         new_tree.SpTree.addAll(spanningTree.SpTree);
         new_tree.SpTree.addAll(spanningTree1.SpTree);
 
-        try (Transaction tx = spanningTree.neo4j.graphDB.beginTx()) {
-            for (Relationship r : new_tree.SpTree) {
-                r.removeProperty("pFirstID");
-                r.removeProperty("pSecondID");
-                tx.success();
-            }
-        }
+        System.out.println("qqqqqqqqqqqqqqq");
+        new_tree.printNodes();
+        new_tree.printEdges();
 
         new_tree.N = new_tree.N_nodes.size();
 
@@ -115,14 +108,17 @@ public class SpanningForests {
 
         int start_node_id = (int) Math.random() * new_tree.N;
         new_tree.FindAdjList();
+        //Todo:get the right starting node
         new_tree.FindEulerTourString(start_node_id, level_r);
-
 
         return new_tree;
 
     }
 
     private Pair<Integer, Integer> hasCouldMergedTree() {
+        if (trees.size() == 1) {
+            return null;
+        }
         for (int i = 0; i < trees.size(); i++) {
             for (int j = i + 1; j < trees.size(); j++) {
                 if (hasCommonNodes(trees.get(i), trees.get(j))) {
