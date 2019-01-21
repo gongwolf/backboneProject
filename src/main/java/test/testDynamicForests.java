@@ -41,32 +41,33 @@ public class testDynamicForests {
         System.out.println("~~~~~~~~~~~~~~~~~~~");
         sptree.FindEulerTourString(0);
         this.dforests.createBase(sptree);
-        this.dforests.dforests.get(0).trees.get(0).rbtree.root.print();
-        try(Transaction tx = neo4j.graphDB.beginTx()){
-            System.out.println(neo4j.graphDB.getRelationshipById(13));
-            for(Map.Entry<String, Object> ssss:neo4j.graphDB.getRelationshipById(13).getAllProperties().entrySet()){
-                System.out.println(ssss.getKey()+"    "+ ssss.getValue());
-            }
-            tx.success();
-        }
+//        this.dforests.dforests.get(0).trees.get(0).rbtree.root.print();
+//        try(Transaction tx = neo4j.graphDB.beginTx()){
+//            System.out.println(neo4j.graphDB.getRelationshipById(13));
+//            for(Map.Entry<String, Object> ssss:neo4j.graphDB.getRelationshipById(13).getAllProperties().entrySet()){
+//                System.out.println(ssss.getKey()+"    "+ ssss.getValue());
+//            }
+//            tx.success();
+//        }
 
         deleteTest(7, neo4j);
-        System.out.println(this.dforests.dforests.get(0).trees.size());
-        this.dforests.dforests.get(0).trees.get(0).rbtree.root.print();
-        this.dforests.dforests.get(0).trees.get(0).printEdges();
-
-
-        System.out.println(this.dforests.dforests.get(1).trees.size());
-        this.dforests.dforests.get(1).trees.get(0).rbtree.root.print();
-        this.dforests.dforests.get(1).trees.get(0).printEdges();
-
-
-        try(Transaction tx = neo4j.graphDB.beginTx()){
-            for(Map.Entry<String, Object> ssss:neo4j.graphDB.getRelationshipById(13).getAllProperties().entrySet()){
-                System.out.println(ssss.getKey()+"    "+ ssss.getValue());
-            }
-            tx.success();
-        }
+        deleteTest(13, neo4j);
+//        System.out.println(this.dforests.dforests.get(0).trees.size());
+//        this.dforests.dforests.get(0).trees.get(0).rbtree.root.print();
+//        this.dforests.dforests.get(0).trees.get(0).printEdges();
+//
+//
+//        System.out.println(this.dforests.dforests.get(1).trees.size());
+//        this.dforests.dforests.get(1).trees.get(0).rbtree.root.print();
+//        this.dforests.dforests.get(1).trees.get(0).printEdges();
+//
+//
+//        try(Transaction tx = neo4j.graphDB.beginTx()){
+//            for(Map.Entry<String, Object> ssss:neo4j.graphDB.getRelationshipById(13).getAllProperties().entrySet()){
+//                System.out.println(ssss.getKey()+"    "+ ssss.getValue());
+//            }
+//            tx.success();
+//        }
 
 
 //        this.dforests.dforests.get(1).trees.get(0).rbtree.root.print();
@@ -75,10 +76,12 @@ public class testDynamicForests {
         neo4j.closeDB();
     }
 
+    //Todo:Change the logic: if it is could be deleted, then remove it from highest level to lowest level. Not deleted it once found a replacement edge.
+
     private void deleteTest(int rel_id, Neo4jDB neo4j) {
         GraphDatabaseService graphdb = neo4j.graphDB;
         try (Transaction tx = graphdb.beginTx()) {
-            Relationship r = graphdb.getRelationshipById(7);
+            Relationship r = graphdb.getRelationshipById(rel_id);
             System.out.println(r);
 
             int level_r = (int) r.getProperty("level");
@@ -97,6 +100,7 @@ public class testDynamicForests {
             r.delete();
 
             tx.success();
+            System.out.println("end of the deletion of the relationship "+r);
         }
     }
 

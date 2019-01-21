@@ -1,10 +1,14 @@
 package v3;
 
+import DataStructure.TNode;
 import javafx.util.Pair;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+
+import static DataStructure.STATIC.nil;
 
 public class SpanningForests {
     public ArrayList<SpanningTree> trees = new ArrayList<>();
@@ -43,14 +47,25 @@ public class SpanningForests {
 
     public boolean merge(int level_r) {
         if (trees.size() == 1) {
-            return true;
+            SpanningTree sub_tree = trees.get(0);
+            updateTreePointers(sub_tree, level_r);
         }
 
         Pair<Integer, Integer> tree_idx;
         while ((tree_idx = hasCouldMergedTree()) != null) {
             int i = tree_idx.getKey();
             int j = tree_idx.getValue();
-            SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j),level_r);
+//            trees.get(i).rbtree.root.print();
+//            trees.get(j).rbtree.root.print();
+
+            trees.get(i).printNodes();
+            trees.get(i).printEdges();
+
+            System.out.println("---------------------------------------------");
+            trees.get(j).printNodes();
+            trees.get(j).printEdges();
+
+            SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j), level_r);
             /**
              * because i is always less than j, i is deleted before j.
              * After deletion of tree i, the index of tree j needs to decrease 1.
@@ -64,6 +79,18 @@ public class SpanningForests {
         return false;
     }
 
+
+    private void updateTreePointers(SpanningTree sub_tree, int new_level) {
+        TNode<RelationshipExt> min_node = sub_tree.findMinimum();
+        sub_tree.updateRelationshipRBPointer(min_node.item, min_node.key, min_node.key, new_level);
+
+        TNode<RelationshipExt> suc_node = sub_tree.rbtree.successor(min_node);
+        while (suc_node != nil) {
+            sub_tree.updateRelationshipRBPointer(suc_node.item, suc_node.key, suc_node.key, new_level);
+            suc_node = sub_tree.rbtree.successor(suc_node);
+        }
+    }
+
     private SpanningTree mergeTree(SpanningTree spanningTree, SpanningTree spanningTree1, int level_r) {
         SpanningTree new_tree = new SpanningTree();
         new_tree.N_nodes.addAll(spanningTree.N_nodes);
@@ -72,9 +99,24 @@ public class SpanningForests {
         new_tree.SpTree.addAll(spanningTree.SpTree);
         new_tree.SpTree.addAll(spanningTree1.SpTree);
 
+        try (Transaction tx = spanningTree.neo4j.graphDB.beginTx()) {
+            for (Relationship r : new_tree.SpTree) {
+                r.removeProperty("pFirstID");
+                r.removeProperty("pSecondID");
+                tx.success();
+            }
+        }
+
         new_tree.N = new_tree.N_nodes.size();
+
+        System.out.println(new_tree.N_nodes.size());
+//        new_tree.printEdges();
+//        new_tree.printNodes();
+
+        int start_node_id = (int) Math.random() * new_tree.N;
         new_tree.FindAdjList();
-        new_tree.EulerTourString();
+        new_tree.FindEulerTourString(start_node_id, level_r);
+
 
         return new_tree;
 
