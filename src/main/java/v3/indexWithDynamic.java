@@ -336,7 +336,7 @@ public class indexWithDynamic {
                         int l_idx = level_r;
                         while (l_idx >= 0) {
                             System.out.println("Finding the replacement relationship in level " + l_idx + " spanning tree");
-                            if (!dforests.replacement(r, l_idx)) {
+                            if (null==dforests.replacement(r, l_idx)) {
                                 l_idx--;
                             } else {
                                 break;

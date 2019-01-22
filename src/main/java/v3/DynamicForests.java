@@ -41,7 +41,7 @@ public class DynamicForests {
         return false;
     }
 
-    public boolean replacement(Relationship r, int level_r) {
+    public Relationship replacement(Relationship r, int level_r) {
         //Find the tree that contains given relationship r in the level level_r
         SpanningTree sp_tree = this.dforests.get(level_r).findTree(r);
         System.out.println("whole tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
@@ -54,17 +54,22 @@ public class DynamicForests {
 
         //Find the sub euler tour from the first until before the given r
         SpanningTree left_sub_tree = new SpanningTree(sp_tree.neo4j, false);
+        System.out.println("min node " + min_node.item);
         TNode<RelationshipExt> firstSplitor = sp_tree.findLeftSubTree(min_node, r, left_sub_tree);
+        System.out.println(left_sub_tree.N);
+        System.out.println(left_sub_tree.E);
         left_sub_tree.fixIfSingle();
+
+
         System.out.println("left tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         left_sub_tree.rbtree.root.print();
-//        System.out.println(left_sub_tree.N);
-//        System.out.println("==============================================================");
 
         //Find the sub euler tour from the first given r to the second given r
         //if r == (v,w), first r means (v,w) or (w,v), the second r means the reverse of the first r, such as (w,v) or (v,w)
         SpanningTree middle_sub_tree = new SpanningTree(sp_tree.neo4j, false);
         TNode<RelationshipExt> secondSplitor = sp_tree.findMiddleSubTree(firstSplitor, r, middle_sub_tree);
+        System.out.println(middle_sub_tree.N);
+        System.out.println(middle_sub_tree.E);
         middle_sub_tree.fixIfSingle();
         System.out.println("middle tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         middle_sub_tree.rbtree.root.print();
@@ -76,7 +81,6 @@ public class DynamicForests {
         sp_tree.findRightSubTree(secondSplitor, right_sub_tree);
         System.out.println("right tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         right_sub_tree.rbtree.root.print();
-
         left_sub_tree.combineTree(right_sub_tree); //combine left tree and right, the cutting process of the euler tree.
         System.out.println("combination tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         left_sub_tree.rbtree.root.print();
@@ -86,9 +90,9 @@ public class DynamicForests {
         left_sub_tree.fixIfSingle();
 
 
-
         right_sub_tree = middle_sub_tree; //Already fix after found the middle tree
         right_sub_tree.rbtree.root.print();
+        right_sub_tree.fixIfSingle();
 
 
         left_sub_tree.printEdges();
@@ -104,26 +108,28 @@ public class DynamicForests {
 
         //update edge level in the smaller tree
         if (left_sub_tree.N < right_sub_tree.N) {
+            updateDynamicInformation(left_sub_tree, level_r); //push the left tree to higher level
             Relationship replacement_relationship = left_sub_tree.findReplacementEdge(right_sub_tree, level_r, r);
-            if (replacement_relationship != null) {
-                updateDynamicInformation(left_sub_tree, level_r); //push the left tree to higher level
-                HashMap<Integer, Integer> keyUpdatesMap = new HashMap<>();
-                System.out.println("Found replacement relationship " + replacement_relationship + " and push left sub tree to higher level");
-                addNewTreeEdge(replacement_relationship, r, level_r, keyUpdatesMap); // add new edge from level 0 to level_r forests
-                return true;
-            }
+            System.out.println("end of the replacement function call at " + level_r);
+            return replacement_relationship;
+//            if (replacement_relationship != null) {
+//                HashMap<Integer, Integer> keyUpdatesMap = new HashMap<>();
+//                System.out.println("Found replacement relationship " + replacement_relationship + " and push left sub tree to higher level");
+//                addNewTreeEdge(replacement_relationship, r, level_r, keyUpdatesMap); // add new edge from level 0 to level_r forests
+//                return true;
+//            }
         } else {
+            updateDynamicInformation(right_sub_tree, level_r); //push the right tree to higher level
             Relationship replacement_relationship = right_sub_tree.findReplacementEdge(left_sub_tree, level_r, r);
-            if (replacement_relationship != null) {
-                updateDynamicInformation(right_sub_tree, level_r); //push the right tree to higher level
-                HashMap<Integer, Integer> keyUpdatesMap = new HashMap<>();
-                System.out.println("Found replacement relationship " + replacement_relationship + " at level " + level_r);
-                addNewTreeEdge(replacement_relationship, r, level_r, keyUpdatesMap); // add new edge from level 0 to level_r forests
-                return true;
-            }
+            System.out.println("end of the replacement function call at " + level_r);
+            return replacement_relationship;
+//            if (replacement_relationship != null) {
+//                HashMap<Integer, Integer> keyUpdatesMap = new HashMap<>();
+//                System.out.println("Found replacement relationship " + replacement_relationship + " at level " + level_r);
+//                addNewTreeEdge(replacement_relationship, r, level_r, keyUpdatesMap); // add new edge from level 0 to level_r forests
+//                return true;
+//            }
         }
-        System.out.println("end of the replacement function call at " + level_r);
-        return false;
     }
 
     /**
@@ -162,7 +168,6 @@ public class DynamicForests {
             //Find the sub euler tour from after the second r to the end of the Euler tour
             SpanningTree right_sub_tree = new SpanningTree(sp_tree.neo4j, false);
             sp_tree.findRightSubTree(secondSplitor, right_sub_tree);
-            right_sub_tree.fixIfSingle();
             left_sub_tree.combineTree(right_sub_tree); //combine left tree and right, the cutting process of the euler tree.
             left_sub_tree.fixIfSingle();
 

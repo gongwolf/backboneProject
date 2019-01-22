@@ -37,6 +37,7 @@ public class testDynamicForests {
 //            System.out.println(r);
 //        }
 
+
         sptree.FindAdjList();
         System.out.println("~~~~~~~~~~~~~~~~~~~");
         sptree.FindEulerTourString(0);
@@ -49,26 +50,36 @@ public class testDynamicForests {
 //            }
 //            tx.success();
 //        }
-
+//
         deleteTest(7, neo4j);
         deleteTest(13, neo4j);
-//        System.out.println(this.dforests.dforests.get(0).trees.size());
+
+        deleteTest(1, neo4j);
+
+        System.out.println(this.dforests.dforests.get(0).trees.size());
 //        this.dforests.dforests.get(0).trees.get(0).rbtree.root.print();
         this.dforests.dforests.get(0).trees.get(0).printEdges();
         System.out.println("------------------------------");
 //
 //
-//        System.out.println(this.dforests.dforests.get(1).trees.size());
+        System.out.println(this.dforests.dforests.get(1).trees.size());
 //        this.dforests.dforests.get(1).trees.get(0).rbtree.root.print();
         this.dforests.dforests.get(1).trees.get(0).printEdges();
+        this.dforests.dforests.get(1).trees.get(1).printEdges();
         System.out.println("------------------------------");
-//
-//        try(Transaction tx = neo4j.graphDB.beginTx()){
-//            for(Map.Entry<String, Object> ssss:neo4j.graphDB.getRelationshipById(13).getAllProperties().entrySet()){
-//                System.out.println(ssss.getKey()+"    "+ ssss.getValue());
-//            }
-//            tx.success();
-//        }
+
+        System.out.println(this.dforests.dforests.get(2).trees.size());
+        this.dforests.dforests.get(2).trees.get(0).printEdges();
+
+        try(Transaction tx = neo4j.graphDB.beginTx()){
+            ResourceIterable<Relationship> a = neo4j.graphDB.getAllRelationships();
+            ResourceIterator<Relationship> b = a.iterator();
+            while(b.hasNext()){
+                Relationship r = b.next();
+                System.out.println(r+"   "+r.getProperty("level"));
+            }
+            tx.success();
+        }
 
 
 //        this.dforests.dforests.get(1).trees.get(0).rbtree.root.print();
@@ -86,22 +97,38 @@ public class testDynamicForests {
             System.out.println(r);
 
             int level_r = (int) r.getProperty("level");
+            Relationship replacement_edge = null;
 
             System.out.println(r + " is a tree edge ? " + dforests.isTreeEdge(r) + "  level:" + level_r);
             int l_idx = level_r;
             while (l_idx >= 0) {
                 System.out.println("Finding the replacement relationship in level " + l_idx + " spanning tree");
-                if (!dforests.replacement(r, l_idx)) {
+                replacement_edge = dforests.replacement(r, l_idx);
+                if (null == replacement_edge) {
                     l_idx--;
                 } else {
                     break;
                 }
             }
 
-            r.delete();
+            System.out.println("level of deleted edge r : " + level_r + " level of replacement edge : " + l_idx);
 
+            if (l_idx != -1) {
+                updateDynamicForest(level_r, l_idx, r, replacement_edge);
+                r.delete();
+                System.out.println("end of the deletion of the relationship " + r);
+            }
             tx.success();
-            System.out.println("end of the deletion of the relationship "+r);
+        }
+    }
+
+    private void updateDynamicForest(int level_r, int l_idx, Relationship delete_edge, Relationship replacement_edge) {
+        for (int i = level_r; i >= 0; i--) {
+            if (i > l_idx) {
+                dforests.dforests.get(i).deleteEdge(delete_edge);
+            } else if (i <= l_idx) {
+                dforests.dforests.get(i).replaceEdge(delete_edge, replacement_edge);
+            }
         }
     }
 
