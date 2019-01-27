@@ -35,6 +35,8 @@ public class SpanningTree {
     Bag adjList[];
     boolean isSingle = false;
 
+    int insertedEdgesTimes = 0;
+
 
     public SpanningTree() {
         SpTree = new HashSet<>();
@@ -79,8 +81,9 @@ public class SpanningTree {
     public String EulerTourString(TreeMap<Long, GraphNode> graph_node_spanning_rb_map, int level) {
         KruskalMST();
         FindAdjList();
-        String elurtourString = FindEulerTourString(0, graph_node_spanning_rb_map, level);
-        return elurtourString;
+        //search the Euler Tour of the spanning tree from node 0
+        String eulertourString = FindEulerTourString(0, graph_node_spanning_rb_map, level);
+        return eulertourString;
     }
 
 
@@ -223,6 +226,8 @@ public class SpanningTree {
 
 //        System.out.println(sb.toString().substring(0, sb.length() - 1));
         System.out.println(sb1.append(src_id));
+        this.insertedEdgesTimes = N * 2;
+        System.out.println("inserted edges times : " + insertedEdgesTimes);
         return sb.toString().substring(0, sb.length() - 1);
     }
 
@@ -326,7 +331,7 @@ public class SpanningTree {
         for (int i = 0; i < adjList.length; i++) {
             if (N_nodes.contains((long) i)) {
                 adjList[i] = new Bag();
-                System.out.println(i);
+//                System.out.println(i);
             }
         }
 
@@ -435,6 +440,18 @@ public class SpanningTree {
 
         if (needtoCloseDB) {
             neo4j.closeDB();
+        }
+    }
+
+
+    public void clearRelationshipRBPointerAtLevel(int level_r) {
+        try (Transaction tx = this.neo4j.graphDB.beginTx()) {
+            for (Relationship rel : this.SpTree) {
+                if (rel.hasProperty("pFirstID" + level_r)) rel.removeProperty("pFirstID" + level_r);
+                if (rel.hasProperty("pSecondID" + level_r)) rel.removeProperty("pSecondID" + level_r);
+            }
+
+            tx.success();
         }
     }
 
@@ -553,7 +570,6 @@ public class SpanningTree {
         TNode<RelationshipExt> node = new TNode<>(min_node);
 
         if (min_node.item.relationship.getId() == r.getId()) {
-            left_sub_tree.insert(node);
             return min_node;
         }
 
@@ -577,12 +593,6 @@ public class SpanningTree {
         //if the successor of the splitor is the second appear of the node needs to be deleted,
         // middle_sub_tree is empty, the splitor is the successor of the splitor.
         // the while loop would not run
-        if (suc_node.item.relationship.getId() == r.getId()) {
-            node = new TNode<>(splitor);
-            middle_sub_tree.insert(node);
-            middle_sub_tree.isSingle = true;
-        }
-
         while (suc_node.item.relationship.getId() != r.getId()) {
             node = new TNode<>(suc_node);
             middle_sub_tree.insert(node);
@@ -594,14 +604,7 @@ public class SpanningTree {
     public void findRightSubTree(TNode<RelationshipExt> Splitor, SpanningTree last_sub_tree) {
         TNode<RelationshipExt> suc_node = rbtree.successor(Splitor);
 
-
-        //If there is not successor follow the given Splitor, the last_sub_tree is a single tree
-        if (suc_node == nil) {
-            last_sub_tree.isSingle = true;
-            last_sub_tree.insert(new TNode<>(Splitor));
-            return;
-        }
-
+        //If there is not successor follow the given Splitor, the last_sub_tree is a empty tree
         while (suc_node != nil) {
             TNode<RelationshipExt> node = new TNode<>(suc_node);
             last_sub_tree.insert(node);
@@ -621,26 +624,20 @@ public class SpanningTree {
         }
         this.N = N_nodes.size();
         this.E = SpTree.size();
+        this.insertedEdgesTimes++;
     }
 
-    public void fixIfSingle() {
-        if (this.N == 2 && this.E == 1) {
+    public void fixIfSingle(Relationship r) {
+        if (this.N == 2 && this.insertedEdgesTimes == 1) {
             isSingle = true;
-            System.out.println("Fix 2,1 single tree");
+            System.out.print("Fix 2,1 single tree");
             TNode<RelationshipExt> f = null;
 
             if (rbtree.root != nil) {
                 f = rbtree.root;
             }
-//            if (rbtree.root.left != nil) {
-//                f = rbtree.root.left;
-//                s = rbtree.root;
-//            } else {
-//                f = rbtree.root;
-//                s = rbtree.root.right;
-//            }
-//            System.out.println("fix single node in tree : " + f.item);
-//            System.out.println("fix single node in tree : " + s.item);
+
+            System.out.println(" :  " + f.item);
 
             RelationshipExt ext_r = new RelationshipExt(null, f.item.end_id, f.item.end_id);
             TNode<RelationshipExt> dummyRoot = new TNode<>(0, ext_r);
@@ -656,40 +653,37 @@ public class SpanningTree {
 
             this.N = 1;
             this.E = 0;
-        }else if(this.N == 2 && this.E == 2){
-            isSingle = true;
-            System.out.println("Fix 2,2 single tree");
-            TNode<RelationshipExt> f,s;
+        } else if (this.N == 2 && this.insertedEdgesTimes == 2) {
+
+            TNode<RelationshipExt> f;
 
             if (rbtree.root.left != nil) {
                 f = rbtree.root.left;
-                s = rbtree.root;
             } else {
                 f = rbtree.root;
-                s = rbtree.root.right;
             }
 
+            if (r.getId() == f.item.relationship.getId()) {
+                isSingle = true;
+                System.out.println("Fix 2,2 single tree : ");
+                RelationshipExt ext_r = new RelationshipExt(null, f.item.end_id, f.item.end_id);
+                TNode<RelationshipExt> dummyRoot = new TNode<>(0, ext_r);
+                this.rbtree.root = nil; //empty the tree
+                this.insert(dummyRoot); //insert the dummy node as the new root
 
-            RelationshipExt ext_r = new RelationshipExt(null, f.item.end_id, f.item.end_id);
-            TNode<RelationshipExt> dummyRoot = new TNode<>(0, ext_r);
+                //update information of this spanning tree
+                this.N_nodes.clear();
+                this.N_nodes.add((long) f.item.end_id);
+                this.SpTree.clear();
 
-
-            this.rbtree.root = nil; //empty the tree
-            this.insert(dummyRoot); //insert the dummy node as the new root
-
-            //update information of this spanning tree
-            this.N_nodes.clear();
-            this.N_nodes.add((long) f.item.end_id);
-            this.SpTree.clear();
-
-            this.N = 1;
-            this.E = 0;
-
+                this.N = 1;
+                this.E = 0;
+            }
         }
     }
 
     public void combineTree(SpanningTree right_sub_tree) {
-        if(!right_sub_tree.isSingle){
+        if (!right_sub_tree.isSingle) {
             TNode<RelationshipExt> right_min = right_sub_tree.findMinimum();
             TNode<RelationshipExt> node = new TNode<>(right_min);
             this.insert(node);
@@ -701,19 +695,6 @@ public class SpanningTree {
                 suc_node = rbtree.successor(suc_node);
             }
         }
-//        if(right_sub_tree.isSingle) System.out.println("---------");
-//        if (right_sub_tree.rbtree.root != nil) {
-//            TNode<RelationshipExt> right_min = right_sub_tree.findMinimum();
-//            TNode<RelationshipExt> node = new TNode<>(right_min);
-//            this.insert(node);
-//
-//            TNode<RelationshipExt> suc_node = rbtree.successor(right_min);
-//            while (suc_node != nil) {
-//                node = new TNode<>(suc_node);
-//                this.insert(node);
-//                suc_node = rbtree.successor(suc_node);
-//            }
-//        }
     }
 
     /**
@@ -725,13 +706,15 @@ public class SpanningTree {
         for (Relationship rel : SpTree) {
             int level = (int) rel.getProperty("level");
             if (i == level) {
-                rel.setProperty("level", ++level);
+                int newlevel = level + 1;
+                rel.setProperty("level", newlevel);
+                System.out.println("update tree edge relationship " + rel + " at level " + i + " to " + newlevel);
             }
         }
     }
 
     public Relationship findReplacementEdge(SpanningTree another_sub_tree, int level, Relationship deletedRel) {
-//        System.out.println("findReplacementEdge function : "+ this.neo4j.DB_PATH);
+        System.out.println("Finding the replacement edge.................................");
 
         for (long nid : this.N_nodes) {
             Iterable<Relationship> iterable = neo4j.graphDB.getNodeById(nid).getRelationships(Direction.BOTH);
@@ -746,9 +729,14 @@ public class SpanningTree {
                  * If rel connected this spanning tree to another_sub_tree, return it and connect those two subtree later
                  * else, increment the edge level by one
                  */
-                if (org_level == level && another_sub_tree.N_nodes.contains(rel.getOtherNodeId(nid)) && rel.getId() != deletedRel.getId()) {
-                    System.out.println(org_level + " <----->  " + level + "   " + rel);
-                    return rel;
+
+                if (org_level == level && rel.getId() != deletedRel.getId() && !this.SpTree.contains(rel)) {
+                    if (another_sub_tree.N_nodes.contains(rel.getOtherNodeId(nid)) && rel.getId() != deletedRel.getId()) {
+                        System.out.println(org_level + " <----->  " + level + "   " + rel);
+                        return rel;
+                    } else {
+                        System.out.println("update relationship " + rel + " at level  to " + (level + 1));
+                    }
                 }
             }
         }
@@ -866,6 +854,58 @@ public class SpanningTree {
         for (Relationship r : this.SpTree) {
             System.out.println(r + " ");
         }
+    }
+
+
+    public void deleteAdditionalInformationByRelationship(Relationship r) {
+        this.SpTree.remove(r);
+        long sid = r.getStartNodeId();
+        long eid = r.getEndNodeId();
+
+        if (SpTree.stream().filter(relationship -> relationship.getStartNodeId() == sid || relationship.getEndNodeId() == sid).count() == 0) {
+            N_nodes.remove(sid);
+        }
+        if (SpTree.stream().filter(relationship -> relationship.getStartNodeId() == eid || relationship.getEndNodeId() == eid).count() == 0) {
+            N_nodes.remove(eid);
+        }
+    }
+
+    public boolean isEmpty() {
+        return this.rbtree.root == nil;
+    }
+
+    public void initializedAsSingleTree(int nodeid) {
+        RelationshipExt ext_r = new RelationshipExt(null, nodeid, nodeid);
+        TNode<RelationshipExt> dummyRoot = new TNode<>(0, ext_r);
+        this.rbtree.root = nil; //empty the tree
+        this.insert(dummyRoot); //insert the dummy node as the new root
+        this.N_nodes.clear();
+        this.N_nodes.add((long) nodeid);
+        this.SpTree.clear();
+        this.N = 1;
+        this.E = 0;
+        this.isSingle = true;
+    }
+
+    public void clear() {
+        this.N_nodes.clear();
+        this.SpTree.clear();
+        this.N = this.E = this.insertedEdgesTimes = 0;
+        this.rbtree.root = nil;
+    }
+
+    public void copyTree(SpanningTree tree) {
+        this.N_nodes = tree.N_nodes;
+        this.N = tree.N;
+        this.rbtree.root = tree.rbtree.root;
+        this.SpTree = tree.SpTree;
+        this.E = tree.E;
+
+        this.isSingle = tree.isSingle;
+        this.neo4j = tree.neo4j;
+        this.adjList = tree.adjList;
+
+        this.level = tree.level;
     }
 }
 

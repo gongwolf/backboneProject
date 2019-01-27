@@ -4,6 +4,7 @@ import Neo4jTools.CreateDB;
 import Neo4jTools.Neo4jDB;
 import org.neo4j.graphdb.*;
 import v3.DynamicForests;
+import v3.SpanningForests;
 import v3.SpanningTree;
 
 import java.util.Map;
@@ -53,33 +54,32 @@ public class testDynamicForests {
 //
         deleteTest(7, neo4j);
         deleteTest(13, neo4j);
-
-        deleteTest(1, neo4j);
-
-        System.out.println(this.dforests.dforests.get(0).trees.size());
-//        this.dforests.dforests.get(0).trees.get(0).rbtree.root.print();
-        this.dforests.dforests.get(0).trees.get(0).printEdges();
-        System.out.println("------------------------------");
 //
+//        deleteTest(8, neo4j);
+//        deleteTest(1, neo4j);
+
+
+//        for(Map.Entry<Integer, SpanningForests> sf : dforests.dforests.entrySet()){
+//            for(SpanningTree sp_tree:sf.getValue().trees){
+//                sp_tree.rbtree.root.print();
+//                System.out.println("---------------------------------");
+//            }
+//            System.out.println("===================================================");
+//        }
 //
-        System.out.println(this.dforests.dforests.get(1).trees.size());
-//        this.dforests.dforests.get(1).trees.get(0).rbtree.root.print();
-        this.dforests.dforests.get(1).trees.get(0).printEdges();
-        this.dforests.dforests.get(1).trees.get(1).printEdges();
-        System.out.println("------------------------------");
-
-        System.out.println(this.dforests.dforests.get(2).trees.size());
-        this.dforests.dforests.get(2).trees.get(0).printEdges();
-
-        try(Transaction tx = neo4j.graphDB.beginTx()){
-            ResourceIterable<Relationship> a = neo4j.graphDB.getAllRelationships();
-            ResourceIterator<Relationship> b = a.iterator();
-            while(b.hasNext()){
-                Relationship r = b.next();
-                System.out.println(r+"   "+r.getProperty("level"));
-            }
-            tx.success();
-        }
+//        try(Transaction tx = neo4j.graphDB.beginTx()){
+//            ResourceIterable<Relationship> a = neo4j.graphDB.getAllRelationships();
+//            ResourceIterator<Relationship> b = a.iterator();
+//            while(b.hasNext()){
+//                Relationship r = b.next();
+//                System.out.println(r+"   "+r.getProperty("level"));
+//                for(Map.Entry<String, Object> pp :r.getAllProperties().entrySet()){
+//                    System.out.println("  "+pp.getKey()+" <---->  "+pp.getValue());
+//
+//                }
+//            }
+//            tx.success();
+//        }
 
 
 //        this.dforests.dforests.get(1).trees.get(0).rbtree.root.print();

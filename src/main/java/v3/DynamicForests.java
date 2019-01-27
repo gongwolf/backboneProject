@@ -24,7 +24,6 @@ public class DynamicForests {
 
     /**
      * Check whether the edge is a tree edge in the first level of spanning trees.
-     * Todo: May could be optimized by finding the highest level where the given edge @rel belongs to .
      *
      * @param rel given edge
      * @return if the given edge rel is the tree edge return true, otherwise return false.
@@ -56,11 +55,6 @@ public class DynamicForests {
         SpanningTree left_sub_tree = new SpanningTree(sp_tree.neo4j, false);
         System.out.println("min node " + min_node.item);
         TNode<RelationshipExt> firstSplitor = sp_tree.findLeftSubTree(min_node, r, left_sub_tree);
-        System.out.println(left_sub_tree.N);
-        System.out.println(left_sub_tree.E);
-        left_sub_tree.fixIfSingle();
-
-
         System.out.println("left tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         left_sub_tree.rbtree.root.print();
 
@@ -68,9 +62,6 @@ public class DynamicForests {
         //if r == (v,w), first r means (v,w) or (w,v), the second r means the reverse of the first r, such as (w,v) or (v,w)
         SpanningTree middle_sub_tree = new SpanningTree(sp_tree.neo4j, false);
         TNode<RelationshipExt> secondSplitor = sp_tree.findMiddleSubTree(firstSplitor, r, middle_sub_tree);
-        System.out.println(middle_sub_tree.N);
-        System.out.println(middle_sub_tree.E);
-        middle_sub_tree.fixIfSingle();
         System.out.println("middle tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         middle_sub_tree.rbtree.root.print();
 
@@ -81,19 +72,13 @@ public class DynamicForests {
         sp_tree.findRightSubTree(secondSplitor, right_sub_tree);
         System.out.println("right tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         right_sub_tree.rbtree.root.print();
-        left_sub_tree.combineTree(right_sub_tree); //combine left tree and right, the cutting process of the euler tree.
-        System.out.println("combination tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
+        combination(left_sub_tree, middle_sub_tree, right_sub_tree, firstSplitor, secondSplitor);
+        System.out.println("================  combination ============================");
         left_sub_tree.rbtree.root.print();
-        System.out.println("==============================================================================");
-
-        /* test print the two trees*/
-        left_sub_tree.fixIfSingle();
-
-
-        right_sub_tree = middle_sub_tree; //Already fix after found the middle tree
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         right_sub_tree.rbtree.root.print();
-        right_sub_tree.fixIfSingle();
-
+        System.out.println("==========================================================");
 
         left_sub_tree.printEdges();
         left_sub_tree.printNodes();
@@ -102,8 +87,6 @@ public class DynamicForests {
         right_sub_tree.printNodes();
         System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         System.out.println("left sub tree size : " + left_sub_tree.N + "     right sub tree size : " + right_sub_tree.N);
-
-//        System.exit(0);
 
 
         //update edge level in the smaller tree
@@ -132,6 +115,56 @@ public class DynamicForests {
         }
     }
 
+    public void combination(SpanningTree left_sub_tree, SpanningTree middle_sub_tree, SpanningTree right_sub_tree, TNode<RelationshipExt> firstSplitor, TNode<RelationshipExt> secondSplitor) {
+        System.out.println("Call combination function " + left_sub_tree.isEmpty() + "  " + middle_sub_tree.isEmpty() + "  " + right_sub_tree.isEmpty());
+        if (left_sub_tree.isEmpty() && middle_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
+            System.out.println("case1: left, middle and right sub tree is empty, create two single tree.");
+            left_sub_tree.initializedAsSingleTree(firstSplitor.item.start_id);
+            right_sub_tree.initializedAsSingleTree(firstSplitor.item.end_id);
+        } else if (!left_sub_tree.isEmpty() && middle_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
+            System.out.println("case2: left and right sub tree is non-empty, middle tree is a empty tree. " +
+                    "create a single node tree whose id is not same as the minimum node of the middle tree");
+            int middle_tree_min_node_id = middle_sub_tree.findMinimum().item.start_id;
+            int nodeid = firstSplitor.item.start_id == middle_tree_min_node_id ? firstSplitor.item.end_id : firstSplitor.item.start_id;
+            left_sub_tree.initializedAsSingleTree(nodeid);
+            right_sub_tree.copyTree(middle_sub_tree);
+        } else if (left_sub_tree.isEmpty() && !middle_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
+            System.out.println("case3: left and right sub tree are empty, middle tree is a non-empty tree. " +
+                    "create a single node tree whose id is the end_id of the first splitter");
+            int nodeid = firstSplitor.item.end_id;
+            middle_sub_tree.initializedAsSingleTree(nodeid);
+            left_sub_tree.combineTree(right_sub_tree);
+            right_sub_tree.copyTree(middle_sub_tree);
+        } else if (middle_sub_tree.isEmpty()) {
+            System.out.println("case 4:");
+            int nodeid = firstSplitor.item.end_id;
+            System.out.println(nodeid);
+            middle_sub_tree.initializedAsSingleTree(nodeid);
+            System.out.println("qqqqqq");
+            if (left_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
+                System.out.println("case 4.1 left and middle tree are empty, right tree is a non-empty tree.");
+                left_sub_tree.copyTree(right_sub_tree);
+                right_sub_tree.copyTree(middle_sub_tree);
+            } else if (!left_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
+                System.out.println("case 4.2 middle and right tree are empty, left tree is a non-empty tree.");
+                right_sub_tree.copyTree(middle_sub_tree);
+            }
+        } else if (!middle_sub_tree.isEmpty()) {
+            if (!left_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
+                System.out.println("case 5.1 left and middle tree are non0empty, right tree is a empty tree.");
+                right_sub_tree.copyTree(middle_sub_tree);
+            } else if (left_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
+                System.out.println("case 5.2 middle and right tree are empty, left tree is a empty tree.");
+                left_sub_tree.copyTree(right_sub_tree);
+                right_sub_tree.copyTree(middle_sub_tree);
+            } else {
+                System.out.println("case 6, left, middle and right are non-empty tree");
+                left_sub_tree.combineTree(right_sub_tree);
+                right_sub_tree.copyTree(middle_sub_tree);
+            }
+        }
+    }
+
     /**
      * Add new edge to all the forests whose level is equal or lower than level_r.
      * Update level_r's spanning tree by connect two sub tree by given replacement relationship
@@ -156,24 +189,24 @@ public class DynamicForests {
             //Find the sub euler tour from the first until before the given r
             SpanningTree left_sub_tree = new SpanningTree(sp_tree.neo4j, false);
             TNode<RelationshipExt> firstSplitor = sp_tree.findLeftSubTree(min_node, r, left_sub_tree);
-            left_sub_tree.fixIfSingle();
+            left_sub_tree.fixIfSingle(r);
 
             //Find the sub euler tour from the first given r to the second given r
             //if r == (v,w), first r means (v,w) or (w,v), the second r means the reverse of the first r, such as (w,v) or (v,w)
             SpanningTree middle_sub_tree = new SpanningTree(sp_tree.neo4j, false);
             TNode<RelationshipExt> secondSplitor = sp_tree.findMiddleSubTree(firstSplitor, r, middle_sub_tree);
-            middle_sub_tree.fixIfSingle();
+            middle_sub_tree.fixIfSingle(r);
 
 
             //Find the sub euler tour from after the second r to the end of the Euler tour
             SpanningTree right_sub_tree = new SpanningTree(sp_tree.neo4j, false);
             sp_tree.findRightSubTree(secondSplitor, right_sub_tree);
             left_sub_tree.combineTree(right_sub_tree); //combine left tree and right, the cutting process of the euler tree.
-            left_sub_tree.fixIfSingle();
+            left_sub_tree.fixIfSingle(r);
 
             right_sub_tree = middle_sub_tree;
-            left_sub_tree.fixIfSingle();
-            right_sub_tree.fixIfSingle();
+            left_sub_tree.fixIfSingle(r);
+            right_sub_tree.fixIfSingle(r);
 
             if (left_sub_tree.N_nodes.contains(sid)) {
                 System.out.println("re-root left sub-tree on node " + sid);
@@ -315,18 +348,19 @@ public class DynamicForests {
 
         if (dforests.containsKey(new_level)) {
             dforests.get(new_level).addNewTrees(sub_tree);
+            sub_tree.rbtree.root.print();
         } else {
             SpanningForests sp = new SpanningForests(new_level);
             System.out.println("Create new level " + new_level + " forests");
             sp.trees.add(sub_tree);
             dforests.put(new_level, sp);
-            System.out.println(sp.trees.size() + "  " + sp.trees.get(0).neo4j.graphDB);
         }
 
         System.out.println("put new spanning tree to level " + new_level + " forests");
         System.out.println("Starting to merge the level " + new_level + " forest ............. ");
         dforests.get(new_level).merge(new_level);
-        System.out.println("Finished merge the level " + new_level + " forest .............");
+        System.out.print("Finished merge the level " + new_level + " forest .............");
+        System.out.println("There are  " + dforests.get(new_level).trees.size() + " trees in level " + new_level + " forest .............");
 
     }
 }
