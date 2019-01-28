@@ -723,6 +723,8 @@ public class SpanningTree {
                 Relationship rel = iterator.next();
                 int org_level = (int) rel.getProperty("level");
 
+                System.out.println("finding "+ rel + " "+org_level+" "+level);
+
 
                 /**
                  * rel is a relationship whose level is equal to specific level, and its end nodes is a tree node of this spanning tree.
@@ -735,6 +737,7 @@ public class SpanningTree {
                         System.out.println(org_level + " <----->  " + level + "   " + rel);
                         return rel;
                     } else {
+                        rel.setProperty("level",(level + 1));
                         System.out.println("update relationship " + rel + " at level  to " + (level + 1));
                     }
                 }

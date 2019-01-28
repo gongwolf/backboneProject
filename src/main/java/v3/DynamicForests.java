@@ -123,24 +123,25 @@ public class DynamicForests {
             right_sub_tree.initializedAsSingleTree(firstSplitor.item.end_id);
         } else if (!left_sub_tree.isEmpty() && middle_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
             System.out.println("case2: left and right sub tree is non-empty, middle tree is a empty tree. " +
-                    "create a single node tree whose id is not same as the minimum node of the middle tree");
-            int middle_tree_min_node_id = middle_sub_tree.findMinimum().item.start_id;
-            int nodeid = firstSplitor.item.start_id == middle_tree_min_node_id ? firstSplitor.item.end_id : firstSplitor.item.start_id;
-            left_sub_tree.initializedAsSingleTree(nodeid);
-            right_sub_tree.copyTree(middle_sub_tree);
-        } else if (left_sub_tree.isEmpty() && !middle_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
-            System.out.println("case3: left and right sub tree are empty, middle tree is a non-empty tree. " +
-                    "create a single node tree whose id is the end_id of the first splitter");
+                    "create a single node tree whose id is not same as the minimum node of the right tree");
             int nodeid = firstSplitor.item.end_id;
             middle_sub_tree.initializedAsSingleTree(nodeid);
             left_sub_tree.combineTree(right_sub_tree);
+            right_sub_tree.copyTree(middle_sub_tree);
+
+        } else if (left_sub_tree.isEmpty() && !middle_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
+            System.out.println("case3: left and right sub tree are empty, middle tree is a non-empty tree. " +
+                    "create a single node tree whose id is the end_id of the first splitter");
+//            int right_tree_min_node_id = right_sub_tree.findMinimum().item.start_id;
+//            int nodeid = firstSplitor.item.start_id == right_tree_min_node_id ? firstSplitor.item.end_id : firstSplitor.item.start_id;
+            int nodeid = firstSplitor.item.start_id;
+            left_sub_tree.initializedAsSingleTree(nodeid);
             right_sub_tree.copyTree(middle_sub_tree);
         } else if (middle_sub_tree.isEmpty()) {
             System.out.println("case 4:");
             int nodeid = firstSplitor.item.end_id;
             System.out.println(nodeid);
             middle_sub_tree.initializedAsSingleTree(nodeid);
-            System.out.println("qqqqqq");
             if (left_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
                 System.out.println("case 4.1 left and middle tree are empty, right tree is a non-empty tree.");
                 left_sub_tree.copyTree(right_sub_tree);

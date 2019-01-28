@@ -55,17 +55,19 @@ public class testDynamicForests {
         deleteTest(7, neo4j);
         deleteTest(13, neo4j);
 //
-//        deleteTest(8, neo4j);
-//        deleteTest(1, neo4j);
+        deleteTest(8, neo4j);
+        deleteTest(1, neo4j);
 
 
-//        for(Map.Entry<Integer, SpanningForests> sf : dforests.dforests.entrySet()){
-//            for(SpanningTree sp_tree:sf.getValue().trees){
-//                sp_tree.rbtree.root.print();
-//                System.out.println("---------------------------------");
-//            }
-//            System.out.println("===================================================");
-//        }
+        for(Map.Entry<Integer, SpanningForests> sf : dforests.dforests.entrySet()){
+            for(SpanningTree sp_tree:sf.getValue().trees){
+                sp_tree.rbtree.root.print();
+                sp_tree.printNodes();
+                sp_tree.printEdges();
+                System.out.println("---------------------------------");
+            }
+            System.out.println("===================================================");
+        }
 //
 //        try(Transaction tx = neo4j.graphDB.beginTx()){
 //            ResourceIterable<Relationship> a = neo4j.graphDB.getAllRelationships();
@@ -94,7 +96,7 @@ public class testDynamicForests {
         GraphDatabaseService graphdb = neo4j.graphDB;
         try (Transaction tx = graphdb.beginTx()) {
             Relationship r = graphdb.getRelationshipById(rel_id);
-            System.out.println(r);
+            System.out.println("Start to delete the relationship "+r);
 
             int level_r = (int) r.getProperty("level");
             Relationship replacement_edge = null;

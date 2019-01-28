@@ -108,6 +108,7 @@ public class indexWithDynamic {
             for (Map.Entry<Integer, SpanningForests> sf : dforests.dforests.entrySet()) {
                 for (SpanningTree sp_tree : sf.getValue().trees) {
                     sp_tree.rbtree.root.print();
+                    sp_tree.printEdges();
                     System.out.println("---------------------------------");
                 }
                 System.out.println("===================================================");
@@ -115,6 +116,7 @@ public class indexWithDynamic {
             getDegreePairs();
             System.out.println("updated the degree pairs information ......................");
             removeSingletonEdgesInForests();
+            System.out.println("=wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww==");
 
 
             try(Transaction tx = neo4j.graphDB.beginTx()){
@@ -174,9 +176,9 @@ public class indexWithDynamic {
 
                             for (Map.Entry<Integer, SpanningForests> sp_forest : this.dforests.dforests.entrySet()) {
                                 int level = sp_forest.getKey();
-                                System.out.println(r + "   " + r.getProperty("pFirstID" + level) + "   " + r.getProperty("pSecondID" + level));
                                 SpanningTree sp_tree;
                                 if ((sp_tree = sp_forest.getValue().findTree(r)) != null) {
+                                    System.out.println(r + "   " + r.getProperty("pFirstID" + level) + "   " + r.getProperty("pSecondID" + level));
                                     sp_tree.rbtree.delete((Integer) r.getProperty("pFirstID" + level));
                                     sp_tree.rbtree.delete((Integer) r.getProperty("pSecondID" + level));
                                 }
@@ -193,6 +195,7 @@ public class indexWithDynamic {
                         }
                     }
                 }
+                System.out.println("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
                 tx.success();
             }
             getDegreePairs();
