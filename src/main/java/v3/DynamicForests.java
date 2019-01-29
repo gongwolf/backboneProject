@@ -307,6 +307,7 @@ public class DynamicForests {
 
             sub_tree.updateTreeEdgeLevel(level_r);
             int new_level = level_r + 1;
+            sub_tree.updateTreePointers(new_level);
 
             if (dforests.containsKey(new_level)) {
                 dforests.get(new_level).addNewTrees(sub_tree);

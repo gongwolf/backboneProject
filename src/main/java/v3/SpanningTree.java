@@ -420,6 +420,10 @@ public class SpanningTree {
             System.out.println("connected to db " + neo4j.DB_PATH);
         }
 
+        if(iter_edge.relationship.getId()==87){
+            System.out.println("update pointer +"+level+"   "+et_edge_id);
+        }
+
         try (Transaction tx = neo4j.graphDB.beginTx()) {
             Relationship r = iter_edge.relationship;
             if (!r.hasProperty("pFirstID" + level)) {
@@ -562,6 +566,12 @@ public class SpanningTree {
 
     public int findMaximumKeyValue() {
         return rbtree.findMaximumKeyValue(rbtree.root);
+    }
+
+    public int findMaximumKeyValueTracable(){
+        int maxkey = rbtree.findMaximumKeyValueTracable(rbtree.root);
+        System.out.println("tracable"+maxkey);
+        return maxkey;
     }
 
     public TNode<RelationshipExt> findLeftSubTree(TNode<RelationshipExt> min_node, Relationship r, SpanningTree left_sub_tree) {
@@ -711,6 +721,9 @@ public class SpanningTree {
             int level = (int) rel.getProperty("level");
             if (new_level == level) {
                 int newlevel = level + 1;
+                if(rel.getId()==87){
+                    System.out.println("update tree edge of 87 to level "+newlevel);
+                }
                 rel.setProperty("level", newlevel);
             }
         }
@@ -725,7 +738,7 @@ public class SpanningTree {
                 Relationship rel = iterator.next();
                 int org_level = (int) rel.getProperty("level");
 
-                System.out.println(rel + " <><><><><><> "+org_level);
+//                System.out.println(rel + " <><><><><><> "+org_level);
 
                 /**
                  * rel is a relationship whose level is equal to specific level, and its end nodes is a tree node of this spanning tree.
@@ -793,12 +806,18 @@ public class SpanningTree {
 
 
     public void reroot(long nid, long eid, int level) {
+        if(nid==43){
+            this.rbtree.root.print();
+        }
         if (!this.isSingle) {
             TNode<RelationshipExt> min_node = findMinimum();
 
-            int max_key = -1;
-            if (level == 0) {
-                max_key = findMaximumKeyValue();
+            int max_key = findMaximumKeyValue();
+
+
+            if(nid==43){
+                System.out.println(max_key);
+                findMaximumKeyValueTracable();
             }
 
             TNode<RelationshipExt> node_temp = new TNode<>(min_node);
@@ -823,6 +842,17 @@ public class SpanningTree {
 
                 suc_node = rbtree.successor(suc_node);
             }
+        }
+    }
+
+    public void updateTreePointers(int new_level) {
+        TNode<RelationshipExt> min_node = findMinimum();
+        updateRelationshipRBPointer(min_node.item, min_node.key, min_node.key, new_level);
+
+        TNode<RelationshipExt> suc_node = rbtree.successor(min_node);
+        while (suc_node != nil) {
+            updateRelationshipRBPointer(suc_node.item, suc_node.key, suc_node.key, new_level);
+            suc_node = rbtree.successor(suc_node);
         }
     }
 

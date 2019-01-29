@@ -24,8 +24,11 @@ public class RedBlackTree<T> {
             y = x;
             if (newnode.key < x.key) {
                 x = x.left;
-            } else {
+            } else if(newnode.key>x.key){
                 x = x.right;
+            }else {
+                System.err.println("the same key exception");
+                System.exit(0);
             }
         }
 
@@ -361,10 +364,21 @@ public class RedBlackTree<T> {
         return y;
     }
 
-    public int findMaximumKeyValue(TNode node) {
+    public int findMaximumKeyValue(TNode<T> node) {
         while (node.right != nil) {
             node = node.right;
         }
+        return node.key;
+    }
+
+    public int findMaximumKeyValueTracable(TNode<T> node) {
+        while (node.right != nil) {
+            System.out.println(node.key+"   "+node.item+" "+node.left.key+"("+(node.left != nil)+"):"+node.left.item
+                    +"   "+node.right.key+"("+(node.right != nil)+"):"+node.right.item);
+            node = node.right;
+        }
+        System.out.println(node.key+"   "+node.item+" "+node.left.key+"("+(node.left != nil)+"):"+node.left.item
+                +"   "+node.right.key+"("+(node.right != nil)+"):"+node.right.item);
         return node.key;
     }
 }

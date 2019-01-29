@@ -172,9 +172,6 @@ public class indexWithDynamic {
                                     sp_tree.rbtree.delete((Integer) r.getProperty("pSecondID" + level));
                                     sp_tree.deleteAdditionalInformationByRelationship(r);
 
-//                                    sp_tree.printEdges();
-//                                    sp_tree.printNodes();
-//                                    System.out.println(sp_tree.rbtree.root == nil);
                                     if (sp_tree.rbtree.root == nil) {
                                         sp_forest.trees.remove(sp_tree_idx);
                                         System.out.println("remove empty spanning tree index(" + sp_tree_idx + ") at level " + level);
@@ -189,6 +186,25 @@ public class indexWithDynamic {
                     }
                 }
                 tx.success();
+            } catch (NotFoundException e) {
+                System.out.println("no property found exception ");
+                try (Transaction tx = neo4j.graphDB.beginTx()) {
+                    ResourceIterable<Relationship> a = neo4j.graphDB.getAllRelationships();
+                    ResourceIterator<Relationship> b = a.iterator();
+                    while (b.hasNext()) {
+                        Relationship r = b.next();
+                        if (r.getId() == 87) {
+                            System.out.println(r + "   " + r.getProperty("level"));
+                            for (Map.Entry<String, Object> pp : r.getAllProperties().entrySet()) {
+                                System.out.println("  " + pp.getKey() + " <---->  " + pp.getValue());
+
+                            }
+                        }
+                    }
+                    tx.success();
+                }
+                System.exit(0);
+
             }
             getDegreePairs();
             System.out.println("delete single : pre:" + pre_node_num + " " + pre_edge_num + " " + pre_degree_num + " " +
@@ -364,7 +380,7 @@ public class indexWithDynamic {
             int level_r = (int) r.getProperty("level");
             Relationship replacement_edge = null;
 
-            System.out.println(r + " is a tree edge ? " + dforests.isTreeEdge(r) + "  level:" + level_r);
+            System.out.println("deleted the relationship " + r + " is a tree edge ? " + dforests.isTreeEdge(r) + "  level:" + level_r);
             if (dforests.isTreeEdge(r)) {
                 int l_idx = level_r;
                 while (l_idx >= 0) {
@@ -388,12 +404,27 @@ public class indexWithDynamic {
                 }
             } else {
                 deleteRelationshipFromDB(r);
-
             }
+
+
+//            checkstatus();
+
+
             tx.success();
         }
         return false;
     }
+
+//    private void checkstatus() {
+//        for(Map.Entry<Integer, SpanningForests> ef:this.dforests.dforests.entrySet()){
+//            SpanningForests sp_forest = ef.getValue();
+//            for(SpanningTree sp_tree:sp_forest.trees){
+//                if(sp_forest.hasSameKey()){
+//
+//                }
+//            }
+//        }
+//    }
 
     private void deleteRelationshipFromDB(Relationship r) {
         try (Transaction tx = this.neo4j.graphDB.beginTx()) {
