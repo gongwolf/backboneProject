@@ -20,7 +20,7 @@ public class CreateDB {
 
     public static void main(String args[]) {
         CreateDB c = new CreateDB();
-        c.createBusLineDataBase(16,     0);
+        c.createBusLineDataBase(30 ,     25);
     }
 
     public void createBusLineDataBase(int graph_size, double samnode_t) {

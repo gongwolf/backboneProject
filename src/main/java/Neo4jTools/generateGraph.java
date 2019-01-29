@@ -52,7 +52,7 @@ public class generateGraph {
         } else {
 
             if (g_str == null) {
-                numberNodes = 200000;
+                numberNodes = 100;
             } else {
                 numberNodes = Integer.parseInt(g_str);
             }
@@ -64,7 +64,7 @@ public class generateGraph {
             }
 
             if (di_str == null) {
-                numberofDimen = 1;
+                numberofDimen = 3;
             } else {
                 numberofDimen = Integer.parseInt(di_str);
             }

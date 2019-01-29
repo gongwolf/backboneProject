@@ -40,8 +40,8 @@ public class mimicBusLine {
     }
 
     public static void main(String args[]) {
-        int graphsize = 500000;
-        mimicBusLine m = new mimicBusLine(graphsize, 5, 0.3, 1000);
+        int graphsize = 30;
+        mimicBusLine m = new mimicBusLine(graphsize, 20, 25, 1000);
         m.generateGraph(true);
         m.readFromDist();
         while (m.findComponent(m.Nodes).size() != graphsize) {

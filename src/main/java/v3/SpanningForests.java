@@ -58,15 +58,13 @@ public class SpanningForests {
 
             SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j), level_r);
             System.out.println("finished merge in one iteration   with the tree " + i + " and tree " + j);
+
             /**
              * because i is always less than j, i is deleted before j.
              * After deletion of tree i, the index of tree j needs to decrease 1.
              * **/
             trees.remove(i);
-
             trees.remove(j - 1);
-
-//            new_tree.printNodes();
 
             trees.add(new_tree);
 
@@ -75,7 +73,7 @@ public class SpanningForests {
     }
 
 
-    private void updateTreePointers(SpanningTree sub_tree, int new_level) {
+    public void updateTreePointers(SpanningTree sub_tree, int new_level) {
         TNode<RelationshipExt> min_node = sub_tree.findMinimum();
         sub_tree.updateRelationshipRBPointer(min_node.item, min_node.key, min_node.key, new_level);
 
@@ -86,7 +84,7 @@ public class SpanningForests {
         }
     }
 
-    private SpanningTree mergeTree(SpanningTree spanningTree, SpanningTree spanningTree1, int level_r) {
+    public SpanningTree mergeTree(SpanningTree spanningTree, SpanningTree spanningTree1, int level_r) {
         SpanningTree new_tree = new SpanningTree(spanningTree.neo4j, false);
         new_tree.N_nodes.addAll(spanningTree.N_nodes);
         new_tree.N_nodes.addAll(spanningTree1.N_nodes);
@@ -111,7 +109,7 @@ public class SpanningForests {
 
     }
 
-    private Pair<Integer, Integer> hasCouldMergedTree() {
+    public Pair<Integer, Integer> hasCouldMergedTree() {
         if (trees.size() == 1) {
             return null;
         }
@@ -125,7 +123,7 @@ public class SpanningForests {
         return null;
     }
 
-    private boolean hasCommonNodes(SpanningTree spanningTree, SpanningTree spanningTree1) {
+    public boolean hasCommonNodes(SpanningTree spanningTree, SpanningTree spanningTree1) {
         HashSet<Long> nodes_1 = spanningTree.N_nodes;
         HashSet<Long> nodes_2 = spanningTree1.N_nodes;
         for (long nid1 : nodes_1) {
@@ -136,21 +134,21 @@ public class SpanningForests {
         return false;
     }
 
-    public void findTrees(Relationship replacement_relationship, SpanningTree left_sub_tree, SpanningTree right_sub_tree) {
-        boolean findLeft = false, findRight = false;
-        for (SpanningTree t : trees) {
-            if (findLeft && findRight) {
-                return;
-            }
-            if (t.N_nodes.contains(replacement_relationship.getStartNodeId())) {
-                left_sub_tree = t;
-                findLeft = true;
-            } else if (t.N_nodes.contains(replacement_relationship.getEndNodeId())) {
-                right_sub_tree = t;
-                findRight = true;
-            }
-        }
-    }
+//    public void findTrees(Relationship replacement_relationship, SpanningTree left_sub_tree, SpanningTree right_sub_tree) {
+//        boolean findLeft = false, findRight = false;
+//        for (SpanningTree t : trees) {
+//            if (findLeft && findRight) {
+//                return;
+//            }
+//            if (t.N_nodes.contains(replacement_relationship.getStartNodeId())) {
+//                left_sub_tree = t;
+//                findLeft = true;
+//            } else if (t.N_nodes.contains(replacement_relationship.getEndNodeId())) {
+//                right_sub_tree = t;
+//                findRight = true;
+//            }
+//        }
+//    }
 
     public void deleteEdge(Relationship delete_edge) {
         System.out.println("deleted edge  " + delete_edge + " in forest at " + level);
@@ -158,50 +156,27 @@ public class SpanningForests {
         int sp_tree_idx = findTreeIndex(delete_edge);
         SpanningTree sp_tree = trees.get(sp_tree_idx);
         //Find the tree that contains given relationship r in the level level_r
-        System.out.println("whole tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        sp_tree.rbtree.root.print();
-
         //Find the minimum node, the first node|relationship of the Euler tour of the spanning tree sp_tree
         TNode<RelationshipExt> min_node = sp_tree.findMinimum();
-//        System.out.println("minimum node +" + min_node.item);
-//        System.out.println(sp_tree.neo4j.DB_PATH);
+
 
         //Find the sub euler tour from the first until before the given r
         SpanningTree left_sub_tree = new SpanningTree(sp_tree.neo4j, false);
-        System.out.println("min node " + min_node.item);
         TNode<RelationshipExt> firstSplitor = sp_tree.findLeftSubTree(min_node, delete_edge, left_sub_tree);
-        System.out.println("left tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        left_sub_tree.rbtree.root.print();
 
         //Find the sub euler tour from the first given r to the second given r
         //if r == (v,w), first r means (v,w) or (w,v), the second r means the reverse of the first r, such as (w,v) or (v,w)
         SpanningTree middle_sub_tree = new SpanningTree(sp_tree.neo4j, false);
         TNode<RelationshipExt> secondSplitor = sp_tree.findMiddleSubTree(firstSplitor, delete_edge, middle_sub_tree);
-        System.out.println("middle tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        middle_sub_tree.rbtree.root.print();
 
         //Find the sub euler tour from after the second r to the end of the Euler tour
         //Do not need to fix the right sub tree
         //If the right sub tree only have one edge, it means it only the return edge to the left sub tree
         SpanningTree right_sub_tree = new SpanningTree(sp_tree.neo4j, false);
         sp_tree.findRightSubTree(secondSplitor, right_sub_tree);
-        System.out.println("right tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        right_sub_tree.rbtree.root.print();
 
         combination(left_sub_tree, middle_sub_tree, right_sub_tree, firstSplitor, secondSplitor);
-        System.out.println("================  combination ============================");
-        left_sub_tree.rbtree.root.print();
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        right_sub_tree.rbtree.root.print();
-        System.out.println("==========================================================");
-
-        left_sub_tree.printEdges();
-        left_sub_tree.printNodes();
-        System.out.println("---------------------------------------");
-        right_sub_tree.printEdges();
-        right_sub_tree.printNodes();
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        System.out.println("left sub tree size : " + left_sub_tree.N + "     right sub tree size : " + right_sub_tree.N);
+        System.out.println("remove edge on level "+ this.level+" : left sub tree size : " + left_sub_tree.N + "     right sub tree size : " + right_sub_tree.N);
 
 
 
@@ -220,49 +195,23 @@ public class SpanningForests {
         SpanningTree sp_tree = trees.get(sp_tree_idx);
 
         //Find the tree that contains given relationship r in the level level_r
-        System.out.println("whole tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        sp_tree.rbtree.root.print();
-
         //Find the minimum node, the first node|relationship of the Euler tour of the spanning tree sp_tree
         TNode<RelationshipExt> min_node = sp_tree.findMinimum();
-//        System.out.println("minimum node +" + min_node.item);
-//        System.out.println(sp_tree.neo4j.DB_PATH);
+
 
         //Find the sub euler tour from the first until before the given r
         SpanningTree left_sub_tree = new SpanningTree(sp_tree.neo4j, false);
-        System.out.println("min node " + min_node.item);
         TNode<RelationshipExt> firstSplitor = sp_tree.findLeftSubTree(min_node, delete_edge, left_sub_tree);
-        System.out.println("left tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        left_sub_tree.rbtree.root.print();
 
         //Find the sub euler tour from the first given r to the second given r
-        //if r == (v,w), first r means (v,w) or (w,v), the second r means the reverse of the first r, such as (w,v) or (v,w)
         SpanningTree middle_sub_tree = new SpanningTree(sp_tree.neo4j, false);
         TNode<RelationshipExt> secondSplitor = sp_tree.findMiddleSubTree(firstSplitor, delete_edge, middle_sub_tree);
-        System.out.println("middle tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        middle_sub_tree.rbtree.root.print();
 
         //Find the sub euler tour from after the second r to the end of the Euler tour
-        //Do not need to fix the right sub tree
-        //If the right sub tree only have one edge, it means it only the return edge to the left sub tree
         SpanningTree right_sub_tree = new SpanningTree(sp_tree.neo4j, false);
         sp_tree.findRightSubTree(secondSplitor, right_sub_tree);
-        System.out.println("right tree:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        right_sub_tree.rbtree.root.print();
 
         combination(left_sub_tree, middle_sub_tree, right_sub_tree, firstSplitor, secondSplitor);
-        System.out.println("================  combination ============================");
-        left_sub_tree.rbtree.root.print();
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        right_sub_tree.rbtree.root.print();
-        System.out.println("==========================================================");
-
-        left_sub_tree.printEdges();
-        left_sub_tree.printNodes();
-        System.out.println("---------------------------------------");
-        right_sub_tree.printEdges();
-        right_sub_tree.printNodes();
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         System.out.println("left sub tree size : " + left_sub_tree.N + "     right sub tree size : " + right_sub_tree.N);
 
         long sid = replacement_edge.getStartNodeId();
@@ -277,7 +226,6 @@ public class SpanningForests {
             right_sub_tree.reroot(eid, sid, level);
             connectTwoTree(left_sub_tree, right_sub_tree, replacement_edge, level);
             System.out.println("************************************************");
-//                left_sub_tree.rbtree.root.print();
         } else {
             System.out.println("re-root left sub-tree on node " + eid);
             left_sub_tree.reroot(eid, sid, level);
@@ -309,15 +257,12 @@ public class SpanningForests {
         } else if (left_sub_tree.isEmpty() && !middle_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
             System.out.println("case3: left and right sub tree are empty, middle tree is a non-empty tree. " +
                     "create a single node tree whose id is the end_id of the first splitter");
-//            int right_tree_min_node_id = right_sub_tree.findMinimum().item.start_id;
-//            int nodeid = firstSplitor.item.start_id == right_tree_min_node_id ? firstSplitor.item.end_id : firstSplitor.item.start_id;
             int nodeid = firstSplitor.item.start_id;
             left_sub_tree.initializedAsSingleTree(nodeid);
             right_sub_tree.copyTree(middle_sub_tree);
         } else if (middle_sub_tree.isEmpty()) {
-            System.out.println("case 4:");
+//            System.out.println("case 4:");
             int nodeid = firstSplitor.item.end_id;
-            System.out.println(nodeid);
             middle_sub_tree.initializedAsSingleTree(nodeid);
             if (left_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
                 System.out.println("case 4.1 left and middle tree are empty, right tree is a non-empty tree.");
@@ -343,7 +288,7 @@ public class SpanningForests {
         }
     }
 
-    private void connectTwoTree(SpanningTree left_sub_tree, SpanningTree right_sub_tree, Relationship replacement_edge, int level) {
+    public void connectTwoTree(SpanningTree left_sub_tree, SpanningTree right_sub_tree, Relationship replacement_edge, int level) {
         System.out.println("connecting two tree at level " + level);
         int src_id = (int) replacement_edge.getStartNodeId();
         int dest_id = (int) replacement_edge.getEndNodeId();
@@ -384,8 +329,6 @@ public class SpanningForests {
         int max_key;
         max_key = left_sub_tree.findMaximumKeyValue();
 
-        System.out.println(max_key);
-
         //insert first appears of replacement_relationship into the tree
         TNode<RelationshipExt> sNode = new TNode<>(++max_key, rel_ext);
         left_sub_tree.insert(sNode);
@@ -417,6 +360,7 @@ public class SpanningForests {
 
         }
 
+        //insert the second appears of replacement_relationship into the tree
         TNode<RelationshipExt> eNode = new TNode<>(++max_key, reverse_rel_ext);
         left_sub_tree.insert(eNode);
         left_sub_tree.updateRelationshipRBPointer(eNode.item, eNode.key, -1, level);

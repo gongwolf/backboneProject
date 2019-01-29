@@ -13,12 +13,14 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static DataStructure.STATIC.nil;
+
 public class indexWithDynamic {
 
     public ProgramProperty prop = new ProgramProperty();
     GraphDatabaseService graphdb;
-    int graph_size = 14;
-    double samnode_t = 0;
+    int graph_size = 100;
+    double samnode_t = 14.1;
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
     DynamicForests dforests;
@@ -50,10 +52,41 @@ public class indexWithDynamic {
             copyToHigherDB(currentLevel, upperlevel);
             //handle the degrees pairs
             cn = handleUpperLevelGraph(upperlevel, threshold, t_threshold);
-            System.exit(0);
-        } while (false);
+            threshold = updateThreshold(threshold, t_threshold);
+            if (threshold != null) {
+                t_threshold = threshold.getKey() + threshold.getValue();
+                currentLevel = upperlevel;
+            }
+        } while (cn != 0 && threshold != null);
+    }
 
+    private Pair<Integer, Integer> updateThreshold(Pair<Integer, Integer> threshold_p, int threshold_t) {
+        ArrayList<Pair<Integer, Integer>> t_degree_pair = new ArrayList<>(this.degree_pairs.keySet());
+        int idx = t_degree_pair.indexOf(threshold_p);
+//        displayDegreePair(15);
+//        System.out.println(threshold_p + "   " + t_degree_pair.size() + " " + idx);
 
+        if (!t_degree_pair.isEmpty()) {
+            if (idx == -1) {
+                for (Pair<Integer, Integer> e : t_degree_pair) {
+                    int t_t = e.getKey() + e.getValue();
+                    if (t_t < threshold_t) {
+                        continue;
+                    } else if (t_t == threshold_t && e.getKey() > threshold_p.getKey()) {
+                        return e;
+                    } else if (t_t > threshold_t) {
+                        return e;
+                    }
+                }
+            } else {
+                if (idx + 1 < t_degree_pair.size()) {
+                    return t_degree_pair.get(idx + 1);
+                } else {
+                    return null;
+                }
+            }
+        }
+        return null;
     }
 
     private void initLevel() {
@@ -87,15 +120,8 @@ public class indexWithDynamic {
             dforests = new DynamicForests();
             SpanningTree sptree_base = new SpanningTree(neo4j, true);
             System.out.println("=======================================");
-            TreeMap<Long, GraphNode> graph_node_spanning_rb_map = new TreeMap<>();
-            System.out.println("size of the graph_node_spanning_rb_map before finding the euler tour : " + graph_node_spanning_rb_map.size());
-            System.out.println(sptree_base.EulerTourString(graph_node_spanning_rb_map, 0));
-            System.out.println("size of the graph_node_spanning_rb_map after finding the euler tour : " + graph_node_spanning_rb_map.size());
-            System.out.println("------------------");
-            //remove single edge from level 0 spanning forest, because there only one spanning tree in this spanning forest
+            System.out.println(sptree_base.EulerTourString(0));
             removeSingletonEdges(sptree_base, 0);
-            System.out.println("------------------");
-            sptree_base.rbtree.root.print();
             this.dforests.createBase(sptree_base);
             System.out.println("=======================================");
         }
@@ -104,48 +130,11 @@ public class indexWithDynamic {
         while (deleted) {
             //remove edges less than threshold
             deleted = removeLowerDegreePairEdgesByThreshold(threshold_p, threshold_t);
-            System.out.println("Does delete edges with lower degree pairs ?  " + deleted);
-            for (Map.Entry<Integer, SpanningForests> sf : dforests.dforests.entrySet()) {
-                for (SpanningTree sp_tree : sf.getValue().trees) {
-                    sp_tree.rbtree.root.print();
-                    sp_tree.printEdges();
-                    System.out.println("---------------------------------");
-                }
-                System.out.println("===================================================");
-            }
+            System.out.println("Does delete edges with lower degree pairs ?  " + (deleted ? "Yes" : "No"));
+
             getDegreePairs();
             System.out.println("updated the degree pairs information ......................");
             removeSingletonEdgesInForests();
-            System.out.println("=wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww==");
-
-
-            try(Transaction tx = neo4j.graphDB.beginTx()){
-                ResourceIterable<Relationship> a = neo4j.graphDB.getAllRelationships();
-                ResourceIterator<Relationship> b = a.iterator();
-                while(b.hasNext()){
-                    Relationship r = b.next();
-                    System.out.println(r+"   "+r.getProperty("level"));
-                    for(Map.Entry<String, Object> pp :r.getAllProperties().entrySet()){
-                        System.out.println("  "+pp.getKey()+" <---->  "+pp.getValue());
-
-                    }
-                }
-                tx.success();
-            }
-//            System.out.println("removed the single information ......................");
-//            dforests.dforests.get(0).trees.get(0).rbtree.root.print();
-//            break;
-
-            /**
-             * Compare the number of components before the deletion and after the deletion
-             */
-//            int total_num_node = Math.toIntExact(neo4j.getNumberofNodes());
-//            System.out.println((total_num_node == post_cc_num_node) + "     " + total_num_node + "  " + post_cc_num_node);
-//            if (total_num_node != post_cc_num_node) {
-//                System.out.println("terminated the program");
-//                System.exit(0);
-//            }
-
         }
 
 
@@ -170,32 +159,35 @@ public class indexWithDynamic {
                         sum_single += e.getValue().size();
                         for (Long rel_id : e.getValue()) {
                             Relationship r = graphdb.getRelationshipById(rel_id);
-                            Node sNode = r.getStartNode();
-                            Node eNode = r.getEndNode();
-                            System.out.print("deleted single relationship  ");
+                            System.out.println("deleted single relationship  ");
 
-                            for (Map.Entry<Integer, SpanningForests> sp_forest : this.dforests.dforests.entrySet()) {
-                                int level = sp_forest.getKey();
-                                SpanningTree sp_tree;
-                                if ((sp_tree = sp_forest.getValue().findTree(r)) != null) {
-                                    System.out.println(r + "   " + r.getProperty("pFirstID" + level) + "   " + r.getProperty("pSecondID" + level));
+                            for (Map.Entry<Integer, SpanningForests> sp_forest_mapkey : this.dforests.dforests.entrySet()) {
+                                int level = sp_forest_mapkey.getKey();
+                                SpanningForests sp_forest = sp_forest_mapkey.getValue();
+                                int sp_tree_idx;
+                                if ((sp_tree_idx = sp_forest.findTreeIndex(r)) != -1) {
+                                    SpanningTree sp_tree = sp_forest.trees.get(sp_tree_idx);
+                                    System.out.println(r + "   " + r.getProperty("pFirstID" + level) + "   " + r.getProperty("pSecondID" + level) + " at level " + level);
                                     sp_tree.rbtree.delete((Integer) r.getProperty("pFirstID" + level));
                                     sp_tree.rbtree.delete((Integer) r.getProperty("pSecondID" + level));
+                                    sp_tree.deleteAdditionalInformationByRelationship(r);
+
+//                                    sp_tree.printEdges();
+//                                    sp_tree.printNodes();
+//                                    System.out.println(sp_tree.rbtree.root == nil);
+                                    if (sp_tree.rbtree.root == nil) {
+                                        sp_forest.trees.remove(sp_tree_idx);
+                                        System.out.println("remove empty spanning tree index(" + sp_tree_idx + ") at level " + level);
+                                    }
+                                    System.out.println("=======================================");
                                 }
                             }
 
-                            r.delete();
+                            deleteRelationshipFromDB(r);
 
-                            if (sNode.getDegree(Direction.BOTH) == 0) {
-                                sNode.delete();
-                            }
-                            if (eNode.getDegree(Direction.BOTH) == 0) {
-                                eNode.delete();
-                            }
                         }
                     }
                 }
-                System.out.println("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq");
                 tx.success();
             }
             getDegreePairs();
@@ -220,31 +212,27 @@ public class indexWithDynamic {
                         sum_single += e.getValue().size();
                         for (Long rel_id : e.getValue()) {
                             Relationship r = graphdb.getRelationshipById(rel_id);
-                            Node sNode = r.getStartNode();
-                            Node eNode = r.getEndNode();
-
                             /*****
-                             * Delete single edge from spanning tree,
+                             * Delete single edge from level 0 spanning tree,
                              * The order of the key will be kept the increase order.
                              * Also, it will not affect the connectivity of the graph.
                              *****/
                             sptree_base.rbtree.delete((Integer) r.getProperty("pFirstID" + level));
                             sptree_base.rbtree.delete((Integer) r.getProperty("pSecondID" + level));
                             System.out.println(r + " was removed");
-                            r.delete();
 
                             sptree_base.deleteAdditionalInformationByRelationship(r);
 
-                            if (sNode.getDegree(Direction.BOTH) == 0) {
-                                sNode.delete();
-                            }
-                            if (eNode.getDegree(Direction.BOTH) == 0) {
-                                eNode.delete();
-                            }
+                            deleteRelationshipFromDB(r);
+
                         }
                     }
                 }
                 tx.success();
+                if (sptree_base.rbtree.root == nil) {
+                    System.out.println("There is no any nodes in the level 0 spanning tree, terminate the program");
+                    System.exit(0);
+                }
             }
             getDegreePairs();
             System.out.println("delete single : pre:" + pre_node_num + " " + pre_edge_num + " " + pre_degree_num + " " +
@@ -367,39 +355,59 @@ public class indexWithDynamic {
         return deleted;
     }
 
-    private boolean deleteEdge(Relationship r, Neo4jDB neo4j) throws CloneNotSupportedException {
+    private boolean deleteEdge(Relationship r, Neo4jDB neo4j) {
         GraphDatabaseService graphdb = neo4j.graphDB;
         try (Transaction tx = graphdb.beginTx()) {
-            System.out.println(r);
-            System.out.println(graphdb);
+//            System.out.println(r);
+//            System.out.println(graphdb);
 
             int level_r = (int) r.getProperty("level");
             Relationship replacement_edge = null;
 
             System.out.println(r + " is a tree edge ? " + dforests.isTreeEdge(r) + "  level:" + level_r);
-            int l_idx = level_r;
-            while (l_idx >= 0) {
-                System.out.println("Finding the replacement relationship in level " + l_idx + " spanning tree");
-                replacement_edge = dforests.replacement(r, l_idx);
-                if (null == replacement_edge) {
-                    l_idx--;
-                } else {
-                    break;
+            if (dforests.isTreeEdge(r)) {
+                int l_idx = level_r;
+                while (l_idx >= 0) {
+                    System.out.println("Finding the replacement relationship in level " + l_idx + " spanning tree");
+                    replacement_edge = dforests.replacement(r, l_idx);
+                    if (null == replacement_edge) {
+                        l_idx--;
+                    } else {
+                        break;
+                    }
                 }
-            }
 
-            System.out.println("level of deleted edge r : " + level_r + " level of replacement edge : " + l_idx);
+                System.out.println("level of deleted edge r : " + level_r + " level of replacement edge : " + l_idx);
 
-            if (l_idx != -1) {
-                updateDynamicForest(level_r, l_idx, r, replacement_edge);
-                r.delete();
-                System.out.println("end of the deletion of the relationship " + r);
-                tx.success();
-                return true;
+                if (l_idx != -1) {
+                    updateDynamicForest(level_r, l_idx, r, replacement_edge);
+                    deleteRelationshipFromDB(r);
+                    System.out.println("end of the deletion of the relationship " + r);
+                    tx.success();
+                    return true;
+                }
+            } else {
+                deleteRelationshipFromDB(r);
+
             }
             tx.success();
         }
         return false;
+    }
+
+    private void deleteRelationshipFromDB(Relationship r) {
+        try (Transaction tx = this.neo4j.graphDB.beginTx()) {
+            r.delete();
+            Node sNode = r.getStartNode();
+            Node eNode = r.getEndNode();
+            if (sNode.getDegree(Direction.BOTH) == 0) {
+                sNode.delete();
+            }
+            if (eNode.getDegree(Direction.BOTH) == 0) {
+                eNode.delete();
+            }
+            tx.success();
+        }
     }
 
 
