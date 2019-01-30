@@ -159,16 +159,14 @@ public class testDynamicForests {
     }
 
     private void addSpanningTreeEdge(long sid, int eid, SpanningTree sptree, Neo4jDB neo4j) {
-
         GraphDatabaseService graphdb = neo4j.graphDB;
         try (Transaction tx = graphdb.beginTx()) {
             ResourceIterable<Relationship> r_iterable = graphdb.getAllRelationships();
             ResourceIterator<Relationship> r_iter = r_iterable.iterator();
-
             while (r_iter.hasNext()) {
                 Relationship r = r_iter.next();
                 if ((sid == r.getStartNodeId() && eid == r.getEndNodeId()) || (sid == r.getEndNodeId() && eid == r.getStartNodeId())) {
-                    sptree.SpTree.add(r);
+                    sptree.SpTree.add(r.getId());
                     sptree.updateNodesIDInformation(r);
                     System.out.println(r);
                 }

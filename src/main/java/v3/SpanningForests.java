@@ -329,6 +329,10 @@ public class SpanningForests {
         int max_key;
         max_key = left_sub_tree.findMaximumKeyValue();
 
+        if(left_sub_tree.isSingle){
+            left_sub_tree.clear();
+        }
+
         //insert first appears of replacement_relationship into the tree
         TNode<RelationshipExt> sNode = new TNode<>(++max_key, rel_ext);
         left_sub_tree.insert(sNode);
@@ -356,8 +360,6 @@ public class SpanningForests {
                 left_sub_tree.updateRelationshipRBPointer(node.item, node.key, org_key, level);
                 suc_node = right_sub_tree.rbtree.successor(suc_node);
             }
-
-
         }
 
         //insert the second appears of replacement_relationship into the tree

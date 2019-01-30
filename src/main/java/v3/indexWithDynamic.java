@@ -19,8 +19,8 @@ public class indexWithDynamic {
 
     public ProgramProperty prop = new ProgramProperty();
     GraphDatabaseService graphdb;
-    int graph_size = 100;
-    double samnode_t = 14.1;
+    int graph_size = 1000;
+    double samnode_t = 7;
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
     DynamicForests dforests;
@@ -124,6 +124,8 @@ public class indexWithDynamic {
             removeSingletonEdges(sptree_base, 0);
             this.dforests.createBase(sptree_base);
             System.out.println("=======================================");
+        } else {
+            updateNeb4jConnectorInDynamicForests();
         }
 
 
@@ -144,6 +146,14 @@ public class indexWithDynamic {
         System.out.println("pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e);
         neo4j.closeDB();
         return numberOfNodes;
+    }
+
+    private void updateNeb4jConnectorInDynamicForests() {
+        for (Map.Entry<Integer, SpanningForests> sp_forests_e : this.dforests.dforests.entrySet()) {
+            for (SpanningTree sp_tree : sp_forests_e.getValue().trees) {
+                sp_tree.neo4j = this.neo4j;
+            }
+        }
     }
 
     private void removeSingletonEdgesInForests() {
@@ -373,6 +383,7 @@ public class indexWithDynamic {
 
     private boolean deleteEdge(Relationship r, Neo4jDB neo4j) {
         GraphDatabaseService graphdb = neo4j.graphDB;
+
         try (Transaction tx = graphdb.beginTx()) {
 //            System.out.println(r);
 //            System.out.println(graphdb);
@@ -405,10 +416,6 @@ public class indexWithDynamic {
             } else {
                 deleteRelationshipFromDB(r);
             }
-
-
-//            checkstatus();
-
 
             tx.success();
         }
