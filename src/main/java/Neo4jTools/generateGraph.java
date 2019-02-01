@@ -17,10 +17,10 @@ public class generateGraph {
 
     public generateGraph(int graphsize, int degree, int dimensions) {
         this.numberNodes = graphsize;
-        this.numberofEdges = (int) Math.round(numberNodes * (degree));
+        this.numberofEdges = Math.round(numberNodes * (degree));
         this.numberofDimens = dimensions;
 
-        this.DBBase = "/home/gqxwolf/mydata/projectData/testGraph" + graphsize + "_" + degree + "/data/";
+        this.DBBase = "/home/gqxwolf/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/";
         EdgesPath = DBBase + "SegInfo.txt";
         NodePath = DBBase + "NodeInfo.txt";
 
@@ -52,7 +52,7 @@ public class generateGraph {
         } else {
 
             if (g_str == null) {
-                numberNodes = 100;
+                numberNodes = 1000;
             } else {
                 numberNodes = Integer.parseInt(g_str);
             }

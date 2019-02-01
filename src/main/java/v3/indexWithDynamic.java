@@ -18,13 +18,20 @@ import static DataStructure.STATIC.nil;
 public class indexWithDynamic {
 
     public ProgramProperty prop = new ProgramProperty();
+
     GraphDatabaseService graphdb;
-    int graph_size = 1000;
-    double samnode_t = 7;
+
+    int graphsize = 1000;
+    int degree = 4;
+    int dimension = 3;
+
+    double percentage = 0.01;
+
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
     DynamicForests dforests;
     long cn;
+    int degree_pairs_sum;
     private Neo4jDB neo4j;
 
     public static void main(String args[]) throws CloneNotSupportedException {
@@ -38,13 +45,12 @@ public class indexWithDynamic {
     }
 
     private void construction() throws CloneNotSupportedException {
-        int i = 0;
         int currentLevel = 0;
         Pair<Integer, Integer> threshold = new Pair<>(2, 2);
         int t_threshold = threshold.getKey() + threshold.getValue();
         do {
-            i++;
             int upperlevel = currentLevel + 1;
+            printDegreePairs();
             System.out.println("===============  level:" + upperlevel + " ==============");
             System.out.println("threshold:" + threshold.getKey() + "+" + threshold.getValue() + " = " + t_threshold);
 
@@ -52,10 +58,17 @@ public class indexWithDynamic {
             copyToHigherDB(currentLevel, upperlevel);
             //handle the degrees pairs
             cn = handleUpperLevelGraph(upperlevel, threshold, t_threshold);
-            threshold = updateThreshold(threshold, t_threshold);
+
+            threshold = updateThreshold(percentage);
             if (threshold != null) {
                 t_threshold = threshold.getKey() + threshold.getValue();
                 currentLevel = upperlevel;
+            }
+
+            System.out.println("threshold:" + threshold.getKey() + "+" + threshold.getValue() + " = " + t_threshold);
+
+            if (currentLevel == 2) {
+                break;
             }
         } while (cn != 0 && threshold != null);
     }
@@ -63,8 +76,6 @@ public class indexWithDynamic {
     private Pair<Integer, Integer> updateThreshold(Pair<Integer, Integer> threshold_p, int threshold_t) {
         ArrayList<Pair<Integer, Integer>> t_degree_pair = new ArrayList<>(this.degree_pairs.keySet());
         int idx = t_degree_pair.indexOf(threshold_p);
-//        displayDegreePair(15);
-//        System.out.println(threshold_p + "   " + t_degree_pair.size() + " " + idx);
 
         if (!t_degree_pair.isEmpty()) {
             if (idx == -1) {
@@ -89,25 +100,57 @@ public class indexWithDynamic {
         return null;
     }
 
+
+    private Pair<Integer, Integer> updateThreshold(double percentage) {
+        ArrayList<Pair<Integer, Integer>> t_degree_pair = new ArrayList<>(this.degree_pairs.keySet());
+
+        int max = (int) (this.degree_pairs_sum * percentage);
+
+        int t_num = 0;
+        int idx;
+        for (idx = 0; t_num < max && idx < t_degree_pair.size(); idx++) {
+            Pair<Integer, Integer> key = t_degree_pair.get(idx);
+            t_num += this.degree_pairs.get(key).size();
+        }
+
+        idx = idx-1;
+
+        if (idx < t_degree_pair.size()) {
+            return t_degree_pair.get(idx);
+        }
+
+        return null;
+    }
+
     private void initLevel() {
         int currentLevel = 0;
-        String sub_db_name = graph_size + "-" + samnode_t + "-" + "Level" + currentLevel;
+        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
         neo4j = new Neo4jDB(sub_db_name);
         System.out.println(neo4j.DB_PATH);
         neo4j.startDB();
         graphdb = neo4j.graphDB;
         getDegreePairs();
+
         cn = neo4j.getNumberofNodes();
         neo4j.closeDB();
         //initialize the data structure that store multi-layer spanning forest.
         this.dforests = new DynamicForests();
     }
 
+    private void printDegreePairs() {
+        System.out.println("*********************** DEGREE PAIRS ***********************");
+        for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> dps : this.degree_pairs.entrySet()) {
+            System.out.println(dps.getKey() + "    ----> number of pairs " + dps.getValue().size());
+        }
+        System.out.println("************************************************************");
+
+    }
+
 
     private long handleUpperLevelGraph(int currentLevel, Pair<Integer, Integer> threshold_p, int threshold_t) throws CloneNotSupportedException {
 
         boolean deleted = true;
-        String sub_db_name = graph_size + "-" + samnode_t + "-" + "Level" + currentLevel;
+        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
         neo4j = new Neo4jDB(sub_db_name);
         neo4j.startDB();
         graphdb = neo4j.graphDB;
@@ -120,10 +163,11 @@ public class indexWithDynamic {
             dforests = new DynamicForests();
             SpanningTree sptree_base = new SpanningTree(neo4j, true);
             System.out.println("=======================================");
-            System.out.println(sptree_base.EulerTourString(0));
+            sptree_base.EulerTourString(0);
+//            System.out.println(sptree_base.EulerTourString(0));
             removeSingletonEdges(sptree_base, 0);
             this.dforests.createBase(sptree_base);
-            System.out.println("=======================================");
+            System.out.println("================Finish finding the level 0 spanning tree =======================");
         } else {
             updateNeb4jConnectorInDynamicForests();
         }
@@ -316,6 +360,12 @@ public class indexWithDynamic {
             }
             tx.success();
         }
+
+
+        this.degree_pairs_sum = 0;
+        for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> dps : this.degree_pairs.entrySet()) {
+            degree_pairs_sum += dps.getValue().size();
+        }
     }
 
     /**
@@ -326,8 +376,8 @@ public class indexWithDynamic {
      * @param dest_level
      */
     private void copyToHigherDB(int src_level, int dest_level) {
-        String dest_db_name = graph_size + "-" + samnode_t + "-" + "Level" + dest_level;
-        String src_db_name = graph_size + "-" + samnode_t + "-" + "Level" + src_level;
+        String dest_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + dest_level;
+        String src_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + src_level;
         File src_db_folder = new File(prop.params.get("neo4jdb") + "/" + src_db_name);
         File dest_db_folder = new File(prop.params.get("neo4jdb") + "/" + dest_db_name);
         System.out.println("copy db from " + src_db_folder + " to " + dest_db_folder);
@@ -422,16 +472,6 @@ public class indexWithDynamic {
         return false;
     }
 
-//    private void checkstatus() {
-//        for(Map.Entry<Integer, SpanningForests> ef:this.dforests.dforests.entrySet()){
-//            SpanningForests sp_forest = ef.getValue();
-//            for(SpanningTree sp_tree:sp_forest.trees){
-//                if(sp_forest.hasSameKey()){
-//
-//                }
-//            }
-//        }
-//    }
 
     private void deleteRelationshipFromDB(Relationship r) {
         try (Transaction tx = this.neo4j.graphDB.beginTx()) {

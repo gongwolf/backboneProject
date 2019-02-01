@@ -2,11 +2,9 @@ package v3;
 
 import DataStructure.TNode;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 
 import java.util.HashMap;
 
-import static DataStructure.STATIC.nil;
 
 
 public class DynamicForests {

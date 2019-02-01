@@ -15,6 +15,7 @@ import java.util.*;
 import static DataStructure.STATIC.nil;
 
 public class SpanningTree {
+
     public int level;
     public ProgramProperty prop = new ProgramProperty();
     public Neo4jDB neo4j = null;
@@ -23,18 +24,19 @@ public class SpanningTree {
     public HashSet<Long> SpTree;
     public RedBlackTree rbtree = new RedBlackTree();
     public HashSet<Long> N_nodes;
+    //graph information
+    public int graphsize;
+    public int degree;
+    public int dimension;
     int E = 0; // number of edges
     int N = 0; // number of nodes
     String DBPath;
-    long graphsize;
-    double samenode_t;
     int connect_component_number = 0; // number of the connect component found in the graph
     Relationship[] rels;
     UFnode unionfind[];
     //the adjacent list of the spanning tree
     Bag adjList[];
     boolean isSingle = false;
-
     int insertedEdgesTimes = 0;
 
 
@@ -43,17 +45,21 @@ public class SpanningTree {
         N_nodes = new HashSet<>();
     }
 
-    public SpanningTree(int graphsize, double samenode_t) {
+    public SpanningTree(int graphsize, int degree, int dimension) {
         this.graphsize = graphsize;
-        this.samenode_t = samenode_t;
+        this.degree = degree;
+        this.dimension = dimension;
+
         this.level = 0;
         initialization();
     }
 
 
-    public SpanningTree(int graphsize, double samenode_t, int current_level) {
+    public SpanningTree(int graphsize, int degree, int dimension, int current_level) {
         this.graphsize = graphsize;
-        this.samenode_t = samenode_t;
+        this.graphsize = graphsize;
+        this.degree = degree;
+        this.dimension = dimension;
         this.level = current_level;
         initialization();
     }
@@ -74,7 +80,7 @@ public class SpanningTree {
 
 
     public static void main(String args[]) {
-        SpanningTree spt = new SpanningTree(14, 0);
+        SpanningTree spt = new SpanningTree(1000, 4, 3);
         spt.EulerTourString();
     }
 
@@ -89,8 +95,11 @@ public class SpanningTree {
 
     public String EulerTourString() {
         KruskalMST();
+        System.out.println("Finished the calling of the KruskalMST() function");
         FindAdjList();
+        System.out.println("Finished the calling of the FindAdjList() function");
         String elurtourString = FindEulerTourString(0);
+        System.out.println("Finished the calling of the elurtourString() function");
         return elurtourString;
     }
 
@@ -228,8 +237,8 @@ public class SpanningTree {
         }
 
 //        System.out.println(sb.toString().substring(0, sb.length() - 1));
-        System.out.println(sb1.append(src_id));
-        this.insertedEdgesTimes = N * 2;
+//        System.out.println(sb1.append(src_id));
+        this.insertedEdgesTimes = (N-1) * 2;
         System.out.println("inserted edges times : " + insertedEdgesTimes);
         return sb.toString().substring(0, sb.length() - 1);
     }
@@ -333,12 +342,10 @@ public class SpanningTree {
         for (int i = 0; i < adjList.length; i++) {
             if (N_nodes.contains((long) i)) {
                 adjList[i] = new Bag();
-//                System.out.println(i);
             }
         }
 
         try (Transaction tx = neo4j.graphDB.beginTx()) {
-
             System.out.println("==========================");
             for (long rid : SpTree) {
                 Relationship r = neo4j.graphDB.getRelationshipById(rid);
@@ -364,16 +371,14 @@ public class SpanningTree {
      * each node whose root is the node id
      */
     private void initialization() {
-        boolean needtoCloseDB = false;
         this.N_nodes = new HashSet<>();
 
         if (neo4j == null) {
             DBPath = prop.params.get("neo4jdb");
-            String sub_db_name = graphsize + "-" + samenode_t + "-Level" + level;
+            String sub_db_name = graphsize +"_" +degree +"_"+dimension+ "_Level" + level;
             neo4j = new Neo4jDB(sub_db_name);
             System.out.println("connected to db " + neo4j.DB_PATH);
             neo4j.startDB();
-            needtoCloseDB = true;
         }
         System.out.println(neo4j.DB_PATH);
         long nn = neo4j.getNumberofNodes();
@@ -406,11 +411,6 @@ public class SpanningTree {
             tx.success();
         }
         rbtree = new RedBlackTree();
-
-
-        if (needtoCloseDB) {
-            neo4j.closeDB();
-        }
     }
 
 
@@ -418,7 +418,7 @@ public class SpanningTree {
         boolean needtoCloseDB = false;
         if (neo4j == null) {
             DBPath = prop.params.get("neo4jdb");
-            String sub_db_name = graphsize + "-" + samenode_t + "-Level" + level;
+            String sub_db_name = graphsize +"_" +degree +"_"+dimension+ "_Level" + level;
             neo4j = new Neo4jDB(sub_db_name);
             neo4j.startDB();
             needtoCloseDB = true;

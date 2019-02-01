@@ -2,4 +2,5 @@ target
 classes
 output
 .idea
-target
+out
+logs
