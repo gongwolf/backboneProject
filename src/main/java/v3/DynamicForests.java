@@ -62,39 +62,39 @@ public class DynamicForests {
         sp_tree.findRightSubTree(secondSplitor, right_sub_tree);
 
         combination(left_sub_tree, middle_sub_tree, right_sub_tree, firstSplitor, secondSplitor);
-        System.out.println("left sub tree size : " + left_sub_tree.N + "     right sub tree size : " + right_sub_tree.N);
+//        System.out.println("left sub tree size : " + left_sub_tree.N + "     right sub tree size : " + right_sub_tree.N);
 
 
         //update edge level in the smaller tree
         if (left_sub_tree.N < right_sub_tree.N) {
             updateDynamicInformation(left_sub_tree, level_r); //push the left tree to higher level
             Relationship replacement_relationship = left_sub_tree.findReplacementEdge(right_sub_tree, level_r, r);
-            System.out.println("end of the replacement function call at " + level_r);
+//            System.out.println("end of the replacement function call at " + level_r);
             return replacement_relationship;
         } else {
             updateDynamicInformation(right_sub_tree, level_r); //push the right tree to higher level
             Relationship replacement_relationship = right_sub_tree.findReplacementEdge(left_sub_tree, level_r, r);
-            System.out.println("end of the replacement function call at " + level_r);
+//            System.out.println("end of the replacement function call at " + level_r);
             return replacement_relationship;
         }
     }
 
     public void combination(SpanningTree left_sub_tree, SpanningTree middle_sub_tree, SpanningTree right_sub_tree, TNode<RelationshipExt> firstSplitor, TNode<RelationshipExt> secondSplitor) {
-        System.out.println("Call combination function " + left_sub_tree.isEmpty() + "  " + middle_sub_tree.isEmpty() + "  " + right_sub_tree.isEmpty());
+//        System.out.println("Call combination function " + left_sub_tree.isEmpty() + "  " + middle_sub_tree.isEmpty() + "  " + right_sub_tree.isEmpty());
         if (left_sub_tree.isEmpty() && middle_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
-            System.out.println("case1: left, middle and right sub tree is empty, create two single tree.");
+//            System.out.println("case1: left, middle and right sub tree is empty, create two single tree.");
             left_sub_tree.initializedAsSingleTree(firstSplitor.item.start_id);
             right_sub_tree.initializedAsSingleTree(firstSplitor.item.end_id);
         } else if (!left_sub_tree.isEmpty() && middle_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
-            System.out.println("case2: left and right sub tree is non-empty, middle tree is a empty tree. " +
-                    "create a single node tree whose id is not same as the minimum node of the right tree");
+//            System.out.println("case2: left and right sub tree is non-empty, middle tree is a empty tree. " +
+//                    "create a single node tree whose id is not same as the minimum node of the right tree");
             int nodeid = firstSplitor.item.end_id;
             middle_sub_tree.initializedAsSingleTree(nodeid);
             left_sub_tree.combineTree(right_sub_tree);
             right_sub_tree.copyTree(middle_sub_tree);
         } else if (left_sub_tree.isEmpty() && !middle_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
-            System.out.println("case3: left and right sub tree are empty, middle tree is a non-empty tree. " +
-                    "create a single node tree whose id is the end_id of the first splitter");
+//            System.out.println("case3: left and right sub tree are empty, middle tree is a non-empty tree. " +
+//                    "create a single node tree whose id is the end_id of the first splitter");
             int nodeid = firstSplitor.item.start_id;
             left_sub_tree.initializedAsSingleTree(nodeid);
             right_sub_tree.copyTree(middle_sub_tree);
@@ -103,23 +103,23 @@ public class DynamicForests {
             int nodeid = firstSplitor.item.end_id;
             middle_sub_tree.initializedAsSingleTree(nodeid);
             if (left_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
-                System.out.println("case 4.1 left and middle tree are empty, right tree is a non-empty tree.");
+//                System.out.println("case 4.1 left and middle tree are empty, right tree is a non-empty tree.");
                 left_sub_tree.copyTree(right_sub_tree);
                 right_sub_tree.copyTree(middle_sub_tree);
             } else if (!left_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
-                System.out.println("case 4.2 middle and right tree are empty, left tree is a non-empty tree.");
+//                System.out.println("case 4.2 middle and right tree are empty, left tree is a non-empty tree.");
                 right_sub_tree.copyTree(middle_sub_tree);
             }
         } else if (!middle_sub_tree.isEmpty()) {
             if (!left_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
-                System.out.println("case 5.1 left and middle tree are non0empty, right tree is a empty tree.");
+//                System.out.println("case 5.1 left and middle tree are non0empty, right tree is a empty tree.");
                 right_sub_tree.copyTree(middle_sub_tree);
             } else if (left_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
-                System.out.println("case 5.2 middle and right tree are empty, left tree is a empty tree.");
+//                System.out.println("case 5.2 middle and right tree are empty, left tree is a empty tree.");
                 left_sub_tree.copyTree(right_sub_tree);
                 right_sub_tree.copyTree(middle_sub_tree);
             } else {
-                System.out.println("case 6, left, middle and right are non-empty tree");
+//                System.out.println("case 6, left, middle and right are non-empty tree");
                 left_sub_tree.combineTree(right_sub_tree);
                 right_sub_tree.copyTree(middle_sub_tree);
             }
@@ -138,7 +138,7 @@ public class DynamicForests {
         //If it's a single node, do not need to push to higher level
         //update pointer of edge <-> TNode to higher level
         if (sub_tree.isSingle) {
-            System.out.println("the sub tree is a single tree, do not need to push to higher level (level " + (level_r + 1) + ")");
+//            System.out.println("the sub tree is a single tree, do not need to push to higher level (level " + (level_r + 1) + ")");
             return;
         } else {
             sub_tree.updateTreeEdgeLevel(level_r);
@@ -149,16 +149,16 @@ public class DynamicForests {
                 dforests.get(new_level).addNewTrees(sub_tree);
             } else {
                 SpanningForests sp = new SpanningForests(new_level);
-                System.out.println("Create new level " + new_level + " forests");
+//                System.out.println("Create new level " + new_level + " forests");
                 sp.trees.add(sub_tree);
                 dforests.put(new_level, sp);
             }
 
-            System.out.println("put new spanning tree to level " + new_level + " forests");
-            System.out.println("Starting to merge the level " + new_level + " forest ............. ");
+//            System.out.println("put new spanning tree to level " + new_level + " forests");
+//            System.out.println("Starting to merge the level " + new_level + " forest ............. ");
             dforests.get(new_level).merge(new_level);
-            System.out.print("Finished merge the level " + new_level + " forest .............");
-            System.out.println("There are  " + dforests.get(new_level).trees.size() + " trees in level " + new_level + " forest .............");
+//            System.out.print("Finished merge the level " + new_level + " forest .............");
+//            System.out.println("There are  " + dforests.get(new_level).trees.size() + " trees in level " + new_level + " forest .............");
         }
     }
 }

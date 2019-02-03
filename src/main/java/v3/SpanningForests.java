@@ -20,7 +20,7 @@ public class SpanningForests {
     public SpanningTree findTree(Relationship r) {
         for (SpanningTree current_tree : trees) {
             if (current_tree.hasEdge(r)) {
-                System.out.println("find spanning tree whose contains the edge " + r +" at "+level);
+//                System.out.println("find spanning tree whose contains the edge " + r +" at "+level);
                 return current_tree;
             }
         }
@@ -32,7 +32,7 @@ public class SpanningForests {
         for (int i = 0; i < trees.size(); i++) {
             SpanningTree current_tree = trees.get(i);
             if (current_tree.hasEdge(r)) {
-                System.out.println("the index of the spanning tree whose contains the edge " + r + " is " + i);
+//                System.out.println("the index of the spanning tree whose contains the edge " + r + " is " + i);
                 return i;
             }
         }
@@ -48,7 +48,7 @@ public class SpanningForests {
         if (trees.size() == 1) {
             SpanningTree sub_tree = trees.get(0);
             updateTreePointers(sub_tree, level_r);
-            System.out.println("There is only one tree in level " + level_r + ", do not need to merge");
+//            System.out.println("There is only one tree in level " + level_r + ", do not need to merge");
         }
 
         Pair<Integer, Integer> tree_idx;
@@ -57,7 +57,7 @@ public class SpanningForests {
             int j = tree_idx.getValue();
 
             SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j), level_r);
-            System.out.println("finished merge in one iteration   with the tree " + i + " and tree " + j);
+//            System.out.println("finished merge in one iteration   with the tree " + i + " and tree " + j);
 
             /**
              * because i is always less than j, i is deleted before j.
@@ -151,7 +151,7 @@ public class SpanningForests {
 //    }
 
     public void deleteEdge(Relationship delete_edge) {
-        System.out.println("deleted edge  " + delete_edge + " in forest at " + level);
+//        System.out.println("deleted edge  " + delete_edge + " in forest at " + level);
 
         int sp_tree_idx = findTreeIndex(delete_edge);
         SpanningTree sp_tree = trees.get(sp_tree_idx);
@@ -176,7 +176,7 @@ public class SpanningForests {
         sp_tree.findRightSubTree(secondSplitor, right_sub_tree);
 
         combination(left_sub_tree, middle_sub_tree, right_sub_tree, firstSplitor, secondSplitor);
-        System.out.println("remove edge on level "+ this.level+" : left sub tree size : " + left_sub_tree.N + "     right sub tree size : " + right_sub_tree.N);
+//        System.out.println("remove edge on level "+ this.level+" : left sub tree size : " + left_sub_tree.N + "     right sub tree size : " + right_sub_tree.N);
 
 
 
@@ -189,7 +189,7 @@ public class SpanningForests {
     }
 
     public void replaceEdge(Relationship delete_edge, Relationship replacement_edge) {
-        System.out.println("replace the edge  " + delete_edge + " with  " + replacement_edge + " in forest at " + level);
+//        System.out.println("replace the edge  " + delete_edge + " with  " + replacement_edge + " in forest at " + level);
 
         int sp_tree_idx = findTreeIndex(delete_edge);
         SpanningTree sp_tree = trees.get(sp_tree_idx);
@@ -212,28 +212,27 @@ public class SpanningForests {
         sp_tree.findRightSubTree(secondSplitor, right_sub_tree);
 
         combination(left_sub_tree, middle_sub_tree, right_sub_tree, firstSplitor, secondSplitor);
-        System.out.println("left sub tree size : " + left_sub_tree.N + "     right sub tree size : " + right_sub_tree.N);
+//        System.out.println("left sub tree size : " + left_sub_tree.N + "     right sub tree size : " + right_sub_tree.N);
 
         long sid = replacement_edge.getStartNodeId();
         long eid = replacement_edge.getEndNodeId();
-        System.out.println(replacement_edge.getStartNodeId() + "~~~" + replacement_edge.getEndNodeId());
+//        System.out.println(replacement_edge.getStartNodeId() + "~~~" + replacement_edge.getEndNodeId());
 
 
         if (left_sub_tree.N_nodes.contains(sid)) {
-            System.out.println("re-root left sub-tree on node " + sid);
+//            System.out.println("re-root left sub-tree on node " + sid);
             left_sub_tree.reroot(sid, eid, level);
-            System.out.println("re-root right sub-tree on node " + eid);
+//            System.out.println("re-root right sub-tree on node " + eid);
             right_sub_tree.reroot(eid, sid, level);
             connectTwoTree(left_sub_tree, right_sub_tree, replacement_edge, level);
-            System.out.println("************************************************");
+//            System.out.println("************************************************");
         } else {
-            System.out.println("re-root left sub-tree on node " + eid);
+//            System.out.println("re-root left sub-tree on node " + eid);
             left_sub_tree.reroot(eid, sid, level);
-            System.out.println("re-root right sub-tree on node " + sid);
+//            System.out.println("re-root right sub-tree on node " + sid);
             right_sub_tree.reroot(sid, eid, level);
             connectTwoTree(left_sub_tree, right_sub_tree, replacement_edge, level);
-            System.out.println("************************************************");
-//                left_sub_tree.rbtree.root.print();
+//            System.out.println("************************************************");
         }
         trees.remove(sp_tree_idx);
         trees.add(left_sub_tree);
@@ -241,22 +240,22 @@ public class SpanningForests {
     }
 
     public void combination(SpanningTree left_sub_tree, SpanningTree middle_sub_tree, SpanningTree right_sub_tree, TNode<RelationshipExt> firstSplitor, TNode<RelationshipExt> secondSplitor) {
-        System.out.println("Call combination function " + left_sub_tree.isEmpty() + "  " + middle_sub_tree.isEmpty() + "  " + right_sub_tree.isEmpty());
+//        System.out.println("Call combination function " + left_sub_tree.isEmpty() + "  " + middle_sub_tree.isEmpty() + "  " + right_sub_tree.isEmpty());
         if (left_sub_tree.isEmpty() && middle_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
-            System.out.println("case1: left, middle and right sub tree is empty, create two single tree.");
+//            System.out.println("case1: left, middle and right sub tree is empty, create two single tree.");
             left_sub_tree.initializedAsSingleTree(firstSplitor.item.start_id);
             right_sub_tree.initializedAsSingleTree(firstSplitor.item.end_id);
         } else if (!left_sub_tree.isEmpty() && middle_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
-            System.out.println("case2: left and right sub tree is non-empty, middle tree is a empty tree. " +
-                    "create a single node tree whose id is not same as the minimum node of the right tree");
+//            System.out.println("case2: left and right sub tree is non-empty, middle tree is a empty tree. " +
+//                    "create a single node tree whose id is not same as the minimum node of the right tree");
             int nodeid = firstSplitor.item.end_id;
             middle_sub_tree.initializedAsSingleTree(nodeid);
             left_sub_tree.combineTree(right_sub_tree);
             right_sub_tree.copyTree(middle_sub_tree);
 
         } else if (left_sub_tree.isEmpty() && !middle_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
-            System.out.println("case3: left and right sub tree are empty, middle tree is a non-empty tree. " +
-                    "create a single node tree whose id is the end_id of the first splitter");
+//            System.out.println("case3: left and right sub tree are empty, middle tree is a non-empty tree. " +
+//                    "create a single node tree whose id is the end_id of the first splitter");
             int nodeid = firstSplitor.item.start_id;
             left_sub_tree.initializedAsSingleTree(nodeid);
             right_sub_tree.copyTree(middle_sub_tree);
@@ -265,23 +264,23 @@ public class SpanningForests {
             int nodeid = firstSplitor.item.end_id;
             middle_sub_tree.initializedAsSingleTree(nodeid);
             if (left_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
-                System.out.println("case 4.1 left and middle tree are empty, right tree is a non-empty tree.");
+//                System.out.println("case 4.1 left and middle tree are empty, right tree is a non-empty tree.");
                 left_sub_tree.copyTree(right_sub_tree);
                 right_sub_tree.copyTree(middle_sub_tree);
             } else if (!left_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
-                System.out.println("case 4.2 middle and right tree are empty, left tree is a non-empty tree.");
+//                System.out.println("case 4.2 middle and right tree are empty, left tree is a non-empty tree.");
                 right_sub_tree.copyTree(middle_sub_tree);
             }
         } else if (!middle_sub_tree.isEmpty()) {
             if (!left_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
-                System.out.println("case 5.1 left and middle tree are non0empty, right tree is a empty tree.");
+//                System.out.println("case 5.1 left and middle tree are non0empty, right tree is a empty tree.");
                 right_sub_tree.copyTree(middle_sub_tree);
             } else if (left_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
-                System.out.println("case 5.2 middle and right tree are empty, left tree is a empty tree.");
+//                System.out.println("case 5.2 middle and right tree are empty, left tree is a empty tree.");
                 left_sub_tree.copyTree(right_sub_tree);
                 right_sub_tree.copyTree(middle_sub_tree);
             } else {
-                System.out.println("case 6, left, middle and right are non-empty tree");
+//                System.out.println("case 6, left, middle and right are non-empty tree");
                 left_sub_tree.combineTree(right_sub_tree);
                 right_sub_tree.copyTree(middle_sub_tree);
             }
@@ -289,7 +288,7 @@ public class SpanningForests {
     }
 
     public void connectTwoTree(SpanningTree left_sub_tree, SpanningTree right_sub_tree, Relationship replacement_edge, int level) {
-        System.out.println("connecting two tree at level " + level);
+//        System.out.println("connecting two tree at level " + level);
         int src_id = (int) replacement_edge.getStartNodeId();
         int dest_id = (int) replacement_edge.getEndNodeId();
 
@@ -297,10 +296,10 @@ public class SpanningForests {
         int left_id = -1, right_id = -1;
 
         if (left_sub_tree.N_nodes.contains((long) src_id)) {
-            System.out.println(src_id + " is in the left tree");
+//            System.out.println(src_id + " is in the left tree");
             left_id = src_id;
         } else if (right_sub_tree.N_nodes.contains((long) src_id)) {
-            System.out.println(src_id + " is in the right tree");
+//            System.out.println(src_id + " is in the right tree");
             right_id = src_id;
         } else {
             System.out.println(src_id + " is not in neither the left nor the right tree");
@@ -308,10 +307,10 @@ public class SpanningForests {
 
 
         if (left_sub_tree.N_nodes.contains((long) dest_id)) {
-            System.out.println(dest_id + " is in the left tree");
+//            System.out.println(dest_id + " is in the left tree");
             left_id = dest_id;
         } else if (right_sub_tree.N_nodes.contains((long) dest_id)) {
-            System.out.println(dest_id + " is in the right tree");
+//            System.out.println(dest_id + " is in the right tree");
             right_id = dest_id;
         } else {
             System.out.println(dest_id + " is not in neither the left nor the right tree");

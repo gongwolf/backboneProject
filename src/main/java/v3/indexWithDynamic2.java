@@ -1,5 +1,4 @@
 package v3;
-
 import Neo4jTools.Neo4jDB;
 import configurations.ProgramProperty;
 import javafx.util.Pair;
@@ -9,13 +8,12 @@ import org.neo4j.graphdb.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeMap;
 
 import static DataStructure.STATIC.nil;
 
-public class indexWithDynamic {
+public class indexWithDynamic2 {
 
     public ProgramProperty prop = new ProgramProperty();
 
@@ -35,7 +33,7 @@ public class indexWithDynamic {
     private Neo4jDB neo4j;
 
     public static void main(String args[]) throws CloneNotSupportedException {
-        indexWithDynamic index = new indexWithDynamic();
+        indexWithDynamic2 index = new indexWithDynamic2();
         index.build();
     }
 
@@ -51,7 +49,7 @@ public class indexWithDynamic {
         do {
             int upperlevel = currentLevel + 1;
             System.out.println("===============  level:" + upperlevel + " ==============");
-//            printDegreePairs();
+            printDegreePairs();
             System.out.println("threshold:" + threshold.getKey() + "+" + threshold.getValue() + " = " + t_threshold);
 
             //copy db from previous level
@@ -59,17 +57,13 @@ public class indexWithDynamic {
             //handle the degrees pairs
             cn = handleUpperLevelGraph(upperlevel, threshold, t_threshold);
 
-//            threshold = updateThreshold(threshold,t_threshold);
             threshold = updateThreshold(percentage);
             if (threshold != null) {
                 t_threshold = threshold.getKey() + threshold.getValue();
                 currentLevel = upperlevel;
             }
 
-//            System.out.println("threshold:" + threshold.getKey() + "+" + threshold.getValue() + " = " + t_threshold);
-//            if (currentLevel == 2) {
-//                break;
-//            }
+            System.out.println("threshold:" + threshold.getKey() + "+" + threshold.getValue() + " = " + t_threshold);
         } while (cn != 0 && threshold != null);
     }
 
@@ -103,29 +97,22 @@ public class indexWithDynamic {
 
     private Pair<Integer, Integer> updateThreshold(double percentage) {
         ArrayList<Pair<Integer, Integer>> t_degree_pair = new ArrayList<>(this.degree_pairs.keySet());
-        System.out.println("========================== find updated threshold ==========================");
 
         int max = (int) (this.degree_pairs_sum * percentage);
 
         int t_num = 0;
-        int idx = 0;
-
-
-        while (t_num < max && idx < t_degree_pair.size()) {
+        int idx;
+        for (idx = 0; t_num < max && idx < t_degree_pair.size(); idx++) {
             Pair<Integer, Integer> key = t_degree_pair.get(idx);
             t_num += this.degree_pairs.get(key).size();
-//            System.out.println(idx + " " + t_num + " " + max + " " + degree_pairs_sum + " " + (t_num < max) + "  " + (idx < t_degree_pair.size()));
-            idx++;
         }
 
-        //idx is the index of the first degree pair which summation number is greater than |E|*p
+        idx = idx-1;
 
-        if (0 <= idx && idx < t_degree_pair.size()) {
-//            printDegreePairs();
-//            System.out.println(t_degree_pair.get(idx));
-//            System.out.println("============================================================================");
+        if (idx < t_degree_pair.size()) {
             return t_degree_pair.get(idx);
         }
+
         return null;
     }
 
@@ -171,6 +158,7 @@ public class indexWithDynamic {
             SpanningTree sptree_base = new SpanningTree(neo4j, true);
             System.out.println("=======================================");
             sptree_base.EulerTourString(0);
+//            System.out.println(sptree_base.EulerTourString(0));
             removeSingletonEdges(sptree_base, 0);
             this.dforests.createBase(sptree_base);
             System.out.println("================Finish finding the level 0 spanning tree =======================");
@@ -219,7 +207,7 @@ public class indexWithDynamic {
                         sum_single += e.getValue().size();
                         for (Long rel_id : e.getValue()) {
                             Relationship r = graphdb.getRelationshipById(rel_id);
-//                            System.out.println("deleted single relationship  ");
+                            System.out.println("deleted single relationship  ");
 
                             for (Map.Entry<Integer, SpanningForests> sp_forest_mapkey : this.dforests.dforests.entrySet()) {
                                 int level = sp_forest_mapkey.getKey();
@@ -227,16 +215,16 @@ public class indexWithDynamic {
                                 int sp_tree_idx;
                                 if ((sp_tree_idx = sp_forest.findTreeIndex(r)) != -1) {
                                     SpanningTree sp_tree = sp_forest.trees.get(sp_tree_idx);
-//                                    System.out.println(r + "   " + r.getProperty("pFirstID" + level) + "   " + r.getProperty("pSecondID" + level) + " at level " + level);
+                                    System.out.println(r + "   " + r.getProperty("pFirstID" + level) + "   " + r.getProperty("pSecondID" + level) + " at level " + level);
                                     sp_tree.rbtree.delete((Integer) r.getProperty("pFirstID" + level));
                                     sp_tree.rbtree.delete((Integer) r.getProperty("pSecondID" + level));
                                     sp_tree.deleteAdditionalInformationByRelationship(r);
 
                                     if (sp_tree.rbtree.root == nil) {
                                         sp_forest.trees.remove(sp_tree_idx);
-//                                        System.out.println("remove empty spanning tree index(" + sp_tree_idx + ") at level " + level);
+                                        System.out.println("remove empty spanning tree index(" + sp_tree_idx + ") at level " + level);
                                     }
-//                                    System.out.println("=======================================");
+                                    System.out.println("=======================================");
                                 }
                             }
 
@@ -295,7 +283,7 @@ public class indexWithDynamic {
                              *****/
                             sptree_base.rbtree.delete((Integer) r.getProperty("pFirstID" + level));
                             sptree_base.rbtree.delete((Integer) r.getProperty("pSecondID" + level));
-//                            System.out.println(r + " was removed");
+                            System.out.println(r + " was removed");
 
                             sptree_base.deleteAdditionalInformationByRelationship(r);
 
@@ -441,15 +429,17 @@ public class indexWithDynamic {
         GraphDatabaseService graphdb = neo4j.graphDB;
 
         try (Transaction tx = graphdb.beginTx()) {
+//            System.out.println(r);
+//            System.out.println(graphdb);
 
             int level_r = (int) r.getProperty("level");
             Relationship replacement_edge = null;
 
-//            System.out.println("deleted the relationship " + r + " is a tree edge ? " + dforests.isTreeEdge(r) + "  level:" + level_r);
+            System.out.println("deleted the relationship " + r + " is a tree edge ? " + dforests.isTreeEdge(r) + "  level:" + level_r);
             if (dforests.isTreeEdge(r)) {
                 int l_idx = level_r;
                 while (l_idx >= 0) {
-//                    System.out.println("Finding the replacement relationship in level " + l_idx + " spanning tree");
+                    System.out.println("Finding the replacement relationship in level " + l_idx + " spanning tree");
                     replacement_edge = dforests.replacement(r, l_idx);
                     if (null == replacement_edge) {
                         l_idx--;
@@ -458,12 +448,12 @@ public class indexWithDynamic {
                     }
                 }
 
-//                System.out.println("level of deleted edge r : " + level_r + " level of replacement edge : " + l_idx);
+                System.out.println("level of deleted edge r : " + level_r + " level of replacement edge : " + l_idx);
 
                 if (l_idx != -1) {
                     updateDynamicForest(level_r, l_idx, r, replacement_edge);
                     deleteRelationshipFromDB(r);
-//                    System.out.println("end of the deletion of the relationship " + r);
+                    System.out.println("end of the deletion of the relationship " + r);
                     tx.success();
                     return true;
                 }
@@ -507,13 +497,3 @@ public class indexWithDynamic {
 }
 
 
-class PairComparator implements Comparator<Pair<Integer, Integer>> {
-    @Override
-    public int compare(Pair<Integer, Integer> o1, Pair<Integer, Integer> o2) {
-        if ((o1.getKey() + o1.getValue()) - (o2.getKey() + o2.getValue()) != 0) {
-            return (o1.getKey() + o1.getValue()) - (o2.getKey() + o2.getValue());
-        } else {
-            return o1.getKey() - o2.getKey();
-        }//sort in descending order
-    }
-}

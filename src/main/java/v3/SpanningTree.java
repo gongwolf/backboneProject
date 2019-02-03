@@ -99,7 +99,6 @@ public class SpanningTree {
         FindAdjList();
         System.out.println("Finished the calling of the FindAdjList() function");
         String elurtourString = FindEulerTourString(0);
-        System.out.println("Finished the calling of the elurtourString() function");
         return elurtourString;
     }
 
@@ -237,8 +236,8 @@ public class SpanningTree {
         }
 
 //        System.out.println(sb.toString().substring(0, sb.length() - 1));
-//        System.out.println(sb1.append(src_id));
-        this.insertedEdgesTimes = (N-1) * 2;
+        System.out.println(sb1.append(src_id));
+        this.insertedEdgesTimes = N * 2;
         System.out.println("inserted edges times : " + insertedEdgesTimes);
         return sb.toString().substring(0, sb.length() - 1);
     }
@@ -346,7 +345,7 @@ public class SpanningTree {
         }
 
         try (Transaction tx = neo4j.graphDB.beginTx()) {
-            System.out.println("==========================");
+//            System.out.println("==========================");
             for (long rid : SpTree) {
                 Relationship r = neo4j.graphDB.getRelationshipById(rid);
                 int src_id = (int) r.getStartNodeId();
@@ -358,7 +357,7 @@ public class SpanningTree {
                 RelationshipExt rel_ext_reverse = new RelationshipExt(r, dest_id, src_id);
                 adjList[dest_id].add(rel_ext_reverse);
             }
-            System.out.println("==========================");
+//            System.out.println("==========================");
             tx.success();
         }
     }
