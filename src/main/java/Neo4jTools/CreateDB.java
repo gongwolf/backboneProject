@@ -22,9 +22,9 @@ public class CreateDB {
 
     public static void main(String args[]) {
 
-        int graphsize=1000;
-        int degree = 4;
-        int dimension = 3;
+        int graphsize=14;
+        int degree = 0;
+        int dimension = 0;
 
         CreateDB c = new CreateDB();
         c.createRandomGraph(graphsize,degree,dimension);
@@ -39,8 +39,11 @@ public class CreateDB {
         neo4j.startDB();
         System.out.println(neo4j.DB_PATH);
         System.out.println("====================================================================");
-        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/NodeInfo.txt";
-        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/SegInfo.txt";
+//        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/NodeInfo.txt";
+//        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/SegInfo.txt";
+        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/busline_14_0.0/data/NodeInfo.txt";
+        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/busline_14_0.0/data/SegInfo.txt";
+
         System.out.println("node file path :" + nodeFilePath);
         System.out.println("edge file path :" + EdgeFilePath);
         GraphDatabaseService graphdb = neo4j.graphDB;
@@ -51,7 +54,6 @@ public class CreateDB {
             BufferedReader br = new BufferedReader(new FileReader(nodeFilePath));
             String line = null;
             while ((line = br.readLine()) != null) {
-                //System.out.println(line);
                 String[] attrs = line.split(" ");
 
                 String id = attrs[0];
