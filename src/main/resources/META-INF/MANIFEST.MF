@@ -1,34 +1,34 @@
 Manifest-Version: 1.0
-Class-Path: scala-library-2.11.12.jar neo4j-ssl-3.4.8.jar neo4j-primit
- ive-collections-3.4.8.jar neo4j-cypher-frontend-3.3-3.3.7.jar neo4j-c
- ypher-ir-3.3-3.3.7.jar neo4j-values-3.4.8.jar neo4j-configuration-3.4
- .8.jar asm-analysis-6.2.jar neo4j-collections-3.4.8.jar neo4j-codegen
- -3.4.8.jar commons-cli-1.4.jar neo4j-kernel-3.4.8.jar neo4j-procedure
- -api-3.4.8.jar scala-reflect-2.11.12.jar neo4j-kernel-api-3.4.8.jar n
- eo4j-cypher-logical-plans-3.3-3.3.7.jar neo4j-csv-3.4.8.jar lucene-an
- alyzers-common-5.5.5.jar neo4j-cypher-util-3.4-3.4.8.jar neo4j-cypher
- -logical-plans-3.4-3.4.8.jar neo4j-cypher-compiler-2.3-2.3.12.jar neo
- 4j-cypher-planner-spi-3.4-3.4.8.jar neo4j-unsafe-3.4.8.jar lucene-que
- ryparser-5.5.5.jar parboiled-scala_2.11-1.1.7.jar neo4j-dbms-3.4.8.ja
- r commons-text-1.3.jar neo4j-common-3.4.8.jar lucene-backward-codecs-
- 5.5.0.jar jackson-core-asl-1.9.13.jar jProcesses-1.6.4.jar bcprov-jdk
- 15on-1.60.jar neo4j-3.4.8.jar commons-io-2.6.jar opencsv-2.3.jar tool
- s.jar neo4j-logging-3.4.8.jar neo4j-cypher-compiler-3.1-3.1.9.jar asm
- -6.2.jar neo4j-graph-algo-3.4.8.jar neo4j-consistency-check-3.4.8.jar
-  neo4j-cypher-ir-3.4-3.4.8.jar parboiled-core-1.1.7.jar openCypher-fr
- ontend-1-3.4.8.jar neo4j-bolt-3.4.8.jar commons-compress-1.16.1.jar l
- ucene-core-5.5.5.jar WMI4Java-1.6.1.jar neo4j-cypher-compiler-3.3-3.3
- .7.jar neo4j-import-tool-3.4.8.jar neo4j-lucene-index-3.4.8.jar neo4j
- -graph-matching-3.1.9.jar jPowerShell-1.9.jar neo4j-cypher-frontend-2
- .3-2.3.12.jar bcpkix-jdk15on-1.60.jar neo4j-cypher-runtime-util-3.4.8
- .jar neo4j-lucene-upgrade-3.4.8.jar asm-util-6.2.jar asm-tree-6.2.jar
-  neo4j-resource-3.4.8.jar neo4j-cypher-planner-3.4-3.4.8.jar concurre
- ntlinkedhashmap-lru-1.4.2.jar neo4j-cypher-expression-3.4-3.4.8.jar l
- ucene-codecs-5.5.5.jar neo4j-io-3.4.8.jar neo4j-cypher-frontend-3.1-3
- .1.9.jar neo4j-udc-3.4.8.jar caffeine-2.3.3.jar neo4j-graphdb-api-3.4
- .8.jar neo4j-spatial-index-3.4.8.jar neo4j-cypher-3.4.8.jar neo4j-jmx
- -3.4.8.jar netty-all-4.1.24.Final.jar neo4j-cypher-interpreted-runtim
- e-3.4.8.jar jackson-mapper-asl-1.9.13.jar neo4j-command-line-3.4.8.ja
- r commons-lang3-3.7.jar neo4j-index-3.4.8.jar
-Main-Class: v3.indexWithDynamic
+Class-Path: bcpkix-jdk15on-1.60.jar commons-cli-1.4.jar neo4j-unsafe-3
+ .4.8.jar neo4j-cypher-ir-3.4-3.4.8.jar neo4j-graphdb-api-3.4.8.jar co
+ mmons-compress-1.16.1.jar neo4j-command-line-3.4.8.jar neo4j-codegen-
+ 3.4.8.jar concurrentlinkedhashmap-lru-1.4.2.jar neo4j-cypher-interpre
+ ted-runtime-3.4.8.jar neo4j-resource-3.4.8.jar neo4j-jmx-3.4.8.jar ne
+ o4j-dbms-3.4.8.jar neo4j-procedure-api-3.4.8.jar jPowerShell-1.9.jar 
+ caffeine-2.3.3.jar scala-reflect-2.11.12.jar neo4j-bolt-3.4.8.jar neo
+ 4j-graph-algo-3.4.8.jar neo4j-udc-3.4.8.jar neo4j-cypher-frontend-3.3
+ -3.3.7.jar neo4j-cypher-frontend-3.1-3.1.9.jar neo4j-cypher-logical-p
+ lans-3.3-3.3.7.jar netty-all-4.1.24.Final.jar neo4j-consistency-check
+ -3.4.8.jar neo4j-index-3.4.8.jar neo4j-kernel-3.4.8.jar neo4j-cypher-
+ compiler-3.3-3.3.7.jar neo4j-cypher-expression-3.4-3.4.8.jar neo4j-co
+ mmon-3.4.8.jar neo4j-spatial-index-3.4.8.jar neo4j-io-3.4.8.jar neo4j
+ -import-tool-3.4.8.jar lucene-analyzers-common-5.5.5.jar neo4j-lucene
+ -upgrade-3.4.8.jar commons-io-2.6.jar neo4j-cypher-3.4.8.jar jProcess
+ es-1.6.4.jar lucene-queryparser-5.5.5.jar neo4j-cypher-util-3.4-3.4.8
+ .jar neo4j-collections-3.4.8.jar openCypher-frontend-1-3.4.8.jar jack
+ son-core-asl-1.9.13.jar commons-lang3-3.7.jar lucene-codecs-5.5.5.jar
+  neo4j-graph-matching-3.1.9.jar asm-analysis-6.2.jar lucene-core-5.5.
+ 5.jar neo4j-cypher-compiler-3.1-3.1.9.jar neo4j-cypher-ir-3.3-3.3.7.j
+ ar neo4j-cypher-planner-3.4-3.4.8.jar neo4j-logging-3.4.8.jar bcprov-
+ jdk15on-1.60.jar neo4j-cypher-compiler-2.3-2.3.12.jar scala-library-2
+ .11.12.jar asm-tree-6.2.jar jackson-mapper-asl-1.9.13.jar neo4j-value
+ s-3.4.8.jar neo4j-csv-3.4.8.jar opencsv-2.3.jar neo4j-3.4.8.jar asm-u
+ til-6.2.jar neo4j-kernel-api-3.4.8.jar parboiled-scala_2.11-1.1.7.jar
+  commons-text-1.3.jar neo4j-cypher-runtime-util-3.4.8.jar neo4j-ssl-3
+ .4.8.jar neo4j-primitive-collections-3.4.8.jar WMI4Java-1.6.1.jar neo
+ 4j-cypher-planner-spi-3.4-3.4.8.jar neo4j-cypher-logical-plans-3.4-3.
+ 4.8.jar neo4j-cypher-frontend-2.3-2.3.12.jar neo4j-configuration-3.4.
+ 8.jar neo4j-lucene-index-3.4.8.jar asm-6.2.jar parboiled-core-1.1.7.j
+ ar tools.jar lucene-backward-codecs-5.5.0.jar
+Main-Class: v3.indexWithDynamic2
 

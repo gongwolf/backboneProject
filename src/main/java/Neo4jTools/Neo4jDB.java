@@ -10,12 +10,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
 public class Neo4jDB {
     public GraphDatabaseService graphDB;
     public ProgramProperty prop = new ProgramProperty();
     public String DB_PATH;
+    public static ArrayList<String> propertiesName = new ArrayList<>();
 
 
     public Neo4jDB() {
@@ -46,6 +48,7 @@ public class Neo4jDB {
         GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(new File(this.DB_PATH));
         graphDB = builder.newGraphDatabase();
         if (this.graphDB != null) {
+            this.getPropertiesName();
             System.out.println("Connect the neo4j db (" + this.DB_PATH + ") success !!!!");
         } else {
             System.out.println("Connect the neo4j db (" + this.DB_PATH + ") Failure !!!!");
@@ -208,5 +211,27 @@ public class Neo4jDB {
 
         }
         return rid;
+    }
+
+    public void getPropertiesName() {
+        propertiesName.clear();
+        try (Transaction tx = graphDB.beginTx()) {
+
+            Iterable<Relationship> rels = graphDB.getNodeById(1).getRelationships(Line.Linked, Direction.BOTH);
+            if (rels.iterator().hasNext()) {
+                Relationship rel = rels.iterator().next();
+//                System.out.println(rel);
+                Map<String, Object> pnamemap = rel.getAllProperties();
+//                System.out.println(pnamemap.size());
+                for (Map.Entry<String, Object> entry : pnamemap.entrySet()) {
+                    propertiesName.add(entry.getKey());
+                }
+            } else {
+                System.err.println("There is no edge from or to this node " + graphDB.getNodeById(0).getId());
+            }
+
+//            System.out.println(propertiesName.size());
+            tx.success();
+        }
     }
 }

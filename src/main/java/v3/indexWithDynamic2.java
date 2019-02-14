@@ -8,6 +8,7 @@ import org.neo4j.graphdb.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.*;
 
 import static DataStructure.STATIC.nil;
@@ -17,15 +18,15 @@ public class indexWithDynamic2 {
     final int single = 1;
     final int multiple = 2;
     public ProgramProperty prop = new ProgramProperty();
-    //    int graphsize = 1000;
-//    int degree = 4;
-//    int dimension = 3;
+    int graphsize = 1000;
+    int degree = 4;
+    int dimension = 3;
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
     GraphDatabaseService graphdb;
-    int graphsize = 14;
-    int degree = 0;
-    int dimension = 0;
-    double percentage = 0.01;
+//    int graphsize = 14;
+//    int degree = 0;
+//    int dimension = 0;
+    double percentage = 0.1;
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
     DynamicForests dforests;
@@ -160,7 +161,7 @@ public class indexWithDynamic2 {
             removeSingletonEdges(sptree_base, 0, layer_index, nodesToHighWay, deletedNodes);
             getDegreePairs();
             threshold_p = updateThreshold(percentage);
-            printLayerIndex(layer_index);
+//            printLayerIndex(layer_index);
 
             this.dforests.createBase(sptree_base);
             System.out.println("================Finish finding the level 0 spanning tree =======================");
@@ -184,30 +185,48 @@ public class indexWithDynamic2 {
 
 
         System.out.println("pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e);
-        printLayerIndex(layer_index);
-        System.out.println("==========================================");
+
+//        printLayerIndex(layer_index);
+//        System.out.println("==========================================");
+
         convergeLayerIndex(layer_index, nodesToHighWay);
-        printLayerIndex(layer_index);
-        System.out.println("==========================================");
+
+//        printLayerIndex(layer_index);
+//        System.out.println("==========================================");
+
         if (numberOfNodes != 0) {
             clearLayerIndex(layer_index, nodesToHighWay, deletedNodes);
         }
         printLayerIndex(layer_index);
+
+        System.out.println("==========================================");
 
         neo4j.closeDB();
         return numberOfNodes;
     }
 
     private void convergeLayerIndex(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay) {
-        for (long highway_n_id : layer_index.keySet()) {
-            updatedHighwayofHnode(highway_n_id, layer_index, nodesToHighWay);
+        boolean converged = false;
+        while (!converged) {
+            boolean i_f = false;
+            for (long highway_n_id : layer_index.keySet()) {
+                boolean t_f = updatedHighwayofHnode(highway_n_id, layer_index, nodesToHighWay);
+                if (!i_f && t_f) { //If any of the highway_n_id updated the layer index, i_f is set to true.
+                    i_f = true;
+                }
+            }
+
+            //If there is no update operation in current iteration.
+            if (!i_f) {
+                converged = true;
+            }
         }
     }
 
     private boolean clearLayerIndex(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay, HashSet<Long> deletedNodes) {
         try {
             for (long nid : deletedNodes) {
-                System.out.println("clear index "+nid);
+//                System.out.println("clear index " + nid);
                 layer_index.remove(nid);
                 nodesToHighWay.remove(nid);
             }
@@ -380,14 +399,14 @@ public class indexWithDynamic2 {
             long h_id = highway_node.getId();
             long s_id = source_node.getId();
             addToLayerIndex(layer_index, h_id, s_id, costs, nodesToHighWay, true);
-            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+//            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
 
             h_id = source_node.getId();
             s_id = highway_node.getId();
             addToLayerIndex(layer_index, h_id, s_id, costs, nodesToHighWay, true);
         }
 
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+//        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 
         //add the information that s_id's highway node is h_id
@@ -405,8 +424,8 @@ public class indexWithDynamic2 {
      * @return Ture, if the h_id's index is updated. Otherwise return False.
      */
     public boolean addToLayerIndex(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, long h_id, long s_id, double[] costs, Hashtable<Long, ArrayList<Long>> nodesToHighWay, boolean callRecursively) {
-        System.out.println("call function addToLayerIndex [" + h_id + "<-->" + s_id + "]  ");
-        //update the highway nodes information of s_id
+//        System.out.println("call function addToLayerIndex [" + h_id + "<-->" + s_id + "]  ");
+        //update the highway nodes information of sd_id
         if (!nodesToHighWay.containsKey(s_id)) {
             ArrayList<Long> highways = new ArrayList<>();
             highways.add(h_id);
@@ -445,7 +464,7 @@ public class indexWithDynamic2 {
         //if the new highway-source index is inserted or updated, updated the overall layer index based on the updated h_id index
         if (updated) {
             layer_index.put(h_id, highway_index);
-            updatedHighwayofHnode(h_id, layer_index, nodesToHighWay);
+//            updatedHighwayofHnode(h_id, layer_index, nodesToHighWay);
         }
 
         boolean copied_flag = false;
@@ -453,7 +472,7 @@ public class indexWithDynamic2 {
             copied_flag = copySourceNodeHighWayInformation(layer_index, h_id, s_id, costs, nodesToHighWay);
         }
 
-        System.out.println("end of the call addToLayerIndex");
+//        System.out.println("end of the call addToLayerIndex");
 
         boolean result;
         if (!callRecursively) {
@@ -466,16 +485,25 @@ public class indexWithDynamic2 {
 
     }
 
+    /**
+     * Foreach node h_id who is the highway node of sid.
+     * Foreach node node_id whose highway is sid.
+     * Update the highway index that from node_id to h_id,
+     *
+     * @param sid
+     * @param layer_index
+     * @param nodesToHighWay
+     * @return If the index is updated return true, other wise return false.
+     */
+
     private boolean updatedHighwayofHnode(long sid, Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay) {
         boolean updated = false;
         try {
             if (nodesToHighWay.containsKey(sid)) {
-                System.out.println("update the highway nodes that is the highway node of the " + sid + " current index " + nodesToHighWay.get(sid).toString());
+//                System.out.println("update the highway nodes that is the highway node of the " + sid + " current index " + nodesToHighWay.get(sid).toString());
                 for (long h_id : nodesToHighWay.get(sid)) { //h_id is the node id who is the highway of sid
-
                     for (Map.Entry<Long, ArrayList<double[]>> sidAsHighway : layer_index.get(sid).entrySet()) {
                         long node_id = sidAsHighway.getKey();// the node id whose highway node is sid
-
                         if (h_id != node_id) {
                             ArrayList<double[]> sid_to_hid_costs = layer_index.get(h_id).get(sid); //get all skyline from sid to h_id
                             for (double[] s_t_h_cost : sid_to_hid_costs) {//costs from sid to h_id
@@ -502,7 +530,7 @@ public class indexWithDynamic2 {
     }
 
     /**
-     * Copy the sources node index information of sid to the h_id's structure.
+     * Copy the sources node's information whose highway node is sid to the h_id's structure.
      *
      * @param layer_index    : the structure store the index of the current layer
      * @param h_id           : highway node id
@@ -513,9 +541,9 @@ public class indexWithDynamic2 {
      */
     private boolean copySourceNodeHighWayInformation(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, long h_id, long s_id, double[] costs, Hashtable<Long, ArrayList<Long>> nodesToHighWay) {
         boolean result = false;
-        System.out.println("call function copySourceNodeHighWayInformation [" + h_id + "<-->" + s_id + "]");
+//        System.out.println("call function copySourceNodeHighWayInformation [" + h_id + "<-->" + s_id + "]");
         if (layer_index.containsKey(s_id)) {
-            System.out.println("    contains highway index of node " + s_id);
+//            System.out.println("    contains highway index of node " + s_id);
             Hashtable<Long, ArrayList<double[]>> sid_as_highway_info = layer_index.get(s_id); //get the node whose highway node is sid
             for (Map.Entry<Long, ArrayList<double[]>> highway_information_entry : sid_as_highway_info.entrySet()) {
                 long sub_source_node = highway_information_entry.getKey();
@@ -577,7 +605,12 @@ public class indexWithDynamic2 {
 
     private boolean checkDominated(double[] costs, double[] estimatedCosts) {
         for (int i = 0; i < costs.length; i++) {
-            if (costs[i] * (1.0) > estimatedCosts[i]) {
+
+
+            BigDecimal ci = new BigDecimal(String.valueOf(costs[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
+            BigDecimal ei = new BigDecimal(String.valueOf(estimatedCosts[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
+
+            if (ci.doubleValue()>ei.doubleValue()) {
                 return false;
             }
         }
@@ -727,7 +760,7 @@ public class indexWithDynamic2 {
                 if (l_idx != -1 || r.getStartNode().getDegree(Direction.BOTH) == 1 || r.getEndNode().getDegree(Direction.BOTH) == 1) {
                     updateDynamicForest(level_r, l_idx, r, replacement_edge);
                     updateLayerIndex(r, layer_index, nodesToHighWay, multiple);
-                    printLayerIndex(layer_index);
+//                    printLayerIndex(layer_index);
                     deleteRelationshipFromDB(r, layer_index, nodesToHighWay, deletedNodes);
                     tx.success();
                     return true;
@@ -744,7 +777,7 @@ public class indexWithDynamic2 {
 
     private void deleteRelationshipFromDB(Relationship r, Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay, HashSet<Long> deletedNodes) {
         try (Transaction tx = this.neo4j.graphDB.beginTx()) {
-            System.out.println("remove edge " + r + " at " + this.neo4j.graphDB);
+//            System.out.println("remove edge " + r + " at " + this.neo4j.graphDB);
             r.delete();
             Node sNode = r.getStartNode();
             Node eNode = r.getEndNode();
