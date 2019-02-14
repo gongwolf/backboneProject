@@ -26,7 +26,7 @@ public class testDynamicForests {
         String sub_db_name = graph_size + "-" + samnode_t + "-" + "Level" + 0;
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);
         System.out.println(neo4j.DB_PATH);
-        neo4j.startDB();
+        neo4j.startDB(false);
         SpanningTree sptree = new SpanningTree(neo4j, true);
 
 

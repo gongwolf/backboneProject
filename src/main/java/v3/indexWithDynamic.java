@@ -134,7 +134,7 @@ public class indexWithDynamic {
         String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
         neo4j = new Neo4jDB(sub_db_name);
         System.out.println(neo4j.DB_PATH);
-        neo4j.startDB();
+        neo4j.startDB(false);
         graphdb = neo4j.graphDB;
         getDegreePairs();
 
@@ -159,7 +159,7 @@ public class indexWithDynamic {
         boolean deleted = true;
         String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
         neo4j = new Neo4jDB(sub_db_name);
-        neo4j.startDB();
+        neo4j.startDB(false);
         graphdb = neo4j.graphDB;
         long pre_n = neo4j.getNumberofNodes();
         long pre_e = neo4j.getNumberofEdges();

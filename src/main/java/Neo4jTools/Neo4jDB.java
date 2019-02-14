@@ -44,14 +44,17 @@ public class Neo4jDB {
         });
     }
 
-    public void startDB() {
+    public void startDB(boolean getProperties) {
         GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(new File(this.DB_PATH));
         graphDB = builder.newGraphDatabase();
         if (this.graphDB != null) {
-            this.getPropertiesName();
             System.out.println("Connect the neo4j db (" + this.DB_PATH + ") success !!!!");
         } else {
             System.out.println("Connect the neo4j db (" + this.DB_PATH + ") Failure !!!!");
+        }
+
+        if(getProperties){
+            this.getPropertiesName();
         }
     }
 

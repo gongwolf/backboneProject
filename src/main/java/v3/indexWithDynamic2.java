@@ -23,7 +23,7 @@ public class indexWithDynamic2 {
     int dimension = 3;
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
     GraphDatabaseService graphdb;
-//    int graphsize = 14;
+    //    int graphsize = 14;
 //    int degree = 0;
 //    int dimension = 0;
     double percentage = 0.1;
@@ -43,6 +43,25 @@ public class indexWithDynamic2 {
     private void build() throws CloneNotSupportedException {
         initLevel();
         construction();
+        printSummurizationInformation();
+
+    }
+
+    private void printSummurizationInformation() {
+        int i = 0;
+        long overall = 0;
+        for (Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index : index) {
+            long summation = 0;
+            for (Map.Entry<Long, Hashtable<Long, ArrayList<double[]>>> layer_index_entry : layer_index.entrySet()) {
+                for (Map.Entry<Long, ArrayList<double[]>> source_entryL : layer_index_entry.getValue().entrySet()) {
+                    summation += source_entryL.getValue().size();
+                }
+            }
+            System.out.println("there are " + summation + " indexes at level " + i++);
+            overall+=summation;
+        }
+        System.out.println("the total index size is "+overall+"/="+(overall/2));
+
     }
 
     private void construction() throws CloneNotSupportedException {
@@ -115,7 +134,7 @@ public class indexWithDynamic2 {
         String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
         neo4j = new Neo4jDB(sub_db_name);
         System.out.println(neo4j.DB_PATH);
-        neo4j.startDB();
+        neo4j.startDB(false);
         graphdb = neo4j.graphDB;
         getDegreePairs();
 
@@ -145,7 +164,7 @@ public class indexWithDynamic2 {
         boolean deleted = true;
         String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
         neo4j = new Neo4jDB(sub_db_name);
-        neo4j.startDB();
+        neo4j.startDB(false);
         graphdb = neo4j.graphDB;
         long pre_n = neo4j.getNumberofNodes();
         long pre_e = neo4j.getNumberofEdges();
@@ -197,7 +216,9 @@ public class indexWithDynamic2 {
         if (numberOfNodes != 0) {
             clearLayerIndex(layer_index, nodesToHighWay, deletedNodes);
         }
-        printLayerIndex(layer_index);
+//        printLayerIndex(layer_index);
+        this.index.add(layer_index);
+
 
         System.out.println("==========================================");
 
@@ -610,7 +631,7 @@ public class indexWithDynamic2 {
             BigDecimal ci = new BigDecimal(String.valueOf(costs[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
             BigDecimal ei = new BigDecimal(String.valueOf(estimatedCosts[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
 
-            if (ci.doubleValue()>ei.doubleValue()) {
+            if (ci.doubleValue() > ei.doubleValue()) {
                 return false;
             }
         }

@@ -377,7 +377,7 @@ public class SpanningTree {
             String sub_db_name = graphsize +"_" +degree +"_"+dimension+ "_Level" + level;
             neo4j = new Neo4jDB(sub_db_name);
             System.out.println("connected to db " + neo4j.DB_PATH);
-            neo4j.startDB();
+            neo4j.startDB(false);
         }
         System.out.println(neo4j.DB_PATH);
         long nn = neo4j.getNumberofNodes();
@@ -419,7 +419,7 @@ public class SpanningTree {
             DBPath = prop.params.get("neo4jdb");
             String sub_db_name = graphsize +"_" +degree +"_"+dimension+ "_Level" + level;
             neo4j = new Neo4jDB(sub_db_name);
-            neo4j.startDB();
+            neo4j.startDB(false);
             needtoCloseDB = true;
             System.out.println("connected to db " + neo4j.DB_PATH);
         }

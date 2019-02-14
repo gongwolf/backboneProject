@@ -43,7 +43,7 @@ public class Index {
 
         String sub_db_name = graph_size + "-" + samnode_t + "-" + "Level" + currentLevel;
         neo4j = new Neo4jDB(sub_db_name);
-        neo4j.startDB();
+        neo4j.startDB(false);
         graphdb = neo4j.graphDB;
         getDegreePairs();
         long cn = neo4j.getNumberofNodes();
@@ -76,7 +76,7 @@ public class Index {
 
         String sub_db_name = graph_size + "-" + samnode_t + "-" + "Level" + currentLevel;
         neo4j = new Neo4jDB(sub_db_name);
-        neo4j.startDB();
+        neo4j.startDB(false);
         graphdb = neo4j.graphDB;
         long pre_n = neo4j.getNumberofNodes();
         long pre_e = neo4j.getNumberofEdges();
@@ -494,7 +494,7 @@ public class Index {
             //calculated the degree pair of current level
             String sub_db_name = graph_size + "-" + samnode_t + "-" + "Level" + currentLevel;
             neo4j = new Neo4jDB(sub_db_name);
-            neo4j.startDB();
+            neo4j.startDB(false);
             graphdb = neo4j.graphDB;
             getDegreePairs();
             long number_n = neo4j.getNumberofNodes();
@@ -514,7 +514,7 @@ public class Index {
             //update neo4j object
             sub_db_name = graph_size + "-" + samnode_t + "-" + "Level" + currentLevel;
             neo4j = new Neo4jDB(sub_db_name);
-            neo4j.startDB();
+            neo4j.startDB(false);
             graphdb = neo4j.graphDB;
 //
 ////            for (int i = 0; i < 2; i++) {

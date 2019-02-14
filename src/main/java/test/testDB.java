@@ -11,7 +11,7 @@ public class testDB {
     private void test() {
         Neo4jDB conn = new Neo4jDB();
         conn.deleleDB();
-        conn.startDB();
+        conn.startDB(false);
         conn.closeDB();
     }
 }

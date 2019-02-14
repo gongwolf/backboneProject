@@ -36,7 +36,7 @@ public class CreateDB {
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);
         neo4j.deleleDB();
         System.out.println("====================================================================");
-        neo4j.startDB();
+        neo4j.startDB(false);
         System.out.println(neo4j.DB_PATH);
         System.out.println("====================================================================");
 //        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/NodeInfo.txt";
@@ -132,7 +132,7 @@ public class CreateDB {
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);
         neo4j.deleleDB();
         System.out.println("====================================================================");
-        neo4j.startDB();
+        neo4j.startDB(false);
         System.out.println(neo4j.DB_PATH);
         System.out.println("====================================================================");
         String nodeFilePath = home_folder + "/mydata/projectData/BackBone/busline_" + graph_size + "_" + samnode_t + "/data/NodeInfo.txt";

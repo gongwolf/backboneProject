@@ -28,7 +28,7 @@ public class testIndex {
     private void test(int currentLevel) {
         String sub_db_name = graph_size + "-" + samnode_t + "-" + "Level" + currentLevel;
         neo4j = new Neo4jDB(sub_db_name);
-        neo4j.startDB();
+        neo4j.startDB(false);
         graphdb = neo4j.graphDB;
         getDegreePairs();
         long cn = neo4j.getNumberofNodes();
