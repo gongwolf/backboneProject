@@ -4,6 +4,10 @@ import Neo4jTools.Neo4jDB;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -12,16 +16,15 @@ public class BBSBaseline {
     int graphsize = 1000;
     int degree = 4;
     int dimension = 3;
+    HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>();
     private GraphDatabaseService graphdb;
     private Neo4jDB neo4j;
-
-    HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>();
 
 
     public BBSBaseline() {
         String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + 0;
         neo4j = new Neo4jDB(sub_db_name);
-        System.out.println(neo4j.DB_PATH);
+//        System.out.println(neo4j.DB_PATH);
         neo4j.startDB(true);
         graphdb = neo4j.graphDB;
     }
@@ -30,30 +33,75 @@ public class BBSBaseline {
         BBSBaseline baseline = new BBSBaseline();
         for (int i = 0; i < baseline.graphsize; i++) {
             baseline.bbs(i);
-            System.out.println("Finished the finding of the index of the node " + i);
+//            System.out.println("Finished the finding of the index of the node " + i);
         }
         baseline.printSummurizationInformation();
         baseline.closeDB();
     }
 
     private void printSummurizationInformation() {
-        long overall_summation=0;
+        createIndexFolder();
+
+        long overall_summation = 0;
         for (int nodeID = 0; nodeID < graphsize; nodeID++) {
             long summation = 0;
-            for (int i = 0; i < 1000; i++) {
-                long size = this.index.get((long) nodeID).get((long) i).skyPaths.size();
+            HashMap<Long, myNode> destination_index = this.index.get((long) nodeID);
+            writeToDisk(destination_index, nodeID);
+
+            for (long i = 0; i < 1000; i++) {
+                ArrayList<path> skys = destination_index.get(i).skyPaths;
+                long size = skys.size();
+//                for (path p : skys) {
+//                    System.out.println(nodeID + " " + i + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2]);
+//                }
                 summation += size;
-//            System.out.println("0 to " + i + "  " + size);
+//                System.out.println(nodeID + " to " + i + "  " + size);
             }
-            System.out.println("the number of the skyline paths from  "+nodeID+" to others is " + summation);
-            overall_summation+=summation;
+            System.out.println("the number of the skyline paths from  " + nodeID + " to others is " + summation);
+            overall_summation += summation;
         }
-        System.out.println("the total index size is "+overall_summation+"/="+(overall_summation/2));
+        System.out.println("the total index size is " + overall_summation + "/=" + (overall_summation / 2));
+    }
+
+    private void createIndexFolder() {
+        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/baseline_" + graphsize + "_" + degree + "_" + dimension;
+        File idx_folder = new File(folder);
+        if (idx_folder.exists()) {
+            idx_folder.delete();
+        }
+
+        idx_folder.mkdirs();
+
+    }
+
+    private void writeToDisk(HashMap<Long, myNode> destination_index, long nodeID) {
+        BufferedWriter writer = null;
+        try {
+
+            String file_path = "/home/gqxwolf/mydata/projectData/BackBone/indexes/baseline_" + graphsize + "_" + degree + "_" + dimension + "/" + nodeID + ".idx";
+
+            File idx_file = new File(file_path);
+            if (idx_file.exists()) {
+                idx_file.delete();
+            }
+
+            writer = new BufferedWriter(new FileWriter(file_path));
+
+            for (long i = 0; i < 1000; i++) {
+                ArrayList<path> skys = destination_index.get(i).skyPaths;
+                for (path p : skys) {
+                    writer.write(i + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2]+"\n");
+                }
+            }
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void closeDB() {
         if (neo4j != null) {
-            System.out.println(neo4j.DB_PATH + " is closed successfully");
+//            System.out.println(neo4j.DB_PATH + " is closed successfully");
             this.neo4j.closeDB();
         }
     }

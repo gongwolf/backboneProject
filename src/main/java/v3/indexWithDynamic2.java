@@ -6,7 +6,9 @@ import javafx.util.Pair;
 import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.*;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.*;
@@ -18,10 +20,10 @@ public class indexWithDynamic2 {
     final int single = 1;
     final int multiple = 2;
     public ProgramProperty prop = new ProgramProperty();
+    public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
     int graphsize = 1000;
     int degree = 4;
     int dimension = 3;
-    public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
     GraphDatabaseService graphdb;
     //    int graphsize = 14;
 //    int degree = 0;
@@ -43,7 +45,18 @@ public class indexWithDynamic2 {
     private void build() throws CloneNotSupportedException {
         initLevel();
         construction();
+        createIndexFolder();
         printSummurizationInformation();
+    }
+
+    private void createIndexFolder() {
+        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension;
+        File idx_folder = new File(folder);
+        if (idx_folder.exists()) {
+            idx_folder.delete();
+        }
+
+        idx_folder.mkdirs();
 
     }
 
@@ -51,6 +64,7 @@ public class indexWithDynamic2 {
         int i = 0;
         long overall = 0;
         for (Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index : index) {
+            writeToDisk(layer_index, i);
             long summation = 0;
             for (Map.Entry<Long, Hashtable<Long, ArrayList<double[]>>> layer_index_entry : layer_index.entrySet()) {
                 for (Map.Entry<Long, ArrayList<double[]>> source_entryL : layer_index_entry.getValue().entrySet()) {
@@ -58,9 +72,41 @@ public class indexWithDynamic2 {
                 }
             }
             System.out.println("there are " + summation + " indexes at level " + i++);
-            overall+=summation;
+            overall += summation;
         }
-        System.out.println("the total index size is "+overall+"/="+(overall/2));
+        System.out.println("the total index size is " + overall + "/=" + (overall / 2));
+
+    }
+
+    private void writeToDisk(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, int level) {
+        BufferedWriter writer = null;
+        try {
+            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "/level" + level;
+            File sub_folder_f = new File(sub_folder_str);
+            if (sub_folder_f.exists()) {
+                sub_folder_f.delete();
+            }
+            sub_folder_f.mkdirs();
+
+            for (Map.Entry<Long, Hashtable<Long, ArrayList<double[]>>> layer_index_entry : layer_index.entrySet()) {
+                long highway_node_id = layer_index_entry.getKey();
+                String index_file_str = sub_folder_str + "/" + highway_node_id + ".idx";
+
+                writer = new BufferedWriter(new FileWriter(index_file_str));
+
+                for (Map.Entry<Long, ArrayList<double[]>> source_entry : layer_index_entry.getValue().entrySet()) {
+                    long source_id = source_entry.getKey();
+                    for (double[] costs : source_entry.getValue()) {
+                        writer.write(source_id + " " + costs[0] + " " + costs[1] + " " + costs[2] + "\n");
+                    }
+                }
+
+                writer.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
     }
 
