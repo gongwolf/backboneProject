@@ -20,7 +20,6 @@ public class indexWithDynamic2 {
     final int single = 1;
     final int multiple = 2;
     public ProgramProperty prop = new ProgramProperty();
-    public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
     int graphsize = 1000;
     int degree = 4;
     int dimension = 3;
@@ -36,6 +35,10 @@ public class indexWithDynamic2 {
     int degree_pairs_sum;
     private Neo4jDB neo4j;
     private long numberOfNodes;
+
+    //index data structure
+    public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
+    public ArrayList<Hashtable<Long, ArrayList<Long>>> nodesToHighway_index = new ArrayList();
 
     public static void main(String args[]) throws CloneNotSupportedException {
         indexWithDynamic2 index = new indexWithDynamic2();
@@ -76,6 +79,45 @@ public class indexWithDynamic2 {
         }
         System.out.println("the total index size is " + overall + "/=" + (overall / 2));
 
+        writeNodesToHighwayToDisk(nodesToHighway_index);
+    }
+
+    private void writeNodesToHighwayToDisk(ArrayList<Hashtable<Long, ArrayList<Long>>> nodes_to_highway_index) {
+        BufferedWriter writer = null;
+        try {
+            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "/nodeToHighway_index";
+            File sub_folder_f = new File(sub_folder_str);
+            if (sub_folder_f.exists()) {
+                sub_folder_f.delete();
+            }
+            sub_folder_f.mkdirs();
+
+
+
+            int level = 0 ;
+            for (Hashtable<Long, ArrayList<Long>> nodes_to_highway : nodes_to_highway_index) {
+                String index_file_str = sub_folder_str + "/source_to_highway_index_level"+level +   ".idx";
+                writer = new BufferedWriter(new FileWriter(index_file_str));
+
+                for (Map.Entry<Long, ArrayList<Long>> nodes_to_highway_entry : nodes_to_highway.entrySet()) {
+                    StringBuilder sb = new StringBuilder();
+
+                    long source_node_id = nodes_to_highway_entry.getKey();
+
+                    sb.append(source_node_id).append(":");
+
+                    ArrayList<Long> Highway_nodes = nodes_to_highway_entry.getValue();
+                    for(long h_nodes:Highway_nodes){
+                        sb.append(h_nodes).append(" ");
+                    }
+                    writer.write(sb + "\n");
+                }
+                writer.close();
+                level++;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void writeToDisk(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, int level) {
@@ -264,6 +306,7 @@ public class indexWithDynamic2 {
         }
 //        printLayerIndex(layer_index);
         this.index.add(layer_index);
+        this.nodesToHighway_index.add(nodesToHighWay);
 
 
         System.out.println("==========================================");
