@@ -53,35 +53,35 @@ public class Index {
         backbonePath destDummyResult = new backbonePath(destination_node);
         ArrayList<backbonePath> temp_dest_list = new ArrayList<>();
         temp_src_list.add(destDummyResult);
-        source_to_highway_results.put(destination_node, temp_dest_list);
+        destination_to_highway_results.put(destination_node, temp_dest_list);
 
 
-        HashSet<Long> source_to_highways = new HashSet<>();
-        HashSet<Long> destination_to_highways = new HashSet<>();
-
-        source_to_highways.add(source_node);
-        destination_to_highways.add(destination_node);
+//        HashSet<Long> source_to_highways = new HashSet<>();
+//        HashSet<Long> destination_to_highways = new HashSet<>();
+//        source_to_highways.add(source_node);
+//        destination_to_highways.add(destination_node);
 
         for (int l = 0; l <= this.total_level; l++) {
             System.out.println("Find the index information at level " + l);
             HashSet<Long> needs_to_add_to_source = new HashSet<>();
             HashSet<Long> needs_to_add_to_destination = new HashSet<>();
 
-            for (long s_id : source_to_highways) {
+            for (long s_id : source_to_highway_results.keySet()) {
                 ArrayList<Long> highwaysOfsrcNode = this.nodesToHighway_index.get(l).get(s_id);//get highways of sid
                 if (highwaysOfsrcNode != null) {
                     for (long h_node : highwaysOfsrcNode) {//h_node is highway node of the sid, it's the source node to the next level
                         ArrayList<double[]> source_to_highway_list = readHighwaysInformation(h_node, l, s_id); //
                         if (source_to_highway_list != null || !source_to_highway_list.isEmpty()) {
-                            for (double[] costs : source_to_highway_list) {
-                                System.out.println("        " + s_id + " ==> " + h_node + "    costs:" + costs[0] + " " + costs[1] + " " + costs[2]);
-                                backbonePath bp = new backbonePath(s_id, h_node, costs);
 
-
+                            for (backbonePath old_path : source_to_highway_results.get(s_id)) {
+                                for (double[] costs : source_to_highway_list) {
+                                    backbonePath new_bp = new backbonePath(s_id, h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
+                                }
                             }
 
-
+                            //Todo addToSkyline founction
                             needs_to_add_to_source.add(h_node);
+
                         }
                     }
                 }
@@ -89,13 +89,21 @@ public class Index {
 
             System.out.println("~~~~~~~~~~~~~~~~~~~~~~");
 
-            for (long d_id : destination_to_highways) {
+            for (long d_id : destination_to_highway_results.keySet()) {
                 ArrayList<Long> highwaysOfDestNode = this.nodesToHighway_index.get(l).get(d_id);//get highways of did
                 if (highwaysOfDestNode != null) {
                     for (long h_node : highwaysOfDestNode) {//h_node is highway node of the did, it's the destination node to the next level
-                        ArrayList<double[]> destination_to_highway_list = readHighwaysInformation(h_node, l, d_id); //
+
+                        ArrayList<double[]> destination_to_highway_list = readHighwaysInformation(h_node, l, d_id);
                         if (destination_to_highway_list != null || !destination_to_highway_list.isEmpty()) {
-                            needs_to_add_to_destination.add(h_node);
+
+                            for (backbonePath old_path : destination_to_highway_results.get(d_id)) {
+                                for (double[] costs : destination_to_highway_list) {
+                                    backbonePath new_bp = new backbonePath(d_id, h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
+                                }
+                            }
+                            //Todo addToSkyline founction
+                            needs_to_add_to_source.add(h_node);
                         }
                     }
                 }
@@ -105,35 +113,8 @@ public class Index {
             System.out.println("nodes to highways of the level: source " + needs_to_add_to_source);
             System.out.println("nodes to highways of the level: destination " + needs_to_add_to_destination);
 
-
-            source_to_highways.addAll(needs_to_add_to_source);
-            destination_to_highways.addAll(needs_to_add_to_destination);
-
-
-            System.out.println(source_to_highways);
-            System.out.println(destination_to_highways);
-
-            System.out.println("---------------------------------------------------");
-            System.out.println(destination_to_highways.contains(source_node) + "    " + source_to_highways.contains(destination_node));
-            HashSet<Long> needs_to_add_common_set = findCommandHighways(needs_to_add_to_destination, needs_to_add_to_source);
-            HashSet<Long> highway_common_set = findCommandHighways(destination_to_highways, source_to_highways);
-            System.out.println("needs_to_add_common_set:\n" + needs_to_add_common_set);
-            System.out.println("highway_common_set:\n" + highway_common_set);
-
-            if (!needs_to_add_common_set.isEmpty()) {
-                commbinationIndex(needs_to_add_to_destination, needs_to_add_to_source);
-            }
-
-            System.out.println("---------------------------------------------------");
-
-
             System.out.println("======================================================================");
         }
-
-        System.out.println(destination_to_highways.contains(source_node) + "    " + source_to_highways.contains(destination_node));
-        System.out.println(findCommandHighways(destination_to_highways, source_to_highways));
-        System.out.println(source_to_highways);
-        System.out.println(destination_to_highways);
         System.out.println("======================================================================");
     }
 
