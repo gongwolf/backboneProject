@@ -2,6 +2,8 @@ package Query;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 
 public class Index {
@@ -18,15 +20,167 @@ public class Index {
 
     int total_level;
 
+    ArrayList<backbonePath> result = new ArrayList<>();
+
+    HashMap<Long, ArrayList<backbonePath>> source_to_highway_results = new HashMap<>(); //the temporary results from source node to highways
+    HashMap<Long, ArrayList<backbonePath>> destination_to_highway_results = new HashMap<>(); //the temporary results from destination node to highways
+
     public Index(int graphsize, int dimension, int degree) {
         this.graphsize = graphsize;
         this.degree = degree;
         this.dimension = dimension;
-
         index_folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension;
         nth_folder = index_folder + "/nodeToHighway_index";
-
         readIndexFromDisk();
+    }
+
+    public static void main(String args[]) {
+        Index i = new Index(1000, 3, 4);
+        i.test();
+    }
+
+    private void test() {
+        long source_node = 9;
+        long destination_node = 999;
+
+        //the source node to it self
+        backbonePath sourceDummyResult = new backbonePath(source_node);
+        ArrayList<backbonePath> temp_src_list = new ArrayList<>();
+        temp_src_list.add(sourceDummyResult);
+        source_to_highway_results.put(source_node, temp_src_list);
+
+        //the destination to it self
+        backbonePath destDummyResult = new backbonePath(destination_node);
+        ArrayList<backbonePath> temp_dest_list = new ArrayList<>();
+        temp_src_list.add(destDummyResult);
+        source_to_highway_results.put(destination_node, temp_dest_list);
+
+
+        HashSet<Long> source_to_highways = new HashSet<>();
+        HashSet<Long> destination_to_highways = new HashSet<>();
+
+        source_to_highways.add(source_node);
+        destination_to_highways.add(destination_node);
+
+        for (int l = 0; l <= this.total_level; l++) {
+            System.out.println("Find the index information at level " + l);
+            HashSet<Long> needs_to_add_to_source = new HashSet<>();
+            HashSet<Long> needs_to_add_to_destination = new HashSet<>();
+
+            for (long s_id : source_to_highways) {
+                ArrayList<Long> highwaysOfsrcNode = this.nodesToHighway_index.get(l).get(s_id);//get highways of sid
+                if (highwaysOfsrcNode != null) {
+                    for (long h_node : highwaysOfsrcNode) {//h_node is highway node of the sid, it's the source node to the next level
+                        ArrayList<double[]> source_to_highway_list = readHighwaysInformation(h_node, l, s_id); //
+                        if (source_to_highway_list != null || !source_to_highway_list.isEmpty()) {
+                            for (double[] costs : source_to_highway_list) {
+                                System.out.println("        " + s_id + " ==> " + h_node + "    costs:" + costs[0] + " " + costs[1] + " " + costs[2]);
+                                backbonePath bp = new backbonePath(s_id, h_node, costs);
+
+
+                            }
+
+
+                            needs_to_add_to_source.add(h_node);
+                        }
+                    }
+                }
+            }
+
+            System.out.println("~~~~~~~~~~~~~~~~~~~~~~");
+
+            for (long d_id : destination_to_highways) {
+                ArrayList<Long> highwaysOfDestNode = this.nodesToHighway_index.get(l).get(d_id);//get highways of did
+                if (highwaysOfDestNode != null) {
+                    for (long h_node : highwaysOfDestNode) {//h_node is highway node of the did, it's the destination node to the next level
+                        ArrayList<double[]> destination_to_highway_list = readHighwaysInformation(h_node, l, d_id); //
+                        if (destination_to_highway_list != null || !destination_to_highway_list.isEmpty()) {
+                            needs_to_add_to_destination.add(h_node);
+                        }
+                    }
+                }
+
+            }
+
+            System.out.println("nodes to highways of the level: source " + needs_to_add_to_source);
+            System.out.println("nodes to highways of the level: destination " + needs_to_add_to_destination);
+
+
+            source_to_highways.addAll(needs_to_add_to_source);
+            destination_to_highways.addAll(needs_to_add_to_destination);
+
+
+            System.out.println(source_to_highways);
+            System.out.println(destination_to_highways);
+
+            System.out.println("---------------------------------------------------");
+            System.out.println(destination_to_highways.contains(source_node) + "    " + source_to_highways.contains(destination_node));
+            HashSet<Long> needs_to_add_common_set = findCommandHighways(needs_to_add_to_destination, needs_to_add_to_source);
+            HashSet<Long> highway_common_set = findCommandHighways(destination_to_highways, source_to_highways);
+            System.out.println("needs_to_add_common_set:\n" + needs_to_add_common_set);
+            System.out.println("highway_common_set:\n" + highway_common_set);
+
+            if (!needs_to_add_common_set.isEmpty()) {
+                commbinationIndex(needs_to_add_to_destination, needs_to_add_to_source);
+            }
+
+            System.out.println("---------------------------------------------------");
+
+
+            System.out.println("======================================================================");
+        }
+
+        System.out.println(destination_to_highways.contains(source_node) + "    " + source_to_highways.contains(destination_node));
+        System.out.println(findCommandHighways(destination_to_highways, source_to_highways));
+        System.out.println(source_to_highways);
+        System.out.println(destination_to_highways);
+        System.out.println("======================================================================");
+    }
+
+    private void commbinationIndex(HashSet<Long> src, HashSet<Long> dest) {
+
+        HashSet<Long> commonset = new HashSet<>();
+
+
+        for (long highway_node : src) {
+            if (dest.contains(highway_node)) {
+                commonset.add(highway_node);
+            }
+        }
+
+        for (long h_node : commonset) {
+
+        }
+
+
+    }
+
+    private HashSet<Long> findCommandHighways(HashSet<Long> src_set, HashSet<Long> dest_set) {
+        HashSet<Long> commonset = new HashSet<>();
+
+        for (long s_element : src_set) {
+            if (dest_set.contains(s_element)) {
+                commonset.add(s_element);
+            }
+        }
+
+        return commonset;
+    }
+
+    /**
+     * @param h_node      highway node id
+     * @param level       the level of the index
+     * @param source_node the source node id
+     * @return the skyline costs from the source node to the highway node
+     */
+    private ArrayList<double[]> readHighwaysInformation(long h_node, int level, long source_node) {
+        ArrayList<double[]> source_to_highway_list = this.index.get(level).get(h_node).get(source_node);
+        if (source_to_highway_list != null) {
+            return source_to_highway_list;
+        } else {
+            return null;
+        }
+
     }
 
     private void readIndexFromDisk() {
@@ -44,14 +198,14 @@ public class Index {
         File index_folder_at_level_dir = new File(index_folder_at_level);
         Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index = new Hashtable<>();
 
-        for(File idx_file:index_folder_at_level_dir.listFiles(new idxFileNameFilter())){
+        for (File idx_file : index_folder_at_level_dir.listFiles(new idxFileNameFilter())) {
             String filename = idx_file.getName();
-            long highway_node = Long.parseLong(filename.substring(0,filename.lastIndexOf(".idx")));
+            long highway_node = Long.parseLong(filename.substring(0, filename.lastIndexOf(".idx")));
 
             try (BufferedReader br = new BufferedReader(new FileReader(idx_file))) {
                 String line;
                 while ((line = br.readLine()) != null) {
-                    System.out.println(line);
+//                    System.out.println(line);
 
                     long source_node = Long.parseLong(line.split(" ")[0]);
 
@@ -88,21 +242,21 @@ public class Index {
         }
 
 
-        String nodes_to_highway_index_file_path = index_folder+"/nodeToHighway_index/source_to_highway_index_level"+level+".idx";
+        String nodes_to_highway_index_file_path = index_folder + "/nodeToHighway_index/source_to_highway_index_level" + level + ".idx";
 
         File nodes_to_highway_index_file = new File(nodes_to_highway_index_file_path);
 
-        Hashtable<Long, ArrayList<Long>> nodesToHighWay=new Hashtable<>();
+        Hashtable<Long, ArrayList<Long>> nodesToHighWay = new Hashtable<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(nodes_to_highway_index_file))) {
             String line;
             while ((line = br.readLine()) != null) {
-                System.out.println(line);
+//                System.out.println(line);
 
                 long source_node_id = Long.parseLong(line.split(":")[0]);
                 String highway_nodes = line.split(":")[1];
 
-                for(String highway_str :highway_nodes.split(" ")){
+                for (String highway_str : highway_nodes.split(" ")) {
                     long highway = Long.parseLong(highway_str);
                     if (!nodesToHighWay.containsKey(source_node_id)) {
                         ArrayList<Long> highways = new ArrayList<>();
@@ -143,12 +297,6 @@ public class Index {
         }
         return level;
     }
-
-
-    public static void main(String args[]) {
-        Index i = new Index(1000, 3, 4);
-    }
-
 
     public static class levelFileNameFilter implements FilenameFilter {
         @Override
