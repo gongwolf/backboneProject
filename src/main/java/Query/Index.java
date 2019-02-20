@@ -1,6 +1,7 @@
 package Query;
 
 import java.io.*;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,8 +41,8 @@ public class Index {
     }
 
     private void test() {
-        long source_node = 9;
-        long destination_node = 999;
+        long source_node = 89;
+        long destination_node = 947;
 
         //the source node to it self
         backbonePath sourceDummyResult = new backbonePath(source_node);
@@ -52,36 +53,46 @@ public class Index {
         //the destination to it self
         backbonePath destDummyResult = new backbonePath(destination_node);
         ArrayList<backbonePath> temp_dest_list = new ArrayList<>();
-        temp_src_list.add(destDummyResult);
+        temp_dest_list.add(destDummyResult);
         destination_to_highway_results.put(destination_node, temp_dest_list);
 
 
-//        HashSet<Long> source_to_highways = new HashSet<>();
-//        HashSet<Long> destination_to_highways = new HashSet<>();
-//        source_to_highways.add(source_node);
-//        destination_to_highways.add(destination_node);
+        HashSet<Long> needs_to_add_to_source = new HashSet<>();
+        HashSet<Long> needs_to_add_to_destination = new HashSet<>();
 
         for (int l = 0; l <= this.total_level; l++) {
             System.out.println("Find the index information at level " + l);
-            HashSet<Long> needs_to_add_to_source = new HashSet<>();
-            HashSet<Long> needs_to_add_to_destination = new HashSet<>();
 
-            for (long s_id : source_to_highway_results.keySet()) {
+            needs_to_add_to_source.clear();
+            needs_to_add_to_destination.clear();
+
+            HashSet<Long> shList = new HashSet<>(source_to_highway_results.keySet());
+            HashSet<Long> dhList = new HashSet<>(destination_to_highway_results.keySet());
+
+            for (long s_id : shList) {
                 ArrayList<Long> highwaysOfsrcNode = this.nodesToHighway_index.get(l).get(s_id);//get highways of sid
                 if (highwaysOfsrcNode != null) {
                     for (long h_node : highwaysOfsrcNode) {//h_node is highway node of the sid, it's the source node to the next level
                         ArrayList<double[]> source_to_highway_list = readHighwaysInformation(h_node, l, s_id); //
                         if (source_to_highway_list != null || !source_to_highway_list.isEmpty()) {
+                            boolean needtoinserted = false;
 
-                            for (backbonePath old_path : source_to_highway_results.get(s_id)) {
+                            ArrayList<backbonePath> bps_src_to_sid = source_to_highway_results.get(s_id);
+
+                            for (backbonePath old_path : bps_src_to_sid) {
                                 for (double[] costs : source_to_highway_list) {
-                                    backbonePath new_bp = new backbonePath(s_id, h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
+                                    backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
+                                    boolean flag = addToResultSet(new_bp, source_to_highway_results);
+
+                                    if (flag && !needtoinserted) {
+                                        needtoinserted = true;
+                                    }
                                 }
                             }
 
-                            //Todo addToSkyline founction
-                            needs_to_add_to_source.add(h_node);
-
+                            if (needtoinserted) {
+                                needs_to_add_to_source.add(h_node);
+                            }
                         }
                     }
                 }
@@ -89,33 +100,172 @@ public class Index {
 
             System.out.println("~~~~~~~~~~~~~~~~~~~~~~");
 
-            for (long d_id : destination_to_highway_results.keySet()) {
+            for (long d_id : dhList) {
                 ArrayList<Long> highwaysOfDestNode = this.nodesToHighway_index.get(l).get(d_id);//get highways of did
                 if (highwaysOfDestNode != null) {
                     for (long h_node : highwaysOfDestNode) {//h_node is highway node of the did, it's the destination node to the next level
 
                         ArrayList<double[]> destination_to_highway_list = readHighwaysInformation(h_node, l, d_id);
                         if (destination_to_highway_list != null || !destination_to_highway_list.isEmpty()) {
+                            boolean needtoinserted = false;
+                            ArrayList<backbonePath> bps_dest_to_did = destination_to_highway_results.get(d_id);
 
-                            for (backbonePath old_path : destination_to_highway_results.get(d_id)) {
+                            for (backbonePath old_path : bps_dest_to_did) {
                                 for (double[] costs : destination_to_highway_list) {
-                                    backbonePath new_bp = new backbonePath(d_id, h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
+                                    backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
+                                    boolean flag = addToResultSet(new_bp, destination_to_highway_results);
+
+                                    if (flag && !needtoinserted) {
+                                        needtoinserted = true;
+                                    }
                                 }
                             }
-                            //Todo addToSkyline founction
-                            needs_to_add_to_source.add(h_node);
+
+                            if (needtoinserted) {
+                                needs_to_add_to_destination.add(h_node);
+                            }
                         }
                     }
                 }
 
             }
 
-            System.out.println("nodes to highways of the level: source " + needs_to_add_to_source);
-            System.out.println("nodes to highways of the level: destination " + needs_to_add_to_destination);
+            HashSet<Long> commonset = findCommandHighways(needs_to_add_to_source, needs_to_add_to_destination);
 
+            System.out.println("commond set : " + commonset);
+
+            if (!commonset.isEmpty()) {
+                for (long common_node : commonset) {
+                    combinationResult(source_to_highway_results.get(common_node), destination_to_highway_results.get(common_node));
+                }
+            }
+
+            System.out.println("the result at level" + l + ":");
+            printResult();
             System.out.println("======================================================================");
         }
-        System.out.println("======================================================================");
+
+
+        System.out.println("nodes to highways of the level: source " + needs_to_add_to_source);
+        System.out.println("nodes to highways of the level: destination " + needs_to_add_to_destination);
+        HashSet<Long> commonset = findCommandHighways(needs_to_add_to_source, needs_to_add_to_destination);
+        System.out.println(commonset);
+        supplementResult(commonset, source_node, destination_node, needs_to_add_to_source, needs_to_add_to_destination);
+
+
+        System.out.println("the result at final level:");
+        printResult();
+    }
+
+    private void supplementResult(HashSet<Long> commonset, long src, long dest, HashSet<Long> needs_to_add_to_source, HashSet<Long> needs_to_add_to_destination) {
+
+        for (long sid : needs_to_add_to_source) {
+            for (long did : needs_to_add_to_destination) {
+                if (sid != did) {
+                    ArrayList<backbonePath> src_to_common_highway = source_to_highway_results.get(sid);
+                    ArrayList<backbonePath> dest_to_common_highway = destination_to_highway_results.get(did);
+
+                    ArrayList<double[]> costs_sid_to_did = this.index.get(this.total_level).get(sid).get(did);
+
+                    for (backbonePath s_t_h_bpath : src_to_common_highway) {
+                        for (backbonePath d_t_h_bpath : dest_to_common_highway) {
+                            for (double[] costs : costs_sid_to_did) {
+                                backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath, costs);
+                                addToSkyline(this.result, result_backbone);
+                                System.out.println("suppliment result " + result_backbone);
+                            }
+                        }
+
+                    }
+                }
+            }
+        }
+
+    }
+
+    private void printResult() {
+        for (backbonePath r : result) {
+            System.out.println("the temp results:" + r);
+        }
+    }
+
+    private ArrayList<backbonePath> combinationResult(ArrayList<backbonePath> src_to_common_highway, ArrayList<backbonePath> dest_to_common_highway) {
+
+        ArrayList<backbonePath> bps_results = new ArrayList<>();
+
+        for (backbonePath s_t_h_bpath : src_to_common_highway) {
+            for (backbonePath d_t_h_bpath : dest_to_common_highway) {
+                backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath);
+//                System.out.println("the result backbone ::::::>>>>> " + result_backbone);
+                if (addToSkyline(this.result, result_backbone)) {
+                    bps_results.add(result_backbone);
+                }
+            }
+        }
+
+        return bps_results;
+    }
+
+    private boolean addToResultSet(backbonePath new_bp, HashMap<Long, ArrayList<backbonePath>> highway_results) {
+
+        long h_node = new_bp.destination;// h_node is the highway node of next layer.
+        ArrayList<backbonePath> h_list = highway_results.get(h_node); //the list of backbone paths from source node to highways.
+
+        if (h_list != null) {
+            if (addToSkyline(h_list, new_bp)) {
+                highway_results.put(h_node, h_list);
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            h_list = new ArrayList<>();
+            h_list.add(new_bp);
+            highway_results.put(h_node, h_list);
+            return true;
+        }
+    }
+
+
+    public boolean addToSkyline(ArrayList<backbonePath> bp_list, backbonePath bp) {
+        int i = 0;
+
+        if (bp_list.isEmpty()) {
+            bp_list.add(bp);
+        } else {
+            boolean can_insert_np = true;
+            for (; i < bp_list.size(); ) {
+                if (checkDominated(bp_list.get(i).costs, bp.costs)) {
+                    can_insert_np = false;
+                    break;
+                } else {
+                    if (checkDominated(bp.costs, bp_list.get(i).costs)) {
+                        bp_list.remove(i);
+                    } else {
+                        i++;
+                    }
+                }
+            }
+            if (can_insert_np) {
+                bp_list.add(bp);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkDominated(double[] costs, double[] estimatedCosts) {
+        for (int i = 0; i < costs.length; i++) {
+
+
+            BigDecimal ci = new BigDecimal(String.valueOf(costs[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
+            BigDecimal ei = new BigDecimal(String.valueOf(estimatedCosts[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
+
+            if (ci.doubleValue() > ei.doubleValue()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void commbinationIndex(HashSet<Long> src, HashSet<Long> dest) {
