@@ -30,7 +30,7 @@ public class indexWithDynamic2 {
     //    int graphsize = 14;
 //    int degree = 0;
 //    int dimension = 0;
-    double percentage = 0.1;
+    double percentage = 0.01;
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
     DynamicForests dforests;

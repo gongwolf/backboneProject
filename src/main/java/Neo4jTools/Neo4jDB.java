@@ -56,7 +56,10 @@ public class Neo4jDB {
         }
 
         if(getProperties){
-            this.getPropertiesName();
+//            this.getPropertiesName();
+            propertiesName.add("EDistence");
+            propertiesName.add("MetersDistance");
+            propertiesName.add("RunningTime");
         }
     }
 
@@ -229,6 +232,7 @@ public class Neo4jDB {
                 Map<String, Object> pnamemap = rel.getAllProperties();
 //                System.out.println(pnamemap.size());
                 for (Map.Entry<String, Object> entry : pnamemap.entrySet()) {
+                    System.out.println(entry.getKey());
                     propertiesName.add(entry.getKey());
                 }
             } else {
