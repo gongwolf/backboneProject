@@ -1,8 +1,11 @@
 package Baseline;
 
+import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphalgo.GraphAlgoFactory;
+import org.neo4j.graphalgo.PathFinder;
+import org.neo4j.graphalgo.WeightedPath;
+import org.neo4j.graphdb.*;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -19,9 +22,25 @@ public class BBSBaseline {
     HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>();
     private GraphDatabaseService graphdb;
     private Neo4jDB neo4j;
+    public double[] iniLowerBound;
+
+    ArrayList<path> results = new ArrayList<>();
 
 
     public BBSBaseline() {
+        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + 0;
+        neo4j = new Neo4jDB(sub_db_name);
+//        System.out.println(neo4j.DB_PATH);
+        neo4j.startDB(true);
+        graphdb = neo4j.graphDB;
+    }
+
+    public BBSBaseline(int graphsize, int degree, int dimension) {
+
+        this.graphsize = graphsize;
+        this.degree = degree;
+        this.dimension = dimension;
+
         String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + 0;
         neo4j = new Neo4jDB(sub_db_name);
 //        System.out.println(neo4j.DB_PATH);
@@ -90,7 +109,7 @@ public class BBSBaseline {
             for (long i = 0; i < 1000; i++) {
                 ArrayList<path> skys = destination_index.get(i).skyPaths;
                 for (path p : skys) {
-                    writer.write(i + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2]+"\n");
+                    writer.write(i + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
                 }
             }
             writer.close();
@@ -111,6 +130,49 @@ public class BBSBaseline {
 
         try (Transaction tx = this.graphdb.beginTx()) {
             myNode snode = new myNode(nodeID, this.neo4j);
+            myNodePriorityQueue mqueue = new myNodePriorityQueue();
+            tmpStoreNodes.put(snode.id, snode);
+
+            mqueue.add(snode);
+            while (!mqueue.isEmpty()) {
+                myNode v = mqueue.pop();
+                for (int i = 0; i < v.skyPaths.size(); i++) {
+                    path p = v.skyPaths.get(i);
+                    if (!p.expaned) {
+                        p.expaned = true;
+                        ArrayList<path> new_paths = p.expand(neo4j);
+                        for (path np : new_paths) {
+                            myNode next_n;
+                            if (tmpStoreNodes.containsKey(np.endNode)) {
+                                next_n = tmpStoreNodes.get(np.endNode);
+                            } else {
+                                next_n = new myNode(snode, np.endNode, neo4j);
+                                tmpStoreNodes.put(next_n.id, next_n);
+                            }
+
+
+                            if (next_n.addToSkyline(np) && !next_n.inqueue) {
+                                mqueue.add(next_n);
+                                next_n.inqueue = true;
+                            }
+
+                        }
+                    }
+                }
+
+            }
+
+            tx.success();
+        }
+
+        this.index.put(nodeID, tmpStoreNodes);
+    }
+
+    public void queryOnline(long startNode, long endNode) {
+        HashMap<Long, myNode> tmpStoreNodes = new HashMap();
+
+        try (Transaction tx = this.graphdb.beginTx()) {
+            myNode snode = new myNode(startNode, this.neo4j);
             myNodePriorityQueue mqueue = new myNodePriorityQueue();
             tmpStoreNodes.put(snode.id, snode);
 
@@ -151,6 +213,70 @@ public class BBSBaseline {
             tx.success();
         }
 
-        this.index.put(nodeID, tmpStoreNodes);
+    }
+
+    public void initilizeSkylinePath(long srcNode, long destNode) {
+        int i = 0;
+
+        this.iniLowerBound = new double[this.degree];
+
+        try (Transaction tx = this.neo4j.graphDB.beginTx()) {
+            Node destination = this.neo4j.graphDB.getNodeById(destNode);
+            Node startNode = this.neo4j.graphDB.getNodeById(srcNode);
+
+
+            for (String property_name : Neo4jDB.propertiesName) {
+                PathFinder<WeightedPath> finder = GraphAlgoFactory
+                        .dijkstra(PathExpanders.forTypeAndDirection(Line.Linked, Direction.BOTH), property_name);
+                WeightedPath paths = finder.findSinglePath(startNode, destination);
+                System.out.println(paths);
+                if (paths != null) {
+                    path np = new path(paths);
+                    System.out.println(np);
+                    this.iniLowerBound[i++] = paths.weight();
+
+                    addToSkyline(np);
+                }
+            }
+            tx.success();
+        }
+    }
+
+
+    public boolean addToSkyline(path np) {
+        int i = 0;
+        if (results.isEmpty()) {
+            this.results.add(np);
+            return true;
+        } else {
+            boolean can_insert_np = true;
+            for (; i < results.size(); ) {
+                if (checkDominated(results.get(i).costs, np.costs)) {
+                    can_insert_np = false;
+                    break;
+                } else {
+                    if (checkDominated(np.costs, results.get(i).costs)) {
+                        this.results.remove(i);
+                    } else {
+                        i++;
+                    }
+                }
+            }
+
+            if (can_insert_np) {
+                this.results.add(np);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkDominated(double[] costs, double[] estimatedCosts) {
+        for (int i = 0; i < costs.length; i++) {
+            if (costs[i] * (1) > estimatedCosts[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 }

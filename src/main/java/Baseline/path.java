@@ -3,6 +3,7 @@ package Baseline;
 
 import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
+import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -42,6 +43,23 @@ public class path {
         calculateCosts(rel);
     }
 
+    public path(WeightedPath paths) {
+        this.startNode=paths.startNode().getId();
+        this.endNode = paths.endNode().getId();
+
+
+        this.propertiesName = Neo4jDB.propertiesName;
+
+        this.costs = new double[3];
+
+        for(Relationship r:paths.relationships()){
+            costs[0]+=(double)r.getProperty(this.propertiesName.get(0));
+            costs[1]+=(double)r.getProperty(this.propertiesName.get(1));
+            costs[2]+=(double)r.getProperty(this.propertiesName.get(2));
+        }
+
+        this.expaned = false;
+    }
 
 
     public ArrayList<path> expand(Neo4jDB neo4j) {
