@@ -1,9 +1,14 @@
 package Query;
 
+import Neo4jTools.Neo4jDB;
+import org.neo4j.graphalgo.WeightedPath;
+import org.neo4j.graphdb.Relationship;
+
 import java.util.ArrayList;
 import java.util.Collections;
 
 public class backbonePath {
+    private ArrayList<String> propertiesName;
     long source;
     long destination;
     double[] costs;
@@ -46,7 +51,7 @@ public class backbonePath {
         costs = new double[3];
         calculatedCosts(s_t_h_bpath.costs, d_t_h_bpath.costs);
 
-        System.out.println(s_t_h_bpath + "\n" + d_t_h_bpath);
+//        System.out.println(s_t_h_bpath + "\n" + d_t_h_bpath);
 
     }
 
@@ -65,7 +70,7 @@ public class backbonePath {
         costs = new double[3];
         calculatedCosts(s_t_h_bpath.costs, d_t_h_bpath.costs);
         calculatedCosts(this.costs, costsInHighestLevel);
-        System.out.println(s_t_h_bpath + "\n ["+costsInHighestLevel[0]+" "+costsInHighestLevel[1]+" "+costsInHighestLevel[2]+"]\n " + d_t_h_bpath);
+//        System.out.println(s_t_h_bpath + "\n ["+costsInHighestLevel[0]+" "+costsInHighestLevel[1]+" "+costsInHighestLevel[2]+"]\n " + d_t_h_bpath);
 
 
     }

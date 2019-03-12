@@ -57,6 +57,7 @@ public class Neo4jDB {
 
         if(getProperties){
 //            this.getPropertiesName();
+            propertiesName.clear();
             propertiesName.add("EDistence");
             propertiesName.add("MetersDistance");
             propertiesName.add("RunningTime");

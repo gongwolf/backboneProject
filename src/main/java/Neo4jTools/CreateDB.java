@@ -22,9 +22,9 @@ public class CreateDB {
 
     public static void main(String args[]) {
 
-        int graphsize=14;
-        int degree = 0;
-        int dimension = 0;
+        int graphsize=40000;
+        int degree = 4;
+        int dimension = 3;
 
         CreateDB c = new CreateDB();
         c.createRandomGraph(graphsize,degree,dimension);
@@ -39,10 +39,10 @@ public class CreateDB {
         neo4j.startDB(false);
         System.out.println(neo4j.DB_PATH);
         System.out.println("====================================================================");
-//        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/NodeInfo.txt";
-//        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/SegInfo.txt";
-        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/busline_14_0.0/data/NodeInfo.txt";
-        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/busline_14_0.0/data/SegInfo.txt";
+        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/NodeInfo.txt";
+        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/SegInfo.txt";
+//        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/busline_14_0.0/data/NodeInfo.txt";
+//        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/busline_14_0.0/data/SegInfo.txt";
 
         System.out.println("node file path :" + nodeFilePath);
         System.out.println("edge file path :" + EdgeFilePath);
@@ -89,7 +89,6 @@ public class CreateDB {
                 Pair<Integer, Integer> relations = new Pair<>(sid, did);
                 if (!existedEdges(relations, edges)) {
                     edges.put(relations, costs);
-
                 }
             }
         } catch (FileNotFoundException e) {

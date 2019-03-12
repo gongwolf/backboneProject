@@ -13,6 +13,7 @@ public class myNode {
     public double[] locations;
     public boolean inqueue;
     public Neo4jDB neo4j;
+    public long callAddToSkylineFunction=0;
 
     public myNode(myNode node, long current_id, Neo4jDB neo4j) {
         this.id = current_id;
@@ -65,6 +66,7 @@ public class myNode {
     }
 
     public boolean addToSkyline(path np) {
+        this.callAddToSkylineFunction++;
         int i = 0;
         if (skyPaths.isEmpty()) {
             this.skyPaths.add(np);

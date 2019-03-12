@@ -23,7 +23,7 @@ public class indexWithDynamic2 {
     //index data structure
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
     public ArrayList<Hashtable<Long, ArrayList<Long>>> nodesToHighway_index = new ArrayList();
-    int graphsize = 1000;
+    int graphsize = 20000;
     int degree = 4;
     int dimension = 3;
     GraphDatabaseService graphdb;
@@ -309,8 +309,10 @@ public class indexWithDynamic2 {
 
         System.out.println("pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e);
 
+        System.out.println("Converging the layer index ");
         convergeLayerIndex(layer_index, nodesToHighWay);
         if (numberOfNodes != 0) {
+            System.out.println("Clearing the layer index ");
             clearLayerIndex(layer_index, nodesToHighWay, deletedNodes);
         }
 

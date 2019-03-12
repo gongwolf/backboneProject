@@ -17,8 +17,8 @@ public class path {
     public boolean expaned;
     public long startNode, endNode;
 
-//    public ArrayList<Long> nodes;
-//    public ArrayList<Long> rels;
+    public ArrayList<Long> nodes;
+    public ArrayList<Long> rels;
     public ArrayList<String> propertiesName;
 
 
@@ -30,6 +30,10 @@ public class path {
         this.expaned = false;
         this.propertiesName = new ArrayList<>();
         this.setPropertiesName(current.neo4j);
+
+        this.nodes = new ArrayList<>();
+        this.rels = new ArrayList<>();
+        this.nodes.add(current.id);
     }
 
     public path(path old_path, Relationship rel) {
@@ -41,10 +45,20 @@ public class path {
         expaned = false;
         System.arraycopy(old_path.costs, 0, this.costs, 0, this.costs.length);
         calculateCosts(rel);
+
+
+        this.nodes = new ArrayList<>();
+        this.rels = new ArrayList<>();
+        this.nodes.addAll(old_path.nodes);
+        this.nodes.add(rel.getOtherNodeId(nodes.get(nodes.size() - 1)));
+        this.rels.addAll(old_path.rels);
+        this.rels.add(rel.getId());
+
+
     }
 
     public path(WeightedPath paths) {
-        this.startNode=paths.startNode().getId();
+        this.startNode = paths.startNode().getId();
         this.endNode = paths.endNode().getId();
 
 
@@ -52,12 +66,17 @@ public class path {
 
         this.costs = new double[3];
 
-        for(Relationship r:paths.relationships()){
-            costs[0]+=(double)r.getProperty(this.propertiesName.get(0));
-            costs[1]+=(double)r.getProperty(this.propertiesName.get(1));
-            costs[2]+=(double)r.getProperty(this.propertiesName.get(2));
-        }
+        this.nodes = new ArrayList<>();
+        this.rels = new ArrayList<>();
+        this.nodes.add(startNode);
+        for (Relationship r : paths.relationships()) {
+            costs[0] += (double) r.getProperty(this.propertiesName.get(0));
+            costs[1] += (double) r.getProperty(this.propertiesName.get(1));
+            costs[2] += (double) r.getProperty(this.propertiesName.get(2));
+            this.rels.add(r.getId());
+            this.nodes.add(r.getOtherNodeId(nodes.get(nodes.size() - 1)));
 
+        }
         this.expaned = false;
     }
 
@@ -95,11 +114,19 @@ public class path {
 
     public String toString() {
         StringBuffer sb = new StringBuffer();
-        sb.append(this.startNode+"-->"+this.endNode+",[");
+        sb.append(this.startNode + "-->" + this.endNode + ",[");
         for (double d : this.costs) {
             sb.append(" " + d);
         }
-        sb.append("]");
+        sb.append("]  ");
+
+        for(int i =0 ; i < this.nodes.size()-1;i++){
+            sb.append("("+this.nodes.get(i)+")");
+            sb.append("--["+this.rels.get(i)+"]-->");
+        }
+
+        sb.append("["+this.nodes.get(nodes.size()-1)+"]");
+
         return sb.toString();
     }
 

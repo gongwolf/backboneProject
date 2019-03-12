@@ -13,18 +13,20 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 public class BBSBaseline {
 
+    public double[] iniLowerBound;
     int graphsize = 1000;
     int degree = 4;
     int dimension = 3;
     HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>();
+    ArrayList<path> results = new ArrayList<>();
     private GraphDatabaseService graphdb;
     private Neo4jDB neo4j;
-    public double[] iniLowerBound;
-
-    ArrayList<path> results = new ArrayList<>();
+    public long callAddToSkylineFunction=0;
+    public long nodes_call_addtoSkylineFunction=0;
 
 
     public BBSBaseline() {
@@ -168,11 +170,10 @@ public class BBSBaseline {
         this.index.put(nodeID, tmpStoreNodes);
     }
 
-    public void queryOnline(long startNode, long endNode) {
+    public ArrayList<path> queryOnline(long src, long dest) {
         HashMap<Long, myNode> tmpStoreNodes = new HashMap();
-
         try (Transaction tx = this.graphdb.beginTx()) {
-            myNode snode = new myNode(startNode, this.neo4j);
+            myNode snode = new myNode(src, this.neo4j);
             myNodePriorityQueue mqueue = new myNodePriorityQueue();
             tmpStoreNodes.put(snode.id, snode);
 
@@ -198,12 +199,16 @@ public class BBSBaseline {
                                 tmpStoreNodes.put(next_n.id, next_n);
                             }
 
-
-                            if (next_n.addToSkyline(np) && !next_n.inqueue) {
-                                mqueue.add(next_n);
-                                next_n.inqueue = true;
+                            if (np.endNode == dest) {
+                                addToSkyline(np);
                             }
 
+                            if (!dominatedByResult(np)) {
+                                if (next_n.addToSkyline(np) && !next_n.inqueue) {
+                                    mqueue.add(next_n);
+                                    next_n.inqueue = true;
+                                }
+                            }
                         }
                     }
                 }
@@ -213,6 +218,22 @@ public class BBSBaseline {
             tx.success();
         }
 
+        for(Map.Entry<Long, myNode> e:tmpStoreNodes.entrySet()){
+            this.nodes_call_addtoSkylineFunction+=e.getValue().callAddToSkylineFunction;
+        }
+
+
+        return tmpStoreNodes.get(dest).skyPaths;
+
+    }
+
+    private boolean dominatedByResult(path np) {
+        for (path rp : results) {
+            if (checkDominated(rp.costs, np.costs)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void initilizeSkylinePath(long srcNode, long destNode) {
@@ -229,10 +250,8 @@ public class BBSBaseline {
                 PathFinder<WeightedPath> finder = GraphAlgoFactory
                         .dijkstra(PathExpanders.forTypeAndDirection(Line.Linked, Direction.BOTH), property_name);
                 WeightedPath paths = finder.findSinglePath(startNode, destination);
-                System.out.println(paths);
                 if (paths != null) {
                     path np = new path(paths);
-                    System.out.println(np);
                     this.iniLowerBound[i++] = paths.weight();
 
                     addToSkyline(np);
@@ -244,6 +263,7 @@ public class BBSBaseline {
 
 
     public boolean addToSkyline(path np) {
+        this.callAddToSkylineFunction++;
         int i = 0;
         if (results.isEmpty()) {
             this.results.add(np);
@@ -271,6 +291,13 @@ public class BBSBaseline {
         return false;
     }
 
+    /**
+     * if all the costs of the target path is less than the costs of the wanted path, means target path dominate the wanted path
+     *
+     * @param costs          the target path
+     * @param estimatedCosts the wanted path
+     * @return if the target path dominates the wanted path, return true. other wise return false.
+     */
     private boolean checkDominated(double[] costs, double[] estimatedCosts) {
         for (int i = 0; i < costs.length; i++) {
             if (costs[i] * (1) > estimatedCosts[i]) {
