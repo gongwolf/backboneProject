@@ -125,7 +125,7 @@ public class path {
             sb.append("--["+this.rels.get(i)+"]-->");
         }
 
-        sb.append("["+this.nodes.get(nodes.size()-1)+"]");
+        sb.append("("+this.nodes.get(nodes.size()-1)+")");
 
         return sb.toString();
     }

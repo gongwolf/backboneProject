@@ -1,5 +1,7 @@
 package Baseline;
 
+import DataStructure.Monitor;
+
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -13,17 +15,18 @@ public class BaselineQuery {
 
     public static void main(String arg[]) {
 
-        long graphsize = 40000;
+        long graphsize = 14;
 
         BaselineQuery bq = new BaselineQuery(graphsize);
 //        bq.batchRandomQueries();
-        bq.query(7732, 167, false);
-        bq.query(7732, 167, true);
+        bq.query(9, 10, false);
+//        bq.query(7732, 167, true);
     }
 
     public void query(long src, long dest, boolean init) {
-        System.out.println(src+"   >>>>>>    "+dest);
-        ArrayList<path> skylines = onlineQueryTest(src, dest, init);
+//        System.out.println(src+"   >>>>>>    "+dest);
+        Monitor m = new Monitor();
+        ArrayList<path> skylines = onlineQueryTest(src, dest, init, m);
         System.out.println();
         for (path p : skylines) {
             System.out.println(p);
@@ -35,19 +38,18 @@ public class BaselineQuery {
         for (int i = 0; i < 10; i++) {
             long startNode = getRandomNumberInRange(graphsize);
             long endNode = getRandomNumberInRange(graphsize);
+            Monitor m1 = new Monitor();
+            Monitor m2 = new Monitor();
 
             if (startNode != endNode) {
-                System.out.print(startNode + " >>>>  " + endNode + "  ");
-                onlineQueryTest(startNode, endNode, true);
-                System.out.print("          ");
-                onlineQueryTest(startNode, endNode, false);
-                System.out.print("\n");
+                onlineQueryTest(startNode, endNode, true, m1);
+                onlineQueryTest(startNode, endNode, false, m2);
             }
         }
     }
 
 
-    public ArrayList<path> onlineQueryTest(long startNode, long endNode, boolean init) {
+    public ArrayList<path> onlineQueryTest(long startNode, long endNode, boolean init, Monitor monitor) {
         BBSBaseline baseline = new BBSBaseline(this.graphsize, 4, 3);
         baseline.results.clear();
 
@@ -57,17 +59,23 @@ public class BaselineQuery {
         if (init) {
             baseline.initilizeSkylinePath(startNode, endNode);
             sizeofinit = baseline.results.size();
+            baseline.monitor.spInitTimeInBaseline = (System.currentTimeMillis()-start_ms);
+
         }
 
         baseline.queryOnline(startNode, endNode);
         long end_ms = System.currentTimeMillis();
-        System.out.println("running time: " + (end_ms - start_ms) + " ms   size of the result: " + (init ? sizeofinit + " --> " : "") + baseline.results.size());
+        baseline.monitor.overallRuningtime = end_ms-start_ms;
         baseline.closeDB();
 
+        monitor.clone(baseline.monitor);
 
         ArrayList<path> results = new ArrayList<>();
         results.addAll(baseline.results);
-        System.out.println(baseline.nodes_call_addtoSkylineFunction+"    "+baseline.callAddToSkylineFunction);
+//        System.out.println(baseline.monitor.node_call_addtoskyline+"    "+baseline.monitor.callAddToSkyline);
+//        System.out.println(baseline.monitor.callcheckdominatedbyresult);
+//        System.out.println(baseline.monitor.getRunningtime_check_domination_resultByms());
+//        System.out.println(baseline.monitor.allsizeofthecheckdominatedbyresult);
         return results;
     }
 

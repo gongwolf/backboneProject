@@ -1,52 +1,47 @@
 package Query;
 
+import DataStructure.Monitor;
+
 import java.io.*;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
+import java.util.*;
 
 public class Index {
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
     public ArrayList<Hashtable<Long, ArrayList<Long>>> nodesToHighway_index = new ArrayList();        //level --> <source_node_id --> list of the highway>
-
-
-    int graphsize;
+    public Monitor monitor;
+    long graphsize;
     int dimension;
     int degree;
-
     String index_folder;
     String nth_folder;
-
     int total_level;
-
-    ArrayList<backbonePath> result = new ArrayList<>();
+    public ArrayList<backbonePath> result = new ArrayList<>();
 
     HashMap<Long, ArrayList<backbonePath>> source_to_highway_results = new HashMap<>(); //the temporary results from source node to highways
     HashMap<Long, ArrayList<backbonePath>> destination_to_highway_results = new HashMap<>(); //the temporary results from destination node to highways
-    public long callAddToSkyline=0;
-    public int finnalCallAddToSkyline=0;
 
-    public Index(int graphsize, int dimension, int degree) {
+
+    public Index(long graphsize, int dimension, int degree) {
         this.graphsize = graphsize;
         this.degree = degree;
         this.dimension = dimension;
         index_folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension;
         nth_folder = index_folder + "/nodeToHighway_index";
         readIndexFromDisk();
+        this.monitor = new Monitor();
     }
 
     public static void main(String args[]) {
         long start_ms = System.currentTimeMillis();
-        Index i = new Index(40000, 3, 4);
+        Index i = new Index(14, 3, 4);
         long running_start_ms = System.currentTimeMillis();
 
-        i.test(7732, 167);
-        long end_ms = System.currentTimeMillis();
-        System.out.println("running time (include index reading ): " + (end_ms - start_ms) + " ms");
-        System.out.println("running time: " + (end_ms - running_start_ms) + " ms");
-        System.out.println(i.callAddToSkyline+"   "+i.finnalCallAddToSkyline);
+        i.test(1, 8);
+//        long end_ms = System.currentTimeMillis();
+//        System.out.println("running time (include index reading ): " + (end_ms - start_ms) + " ms");
+//        System.out.println("running time: " + (end_ms - running_start_ms) + " ms");
+//        System.out.println(i.monitor.callAddToSkyline + "   " + i.monitor.finnalCallAddToSkyline);
     }
 
     public void test(long source_node, long destination_node) {
@@ -89,25 +84,30 @@ public class Index {
                                     for (double[] costs : source_to_highway_list) {
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
                                         addToSkyline(this.result, new_bp);
-                                        this.finnalCallAddToSkyline++;
+                                        monitor.finnalCallAddToSkyline++;
                                     }
                                 }
                             } else {
                                 boolean needtoinserted = false;
-
                                 ArrayList<backbonePath> bps_src_to_sid = source_to_highway_results.get(s_id);
-
                                 for (backbonePath old_path : bps_src_to_sid) {
                                     for (double[] costs : source_to_highway_list) {
+                                        long s_creat_rt_src = System.nanoTime();
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
-                                        if (!dominatedByResult(new_bp)) {
+                                        System.out.println(s_id + "   " + h_node + "  " + old_path + "  " + new_bp + " " + new_bp.hasCycle);
+
+                                        long e_creat_rt_src = System.nanoTime();
+                                        monitor.runningtime_src_create_newpath += (e_creat_rt_src - s_creat_rt_src);
+
+                                        if (!dominatedByResult(new_bp) && !new_bp.hasCycle) {
+                                            long s_add_rt_src = System.nanoTime();
                                             boolean flag = addToResultSet(new_bp, source_to_highway_results);
+                                            long e_add_rt_src = System.nanoTime();
+                                            monitor.runningtime_src_addtoskyline += (e_add_rt_src - s_add_rt_src);
                                             if (flag && !needtoinserted) {
                                                 needtoinserted = true;
                                             }
                                         }
-
-
                                     }
                                 }
 
@@ -120,7 +120,7 @@ public class Index {
                 }
             }
 
-//            System.out.println("~~~~~~~~~~~~~~~~~~~~~~");
+            System.out.println("~~~~~~~~~~~~~~~~~~~~~~");
 
             for (long d_id : dhList) {
                 ArrayList<Long> highwaysOfDestNode = this.nodesToHighway_index.get(l).get(d_id);//get highways of did
@@ -134,7 +134,7 @@ public class Index {
                                     for (double[] costs : destination_to_highway_list) {
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the did->old_highway->destination (the highway node)
                                         addToSkyline(this.result, new_bp);
-                                        this.finnalCallAddToSkyline++;
+                                        monitor.finnalCallAddToSkyline++;
                                     }
                                 }
                             } else {
@@ -142,9 +142,18 @@ public class Index {
                                 ArrayList<backbonePath> bps_dest_to_did = destination_to_highway_results.get(d_id); //the backbone paths from destination to did
                                 for (backbonePath old_path : bps_dest_to_did) {
                                     for (double[] costs : destination_to_highway_list) {
+                                        long s_creat_rt_dest = System.nanoTime();
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the destination->old_highway->new_highway
-                                        if (!dominatedByResult(new_bp)) {
+                                        System.out.println(d_id + "   " + h_node + "  " + old_path + "  " + new_bp);
+
+                                        long e_creat_rt_dest = System.nanoTime();
+                                        monitor.runningtime_dest_create_newpath += (e_creat_rt_dest - s_creat_rt_dest);
+
+                                        if (!dominatedByResult(new_bp) && !new_bp.hasCycle) {
+                                            long s_add_rt_dest = System.nanoTime();
                                             boolean flag = addToResultSet(new_bp, destination_to_highway_results);
+                                            long e_add_rt_dest = System.nanoTime();
+                                            monitor.runningtime_dest_addtoskyline += (e_add_rt_dest - s_add_rt_dest);
 
                                             if (flag && !needtoinserted) {
                                                 needtoinserted = true;
@@ -164,7 +173,7 @@ public class Index {
 
             }
 
-            HashSet<Long> commonset = findCommandHighways(needs_to_add_to_source, needs_to_add_to_destination);
+            HashSet<Long> commonset = findCommandHighways(source_to_highway_results.keySet(), destination_to_highway_results.keySet());
             System.out.println("commond set : " + commonset);
             if (!commonset.isEmpty()) {
                 for (long common_node : commonset) {
@@ -175,16 +184,19 @@ public class Index {
             printResult();
             System.out.println("======================================================================");
         }
-        System.out.println(callAddToSkyline+"     "+finnalCallAddToSkyline);
+//        System.out.println(monitor.callAddToSkyline + "     " + monitor.finnalCallAddToSkyline);
 
-
-//        System.out.println("nodes to highways of the level: source " + needs_to_add_to_source);
-//        System.out.println("nodes to highways of the level: destination " + needs_to_add_to_destination);
         HashSet<Long> commonset = findCommandHighways(needs_to_add_to_source, needs_to_add_to_destination);
         supplementResult(needs_to_add_to_source, needs_to_add_to_destination);
-
+//        System.out.println(monitor.getRunningtime_supplement_addtoskylineByms() + "     " + monitor.getRunningtime_supplement_constructionByms());
+//        System.out.println(monitor.getRunningtime_combination_addtoskylineByms() + "     " + monitor.getRunningtime_combination_constructionByms());
+//        System.out.println(monitor.getRunningtime_src_addtoskylineByms() + "     " + monitor.getRunningtime_dest_addtoskylineByms() + "  " + monitor.getRunningtime_intermedia_addtoskyline());
+//        System.out.println(monitor.getRunningtime_src_createlineByms() + "     " + monitor.getRunningtime_dest_createByms() + "  " + monitor.getRunningtime_intermedia_createline());
+//        System.out.println(monitor.getRunningtime_check_domination_resultByms());
+//        System.out.println(monitor.callcheckdominatedbyresult);
+//        System.out.println(monitor.allsizeofthecheckdominatedbyresult);
 //        System.out.println("the result at final level:");
-        printResult();
+//        printResult();
     }
 
     private void findCommonLayer(long source_node, long destination_node) {
@@ -192,21 +204,21 @@ public class Index {
             ArrayList<Long> src_highways = this.nodesToHighway_index.get(l).get(source_node);
             ArrayList<Long> dest_highways = this.nodesToHighway_index.get(l).get(destination_node);
 
-            System.out.println("common highway on level "+l);
-            if(src_highways!=null && dest_highways!=null){
+            System.out.println("common highway on level " + l);
+            if (src_highways != null && dest_highways != null) {
                 HashSet<Long> highwaysOfsrcNode = new HashSet<>(src_highways);
-                HashSet<Long> highwaysOfdestNode =  new HashSet<>(dest_highways);
-                System.out.println(findCommandHighways(highwaysOfsrcNode,highwaysOfdestNode));
-            }else {
-                boolean a=false,b=false;
-                if(src_highways==null){
-                    a=true;
+                HashSet<Long> highwaysOfdestNode = new HashSet<>(dest_highways);
+                System.out.println(findCommandHighways(highwaysOfsrcNode, highwaysOfdestNode));
+            } else {
+                boolean a = false, b = false;
+                if (src_highways == null) {
+                    a = true;
                 }
 
-                if(dest_highways==null){
-                    b=true;
+                if (dest_highways == null) {
+                    b = true;
                 }
-                System.out.println("there is no highways of "+(a?"src node ":"")+"   "+(b?" dest node":""));
+                System.out.println("there is no highways of " + (a ? "src node " : "") + "   " + (b ? " dest node" : ""));
             }
             System.out.println("=======================================================");
         }
@@ -229,10 +241,17 @@ public class Index {
                     for (backbonePath s_t_h_bpath : src_to_common_highway) {
                         for (backbonePath d_t_h_bpath : dest_to_common_highway) {
                             for (double[] costs : costs_sid_to_did) {
-                                backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath, costs);
-                                addToSkyline(this.result, result_backbone);
-                                this.finnalCallAddToSkyline++;
-//                                System.out.println("suppliment result " + result_backbone);
+                                backbonePath tmp_src_dest_bp = new backbonePath(sid, did, costs);
+                                if (!dominatedByResult(tmp_src_dest_bp)) {
+                                    long s_supplement_new_path_c_rt = System.nanoTime();
+                                    backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath, costs);
+                                    long s_add_rt = System.nanoTime();
+                                    addToSkyline(this.result, result_backbone);
+                                    long e_add_rt = System.nanoTime();
+                                    this.monitor.finnalCallAddToSkyline++;
+                                    this.monitor.runningtime_supplement_addtoskyline += (e_add_rt - s_add_rt);
+                                    this.monitor.runningtime_supplement_construction += (s_add_rt - s_supplement_new_path_c_rt);
+                                }
                             }
                         }
 
@@ -255,11 +274,24 @@ public class Index {
 
         for (backbonePath s_t_h_bpath : src_to_common_highway) {
             for (backbonePath d_t_h_bpath : dest_to_common_highway) {
+                long s_combination_new_path_c_rt = System.nanoTime();
                 backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath);
-                this.finnalCallAddToSkyline++;
+                long e_combination_new_path_c_rt = System.nanoTime();
+                System.out.println("======  "+result_backbone);
+
+
+                monitor.finnalCallAddToSkyline++;
                 if (addToSkyline(this.result, result_backbone)) {
                     bps_results.add(result_backbone);
+                    System.out.println(s_t_h_bpath);
+                    System.out.println(d_t_h_bpath);
+                    System.out.println(result_backbone);
+                    System.out.println("###################");
                 }
+
+                long e_add_rt = System.nanoTime();
+                this.monitor.runningtime_combination_addtoskyline += (e_add_rt - e_combination_new_path_c_rt);
+                this.monitor.runningtime_combination_construction += (e_combination_new_path_c_rt - s_combination_new_path_c_rt);
             }
         }
 
@@ -286,11 +318,12 @@ public class Index {
 
 
     public boolean addToSkyline(ArrayList<backbonePath> bp_list, backbonePath bp) {
-        this.callAddToSkyline++;
+        monitor.callAddToSkyline++;
         int i = 0;
 
         if (bp_list.isEmpty()) {
             bp_list.add(bp);
+            return true;
         } else {
             boolean can_insert_np = true;
             for (; i < bp_list.size(); ) {
@@ -314,17 +347,22 @@ public class Index {
     }
 
     private boolean checkDominated(double[] costs, double[] estimatedCosts) {
+
         for (int i = 0; i < costs.length; i++) {
-
-
-            BigDecimal ci = new BigDecimal(String.valueOf(costs[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
-            BigDecimal ei = new BigDecimal(String.valueOf(estimatedCosts[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
-
-            if (ci.doubleValue() > ei.doubleValue()) {
+            if (costs[i] * (1) > estimatedCosts[i]) {
                 return false;
             }
         }
         return true;
+
+//        for (int i = 0; i < costs.length; i++) {
+//            BigDecimal ci = new BigDecimal(String.valueOf(costs[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
+//            BigDecimal ei = new BigDecimal(String.valueOf(estimatedCosts[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
+//            if (ci.doubleValue() > ei.doubleValue()) {
+//                return false;
+//            }
+//        }
+//        return true;
     }
 
     private void commbinationIndex(HashSet<Long> src, HashSet<Long> dest) {
@@ -346,6 +384,18 @@ public class Index {
     }
 
     private HashSet<Long> findCommandHighways(HashSet<Long> src_set, HashSet<Long> dest_set) {
+        HashSet<Long> commonset = new HashSet<>();
+
+        for (long s_element : src_set) {
+            if (dest_set.contains(s_element)) {
+                commonset.add(s_element);
+            }
+        }
+
+        return commonset;
+    }
+
+    private HashSet<Long> findCommandHighways(Set<Long> src_set, Set<Long> dest_set) {
         HashSet<Long> commonset = new HashSet<>();
 
         for (long s_element : src_set) {
@@ -400,9 +450,13 @@ public class Index {
                     long source_node = Long.parseLong(line.split(" ")[0]);
 
                     double[] costs = new double[dimension];
-                    costs[0] = Double.parseDouble(line.split(" ")[1]);
-                    costs[1] = Double.parseDouble(line.split(" ")[2]);
-                    costs[2] = Double.parseDouble(line.split(" ")[3]);
+//                    costs[0] = Double.parseDouble(line.split(" ")[1]);
+//                    costs[1] = Double.parseDouble(line.split(" ")[2]);
+//                    costs[2] = Double.parseDouble(line.split(" ")[3]);
+
+                    costs[0] = new BigDecimal(String.valueOf(line.split(" ")[1])).setScale(3, BigDecimal.ROUND_HALF_UP).doubleValue();
+                    costs[1] = new BigDecimal(String.valueOf(line.split(" ")[2])).setScale(3, BigDecimal.ROUND_HALF_UP).doubleValue();
+                    costs[2] = new BigDecimal(String.valueOf(line.split(" ")[3])).setScale(3, BigDecimal.ROUND_HALF_UP).doubleValue();
 
                     Hashtable<Long, ArrayList<double[]>> highway_index;
 
@@ -489,11 +543,19 @@ public class Index {
     }
 
     private boolean dominatedByResult(backbonePath np) {
+        monitor.callcheckdominatedbyresult++;
+        monitor.allsizeofthecheckdominatedbyresult += this.result.size();
+        long rt_check_dominatedByresult = System.nanoTime();
         for (backbonePath rp : this.result) {
             if (checkDominated(rp.costs, np.costs)) {
+                long rt_check_dominatedByresult_endwithTrue = System.nanoTime();
+                monitor.runningtime_check_domination_result += (rt_check_dominatedByresult_endwithTrue - rt_check_dominatedByresult);
                 return true;
             }
         }
+
+        long rt_check_dominatedByresult_endwithFalse = System.nanoTime();
+        monitor.runningtime_check_domination_result += (rt_check_dominatedByresult_endwithFalse - rt_check_dominatedByresult);
         return false;
     }
 

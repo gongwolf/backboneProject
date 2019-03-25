@@ -1,19 +1,15 @@
 package Query;
 
-import Neo4jTools.Neo4jDB;
-import org.neo4j.graphalgo.WeightedPath;
-import org.neo4j.graphdb.Relationship;
-
 import java.util.ArrayList;
 import java.util.Collections;
 
 public class backbonePath {
-    private ArrayList<String> propertiesName;
+    boolean hasCycle;
     long source;
     long destination;
     double[] costs;
-
     ArrayList<Long> highwayList = new ArrayList<>();
+    private ArrayList<String> propertiesName;
 
     public backbonePath(long node_id) {
         this.source = node_id;
@@ -29,7 +25,13 @@ public class backbonePath {
 
         this.highwayList.clear();
         this.highwayList.addAll(old_path.highwayList);
+
+        if (highwayList.contains(h_node)) {
+            this.hasCycle = true;
+        }
+
         this.highwayList.add(h_node);
+
 
         calculatedCosts(costs, old_path.costs);
     }
@@ -73,6 +75,14 @@ public class backbonePath {
 //        System.out.println(s_t_h_bpath + "\n ["+costsInHighestLevel[0]+" "+costsInHighestLevel[1]+" "+costsInHighestLevel[2]+"]\n " + d_t_h_bpath);
 
 
+    }
+
+    //the backbone paths in the highest level
+    public backbonePath(long sid, long did, double[] costs) {
+        this.source = sid;
+        this.destination = did;
+        this.costs = new double[3];
+        System.arraycopy(costs, 0, this.costs, 0, this.costs.length);
     }
 
     @Override

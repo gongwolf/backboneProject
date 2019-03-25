@@ -1,5 +1,6 @@
 package Baseline;
 
+import DataStructure.Monitor;
 import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -23,10 +24,9 @@ public class BBSBaseline {
     int dimension = 3;
     HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>();
     ArrayList<path> results = new ArrayList<>();
+    Monitor monitor;
     private GraphDatabaseService graphdb;
     private Neo4jDB neo4j;
-    public long callAddToSkylineFunction=0;
-    public long nodes_call_addtoSkylineFunction=0;
 
 
     public BBSBaseline() {
@@ -35,6 +35,8 @@ public class BBSBaseline {
 //        System.out.println(neo4j.DB_PATH);
         neo4j.startDB(true);
         graphdb = neo4j.graphDB;
+        this.monitor = new Monitor();
+
     }
 
     public BBSBaseline(int graphsize, int degree, int dimension) {
@@ -45,9 +47,10 @@ public class BBSBaseline {
 
         String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + 0;
         neo4j = new Neo4jDB(sub_db_name);
-//        System.out.println(neo4j.DB_PATH);
         neo4j.startDB(true);
         graphdb = neo4j.graphDB;
+        this.monitor = new Monitor();
+
     }
 
     public static void main(String args[]) {
@@ -182,11 +185,7 @@ public class BBSBaseline {
                 myNode v = mqueue.pop();
                 for (int i = 0; i < v.skyPaths.size(); i++) {
                     path p = v.skyPaths.get(i);
-//                    System.out.println(p);
-//                    ArrayList<path> new_paths = p.expand(neo4j);
-//                    for (path np : new_paths) {
-//                        System.out.println("    "+np);
-//                    }
+
                     if (!p.expaned) {
                         p.expaned = true;
                         ArrayList<path> new_paths = p.expand(neo4j);
@@ -201,9 +200,7 @@ public class BBSBaseline {
 
                             if (np.endNode == dest) {
                                 addToSkyline(np);
-                            }
-
-                            if (!dominatedByResult(np)) {
+                            } else if (!dominatedByResult(np)) {
                                 if (next_n.addToSkyline(np) && !next_n.inqueue) {
                                     mqueue.add(next_n);
                                     next_n.inqueue = true;
@@ -218,21 +215,29 @@ public class BBSBaseline {
             tx.success();
         }
 
-        for(Map.Entry<Long, myNode> e:tmpStoreNodes.entrySet()){
-            this.nodes_call_addtoSkylineFunction+=e.getValue().callAddToSkylineFunction;
+        for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
+            this.monitor.node_call_addtoskyline += e.getValue().callAddToSkylineFunction;
         }
-
 
         return tmpStoreNodes.get(dest).skyPaths;
 
     }
 
     private boolean dominatedByResult(path np) {
+
+        monitor.callcheckdominatedbyresult++;
+        monitor.allsizeofthecheckdominatedbyresult+=this.results.size();
+        long rt_check_dominatedByresult = System.nanoTime();
         for (path rp : results) {
             if (checkDominated(rp.costs, np.costs)) {
+                long rt_check_dominatedByresult_endwithTrue = System.nanoTime();
+                monitor.runningtime_check_domination_result += (rt_check_dominatedByresult_endwithTrue - rt_check_dominatedByresult);
                 return true;
             }
         }
+
+        long rt_check_dominatedByresult_endwithFalse = System.nanoTime();
+        monitor.runningtime_check_domination_result += (rt_check_dominatedByresult_endwithFalse - rt_check_dominatedByresult);
         return false;
     }
 
@@ -263,7 +268,7 @@ public class BBSBaseline {
 
 
     public boolean addToSkyline(path np) {
-        this.callAddToSkylineFunction++;
+        this.monitor.callAddToSkyline++;
         int i = 0;
         if (results.isEmpty()) {
             this.results.add(np);
