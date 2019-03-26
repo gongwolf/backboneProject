@@ -319,6 +319,7 @@ public class indexWithDynamic2 {
         if (numberOfNodes != 0) {
             System.out.println("Clearing the layer index ");
             clearLayerIndex(layer_index, nodesToHighWay, deletedNodes);
+            printLayerIndex(layer_index);
         }
 
         this.index.add(layer_index);
@@ -337,7 +338,8 @@ public class indexWithDynamic2 {
             boolean i_f = false;
             for (long highway_n_id : layer_index.keySet()) {
                 System.out.println(highway_n_id + "!!!!!");
-                boolean t_f = updatedHighwayofHnode(highway_n_id, layer_index, nodesToHighWay);
+//                boolean t_f = updatedHighwayofHnode(highway_n_id, layer_index, nodesToHighWay);
+                boolean t_f = updatedHighwayofHnode1(highway_n_id, layer_index, nodesToHighWay);
                 if (!i_f && t_f) { //If any of the highway_n_id updated the layer index, i_f is set to true.
                     i_f = true;
                 }
@@ -432,7 +434,7 @@ public class indexWithDynamic2 {
                                 }
                             }
 
-                            updateLayerIndex(r, layer_index, nodesToHighWay, single);
+                            updateLayerIndex(r, layer_index, nodesToHighWay, multiple);
                             deleteRelationshipFromDB(r, deletedNodes);
                         }
                     }
@@ -673,28 +675,28 @@ public class indexWithDynamic2 {
     private boolean updatedHighwayofHnode1(long h_id, Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay) {
         boolean updated = false;
         try {
-
             if (layer_index.containsKey(h_id)) {
-                Hashtable<Long, ArrayList<double[]>> sid_as_highway_info = layer_index.get(h_id); //get the node whose highway node is h_id
+                Hashtable<Long, ArrayList<double[]>> sid_as_highway_info = new Hashtable<>(layer_index.get(h_id)); //get the node whose highway node is h_id
+                for (Long source_node : sid_as_highway_info.keySet()) {
+                    ArrayList<double[]> source_costs_list = layer_index.get(h_id).get(source_node);
 
-                for (Map.Entry<Long, ArrayList<double[]>> highway_information_entry : sid_as_highway_info.entrySet()) {
-                    long source_node = highway_information_entry.getKey();
                     if (layer_index.containsKey(source_node)) {
                         Hashtable<Long, ArrayList<double[]>> sub_node_as_highway_info = layer_index.get(source_node); //get the node whose highway node is sub_source_node
 
-                        for(Map.Entry<Long, ArrayList<double[]>> sub_information_entry : sub_node_as_highway_info.entrySet()){
+                        for (Long sub_source : sub_node_as_highway_info.keySet()) {
 
-                            long sub_source = sub_information_entry.getKey();
+                            ArrayList<double[]> sub_costs_list = layer_index.get(source_node).get(sub_source);
 
-                            if (h_id != sub_source_node) {
-                                ArrayList<double[]> sub_source_skylines_costs = highway_information_entry.getValue();
-                                ArrayList<double[]> sub_sub_src_skylines_costs = sub_src_node_as_highway_info.getValue();
-                                for (double[] org_costs : sub_source_skylines_costs) {
-                                    double[] new_costs = addCosts(costs, org_costs); //new costs from sub_source_node -> sid -> hid
-                                    //sub_source node can go to the highway node h_id by using the new_costs
-                                    boolean updated = addToLayerIndex(layer_index, h_id, sub_source_node, new_costs, nodesToHighWay, false);
-                                    if (!result && updated) {
-                                        result = true;
+                            if (h_id != sub_source) {
+                                for (double[] costs_sub_to_source : sub_costs_list) {
+                                    for (double[] costs_source_to_highway : source_costs_list) {
+                                        double[] newcosts = addCosts(costs_source_to_highway, costs_sub_to_source);
+                                        System.out.println("    " + sub_source + "-->" + source_node + "-->" + h_id + " " + newcosts[0] + " " + newcosts[1] + " " + newcosts[2]);
+                                        updated = addToLayerIndex(layer_index, h_id, sub_source, newcosts, nodesToHighWay, false);
+                                        if (!updated && updated) {
+                                            updated = true;
+                                        }
+
                                     }
                                 }
                             }

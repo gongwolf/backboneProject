@@ -14,7 +14,7 @@ public class Test {
 
 //        t.batchRnadomTest(14);
 //        t.test(20000);
-        t.ResultTest(14, 2, 7);
+        t.ResultTest(14, 9, 10);
     }
 
     private void ResultTest(long graphsize, long src, long dest) {
