@@ -7,7 +7,7 @@ public class backbonePath {
     boolean hasCycle;
     long source;
     long destination;
-    double[] costs;
+    public double[] costs;
     ArrayList<Long> highwayList = new ArrayList<>();
     private ArrayList<String> propertiesName;
 

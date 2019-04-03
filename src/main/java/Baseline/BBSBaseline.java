@@ -244,7 +244,7 @@ public class BBSBaseline {
     public void initilizeSkylinePath(long srcNode, long destNode) {
         int i = 0;
 
-        this.iniLowerBound = new double[this.degree];
+        this.iniLowerBound = new double[this.dimension];
 
         try (Transaction tx = this.neo4j.graphDB.beginTx()) {
             Node destination = this.neo4j.graphDB.getNodeById(destNode);
@@ -258,7 +258,6 @@ public class BBSBaseline {
                 if (paths != null) {
                     path np = new path(paths);
                     this.iniLowerBound[i++] = paths.weight();
-
                     addToSkyline(np);
                 }
             }

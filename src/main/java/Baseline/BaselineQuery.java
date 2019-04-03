@@ -8,9 +8,16 @@ import java.util.concurrent.ThreadLocalRandom;
 public class BaselineQuery {
 
     private int graphsize;
+    private int degree;
 
     public BaselineQuery(long graphsize) {
         this.graphsize = Math.toIntExact(graphsize);
+        this.degree = 4;
+    }
+
+    public BaselineQuery(long graphsize, int degree) {
+        this.graphsize = Math.toIntExact(graphsize);
+        this.degree = degree;
     }
 
     public static void main(String arg[]) {
@@ -23,14 +30,16 @@ public class BaselineQuery {
 //        bq.query(7732, 167, true);
     }
 
-    public void query(long src, long dest, boolean init) {
+    public ArrayList<path> query(long src, long dest, boolean init) {
 //        System.out.println(src+"   >>>>>>    "+dest);
         Monitor m = new Monitor();
         ArrayList<path> skylines = onlineQueryTest(src, dest, init, m);
-        System.out.println();
-        for (path p : skylines) {
-            System.out.println(p);
-        }
+//        System.out.println();
+//        for (path p : skylines) {
+//            System.out.println(p);
+//        }
+
+        return skylines;
 
     }
 
@@ -50,7 +59,7 @@ public class BaselineQuery {
 
 
     public ArrayList<path> onlineQueryTest(long startNode, long endNode, boolean init, Monitor monitor) {
-        BBSBaseline baseline = new BBSBaseline(this.graphsize, 4, 3);
+        BBSBaseline baseline = new BBSBaseline(this.graphsize, this.degree, 3);
         baseline.results.clear();
 
         long start_ms = System.currentTimeMillis();
@@ -59,13 +68,13 @@ public class BaselineQuery {
         if (init) {
             baseline.initilizeSkylinePath(startNode, endNode);
             sizeofinit = baseline.results.size();
-            baseline.monitor.spInitTimeInBaseline = (System.currentTimeMillis()-start_ms);
+            baseline.monitor.spInitTimeInBaseline = (System.currentTimeMillis() - start_ms);
 
         }
 
         baseline.queryOnline(startNode, endNode);
         long end_ms = System.currentTimeMillis();
-        baseline.monitor.overallRuningtime = end_ms-start_ms;
+        baseline.monitor.overallRuningtime = end_ms - start_ms;
         baseline.closeDB();
 
         monitor.clone(baseline.monitor);

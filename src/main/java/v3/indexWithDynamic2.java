@@ -22,15 +22,14 @@ public class indexWithDynamic2 {
     public ProgramProperty prop = new ProgramProperty();
     //index data structure
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
+    //intra index data structure that store the distance information between nodes in each layer
+    public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> intra_index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
     public ArrayList<Hashtable<Long, ArrayList<Long>>> nodesToHighway_index = new ArrayList();
-    int graphsize = 14;
-    int degree = 4;
+    int graphsize = 20;
+    int degree = 3;
     int dimension = 3;
     GraphDatabaseService graphdb;
-    //    int graphsize = 14;
-//    int degree = 0;
-//    int dimension = 0;
-    double percentage = 0.001;
+    double percentage = 0.3;
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
     DynamicForests dforests;
@@ -73,8 +72,13 @@ public class indexWithDynamic2 {
     private void createIndexFolder() {
         String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension;
         File idx_folder = new File(folder);
-        if (idx_folder.exists()) {
-            idx_folder.delete();
+        try {
+            if (idx_folder.exists()) {
+                System.out.println("delete the folder : " + folder);
+                FileUtils.deleteDirectory(idx_folder);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         idx_folder.mkdirs();
@@ -95,7 +99,25 @@ public class indexWithDynamic2 {
             System.out.println("there are " + summation + " indexes at level " + i++);
             overall += summation;
         }
-        System.out.println("the total index size is " + overall + "/=" + (overall / 2));
+
+
+        i = 0;
+        long intra_overall = 0;
+        for (Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> intra_layer_index : intra_index) {
+            writeIntraIndexToDisk(intra_layer_index, i);
+            long summation = 0;
+            for (Map.Entry<Long, Hashtable<Long, ArrayList<double[]>>> intra_layer_index_entry : intra_layer_index.entrySet()) {
+                for (Map.Entry<Long, ArrayList<double[]>> source_entryL : intra_layer_index_entry.getValue().entrySet()) {
+                    summation += source_entryL.getValue().size();
+                }
+            }
+            System.out.println("there are " + summation + " intra-layer indexes at level " + i++);
+            intra_overall += summation;
+        }
+
+        System.out.println("the total index size is " + overall + "=" + (overall / 2));
+        System.out.println("the total intra index size is " + intra_overall + "=" + (intra_overall / 2));
+        System.out.println("the total overall index size is " + (intra_overall + overall) + "/=" + ((intra_overall + overall) / 2));
 
         writeNodesToHighwayToDisk(nodesToHighway_index);
     }
@@ -141,6 +163,36 @@ public class indexWithDynamic2 {
         BufferedWriter writer = null;
         try {
             String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "/level" + level;
+            File sub_folder_f = new File(sub_folder_str);
+            if (sub_folder_f.exists()) {
+                sub_folder_f.delete();
+            }
+            sub_folder_f.mkdirs();
+
+            for (Map.Entry<Long, Hashtable<Long, ArrayList<double[]>>> layer_index_entry : layer_index.entrySet()) {
+                long highway_node_id = layer_index_entry.getKey();
+                String index_file_str = sub_folder_str + "/" + highway_node_id + ".idx";
+
+                writer = new BufferedWriter(new FileWriter(index_file_str));
+
+                for (Map.Entry<Long, ArrayList<double[]>> source_entry : layer_index_entry.getValue().entrySet()) {
+                    long source_id = source_entry.getKey();
+                    for (double[] costs : source_entry.getValue()) {
+                        writer.write(source_id + " " + costs[0] + " " + costs[1] + " " + costs[2] + "\n");
+                    }
+                }
+
+                writer.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void writeIntraIndexToDisk(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, int level) {
+        BufferedWriter writer = null;
+        try {
+            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "/intraLayer/level" + level;
             File sub_folder_f = new File(sub_folder_str);
             if (sub_folder_f.exists()) {
                 sub_folder_f.delete();
@@ -263,6 +315,7 @@ public class indexWithDynamic2 {
     private long handleUpperLevelGraph(int currentLevel, Pair<Integer, Integer> threshold_p, int threshold_t) throws CloneNotSupportedException {
 
         Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index = new Hashtable<>();
+        Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> intra_layer_index = new Hashtable<>();
         Hashtable<Long, ArrayList<Long>> nodesToHighWay = new Hashtable<>();
         HashSet<Long> deletedNodes = new HashSet<>();
 
@@ -318,11 +371,14 @@ public class indexWithDynamic2 {
 
         if (numberOfNodes != 0) {
             System.out.println("Clearing the layer index ");
-            clearLayerIndex(layer_index, nodesToHighWay, deletedNodes);
+            clearLayerIndex(layer_index, nodesToHighWay, deletedNodes, intra_layer_index);
             printLayerIndex(layer_index);
+            System.out.println("--------------");
+            printLayerIndex(intra_layer_index);
         }
 
         this.index.add(layer_index);
+        this.intra_index.add(intra_layer_index);
         this.nodesToHighway_index.add(nodesToHighWay);
 
 
@@ -344,7 +400,6 @@ public class indexWithDynamic2 {
                     i_f = true;
                 }
             }
-
             //If there is no update operation in current iteration.
             if (!i_f) {
                 converged = true;
@@ -352,7 +407,19 @@ public class indexWithDynamic2 {
         }
     }
 
-    private boolean clearLayerIndex(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay, HashSet<Long> deletedNodes) {
+
+    /**
+     * If the node is removed after the current index construction iteration, the corresponding information needs to be removed as well.
+     * 1) remove the layer index information, the removed node can not be a highway
+     * 2) remove the highway information of each source node sid, which is the nid is sid's highway node. after the deletion, nid can not be the highway node of sid any more.
+     *
+     * @param layer_index       the layer index
+     * @param nodesToHighWay    the highway information of each node
+     * @param deletedNodes      the nodes need to be removed
+     * @param intra_layer_index the index of the intra-information
+     * @return updated layeri_index, nodesToHighWay, intra_layer_index
+     */
+    private boolean clearLayerIndex(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay, HashSet<Long> deletedNodes, Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> intra_layer_index) {
         try {
             for (long nid : deletedNodes) {
                 //remove the node to it's highway if the highway id the nid
@@ -367,6 +434,18 @@ public class indexWithDynamic2 {
                             if (nodesToHighWay.get(sid).isEmpty()) {
                                 nodesToHighWay.remove(sid);
                             }
+                        }
+                    }
+                }
+
+                //if nid needs to be removed, put it information to the intra-index
+                if (!intra_layer_index.containsKey(nid) && layer_index.get(nid) != null) {
+//                    Hashtable<Long, ArrayList<double[]>> source_to_nid = new Hashtable<>(layer_index.get(nid));
+                    Hashtable<Long, ArrayList<double[]>> intra_source_to_deleted = new Hashtable<>();
+                    for (Map.Entry<Long, ArrayList<double[]>> e : layer_index.get(nid).entrySet()) {
+                        if (deletedNodes.contains(e.getKey())) {
+                            intra_source_to_deleted.put(e.getKey(), e.getValue());
+                            intra_layer_index.put(nid, intra_source_to_deleted);
                         }
                     }
                 }
