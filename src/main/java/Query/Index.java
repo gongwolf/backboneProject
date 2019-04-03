@@ -24,7 +24,7 @@ public class Index {
     HashMap<Long, ArrayList<backbonePath>> destination_to_highway_results = new HashMap<>(); //the temporary results from destination node to highways
 
 
-    public Index(long graphsize, int dimension, int degree,boolean readIntraIndex) {
+    public Index(long graphsize, int dimension, int degree, boolean readIntraIndex) {
         this.graphsize = graphsize;
         this.degree = degree;
         this.dimension = dimension;
@@ -37,10 +37,10 @@ public class Index {
     public static void main(String args[]) {
         long start_ms = System.currentTimeMillis();
         boolean readIntraIndex = true;
-        Index i = new Index(30, 3, 3,readIntraIndex);
+        Index i = new Index(30, 3, 3, readIntraIndex);
         long running_start_ms = System.currentTimeMillis();
 
-        i.test(3, 23,readIntraIndex);
+        i.test(16, 22, readIntraIndex);
 //        long end_ms = System.currentTimeMillis();
 //        System.out.println("running time (include index reading ): " + (end_ms - start_ms) + " ms");
 //        System.out.println("running time: " + (end_ms - running_start_ms) + " ms");
@@ -87,7 +87,7 @@ public class Index {
                                     for (double[] costs : source_to_highway_list) {
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
                                         addToSkyline(this.result, new_bp);
-                                        System.out.println("find highway is the destination node "+ s_id + "   " + h_node + " : " + old_path + "  " + new_bp);
+                                        System.out.println("find highway is the destination node " + s_id + "   " + h_node + " : " + old_path + " --> " + new_bp);
                                         monitor.finnalCallAddToSkyline++;
                                     }
                                 }
@@ -98,7 +98,7 @@ public class Index {
                                     for (double[] costs : source_to_highway_list) {
                                         long s_creat_rt_src = System.nanoTime();
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
-                                        System.out.println(s_id + "   " + h_node + " : " + old_path + "  " + new_bp + " " + new_bp.hasCycle);
+                                        System.out.println(s_id + "   " + h_node + " : " + old_path + "  " + new_bp + " --> " + new_bp.hasCycle);
 
                                         long e_creat_rt_src = System.nanoTime();
                                         monitor.runningtime_src_create_newpath += (e_creat_rt_src - s_creat_rt_src);
@@ -138,7 +138,7 @@ public class Index {
                                     for (double[] costs : destination_to_highway_list) {
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the did->old_highway->destination (the highway node)
                                         addToSkyline(this.result, new_bp);
-                                        System.out.println("find highway is the source node "+ h_node+"     "+d_id + " : " + old_path + "  " + new_bp);
+                                        System.out.println("find highway is the source node " + h_node + "     " + d_id + " : " + old_path + " --> " + new_bp);
                                         monitor.finnalCallAddToSkyline++;
                                     }
                                 }
@@ -149,7 +149,7 @@ public class Index {
                                     for (double[] costs : destination_to_highway_list) {
                                         long s_creat_rt_dest = System.nanoTime();
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the destination->old_highway->new_highway
-                                        System.out.println(h_node+"     "+d_id + " : " + old_path + "  " + new_bp);
+                                        System.out.println(h_node + "     " + d_id + " : " + old_path + " --> " + new_bp);
 
                                         long e_creat_rt_dest = System.nanoTime();
                                         monitor.runningtime_dest_create_newpath += (e_creat_rt_dest - s_creat_rt_dest);
@@ -177,7 +177,7 @@ public class Index {
                 }
             }
 
-            System.out.println("============================== intra-index");
+//            System.out.println("intra-index ============================== ");
 
             if (useIntraIndex) {
                 for (long src_key : source_to_highway_results.keySet()) {
@@ -206,7 +206,7 @@ public class Index {
             }
 
             HashSet<Long> commonset = findCommandHighways(source_to_highway_results.keySet(), destination_to_highway_results.keySet());
-            System.out.println("commond set : " + commonset);
+//            System.out.println("commond set : " + commonset);
             if (!commonset.isEmpty()) {
                 for (long common_node : commonset) {
                     combinationResult(source_to_highway_results.get(common_node), destination_to_highway_results.get(common_node));
@@ -214,12 +214,39 @@ public class Index {
             }
             System.out.println("the result at level" + l + ":");
             printResult();
+//
+//            System.out.println("=======-----------------------=======");
+//
+//            for (Map.Entry<Long, ArrayList<backbonePath>> sh : source_to_highway_results.entrySet()) {
+//                long shid = sh.getKey();
+//                System.out.println(shid);
+//                for (backbonePath bp : sh.getValue()) {
+//                    System.out.println("    " + bp);
+//                }
+//            }
+//
+//            System.out.println("-------------------------------------------------------------------------------------------------------");
+//
+//            for (Map.Entry<Long, ArrayList<backbonePath>> dh : destination_to_highway_results.entrySet()) {
+//                long dhid = dh.getKey();
+//                System.out.println(dhid);
+//                for (backbonePath bp : dh.getValue()) {
+//                    System.out.println("    " + bp);
+//                }
+//            }
+
             System.out.println("======================================================================");
         }
 //        System.out.println(monitor.callAddToSkyline + "     " + monitor.finnalCallAddToSkyline);
 
         HashSet<Long> commonset = findCommandHighways(needs_to_add_to_source, needs_to_add_to_destination);
-        supplementResult(needs_to_add_to_source, needs_to_add_to_destination);
+        supplementHighestLevel(needs_to_add_to_source, needs_to_add_to_destination);
+
+
+//        System.out.println("======= find the temp-results");
+        supplementAllIndex();
+
+//        printResult();
 //        System.out.println(monitor.getRunningtime_supplement_addtoskylineByms() + "     " + monitor.getRunningtime_supplement_constructionByms());
 //        System.out.println(monitor.getRunningtime_combination_addtoskylineByms() + "     " + monitor.getRunningtime_combination_constructionByms());
 //        System.out.println(monitor.getRunningtime_src_addtoskylineByms() + "     " + monitor.getRunningtime_dest_addtoskylineByms() + "  " + monitor.getRunningtime_intermedia_addtoskyline());
@@ -229,6 +256,69 @@ public class Index {
 //        System.out.println(monitor.allsizeofthecheckdominatedbyresult);
 //        System.out.println("the result at final level:");
 //        printResult();
+    }
+
+    private void supplementAllIndex() {
+        for (Map.Entry<Long, ArrayList<backbonePath>> sh : source_to_highway_results.entrySet()) {
+            long shid = sh.getKey();
+//            System.out.println(shid);
+//            for (backbonePath bp : sh.getValue()) {
+//                System.out.println(" " + bp);
+//            }
+            for (Map.Entry<Long, ArrayList<backbonePath>> dh : destination_to_highway_results.entrySet()) {
+                long dhid = dh.getKey();
+//                System.out.println("    [" + dhid + "]");
+
+                if (dhid != shid) {
+                    ArrayList<double[]> costs = findLinkBackbonePath(shid, dhid);
+                    if (!costs.isEmpty()) {
+                        for (double[] c : costs) {
+                            backbonePath tmp_src_dest_bp = new backbonePath(shid, dhid, c);
+                            if (!dominatedByResult(tmp_src_dest_bp)) {
+                                for (backbonePath s_t_h_bpath : sh.getValue()) {
+                                    for (backbonePath d_t_h_bpath : dh.getValue()) {
+                                        backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath, c);
+                                        addToSkyline(this.result, result_backbone);
+
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+
+    private ArrayList<double[]> findLinkBackbonePath(long shid, long dhid) {
+        ArrayList<double[]> result = new ArrayList<>();
+//        System.out.println("    find     " + shid + "   " + dhid);
+        int i = 0;
+        for (Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> l_index : this.index) {
+            Hashtable<Long, ArrayList<double[]>> s = l_index.get(shid);
+//            Hashtable<Long, ArrayList<double[]>> d = l_index.get(dhid);
+            if (s != null) {
+                ArrayList<double[]> stod = s.get(dhid);
+                if (stod != null) {
+                    for (double costs[] : stod) {
+//                        System.out.println("    " + shid + "---->" + dhid + " [" + costs[0] + "," + costs[1] + "," + costs[2] + "]    at level " + i);
+                        result.add(costs);
+                    }
+                }
+            }
+            i++;
+//            if (d != null) {
+//                ArrayList<double[]> dtos = d.get(shid);
+//                if (dtos != null) {
+//                    for (double costs[] : dtos) {
+//                        System.out.println("    "+dhid + "---->" + shid + " [" + costs[0] + "," + costs[1] + "," + costs[2] + "]");
+//                    }
+//                }
+//            }
+        }
+
+        return result;
     }
 
     private void findCommonLayer(long source_node, long destination_node) {
@@ -256,7 +346,7 @@ public class Index {
         }
     }
 
-    private void supplementResult(HashSet<Long> needs_to_add_to_source, HashSet<Long> needs_to_add_to_destination) {
+    private void supplementHighestLevel(HashSet<Long> needs_to_add_to_source, HashSet<Long> needs_to_add_to_destination) {
 
         for (long sid : needs_to_add_to_source) {
             for (long did : needs_to_add_to_destination) {
@@ -279,7 +369,7 @@ public class Index {
                                     backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath, costs);
                                     long s_add_rt = System.nanoTime();
                                     addToSkyline(this.result, result_backbone);
-                                    System.out.println("the results found by the supplement function   " + result_backbone);
+//                                    System.out.println("the results found by the supplement function   " + result_backbone);
 
                                     long e_add_rt = System.nanoTime();
                                     this.monitor.finnalCallAddToSkyline++;
@@ -311,7 +401,7 @@ public class Index {
                 long s_combination_new_path_c_rt = System.nanoTime();
                 backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath);
                 long e_combination_new_path_c_rt = System.nanoTime();
-                System.out.println("======  " + result_backbone);
+//                System.out.println("======  " + result_backbone);
 
 
                 monitor.finnalCallAddToSkyline++;

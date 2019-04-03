@@ -14,7 +14,7 @@ public class Test {
 
 //        t.batchRnadomTest(1000);
 //        t.test(20000);
-        t.ResultTest(30, 3,3, 23, true);
+        t.ResultTest(30, 3,16, 22, true);
 
 //        t.pairwiseResultTest(30, 3, true);
     }

@@ -393,7 +393,7 @@ public class indexWithDynamic2 {
         while (!converged) {
             boolean i_f = false;
             for (long highway_n_id : layer_index.keySet()) {
-                System.out.println(highway_n_id + "!!!!!");
+//                System.out.println(highway_n_id + "!!!!!");
 //                boolean t_f = updatedHighwayofHnode(highway_n_id, layer_index, nodesToHighWay);
                 boolean t_f = updatedHighwayofHnode1(highway_n_id, layer_index, nodesToHighWay);
                 if (!i_f && t_f) { //If any of the highway_n_id updated the layer index, i_f is set to true.
