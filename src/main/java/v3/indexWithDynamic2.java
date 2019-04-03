@@ -25,7 +25,7 @@ public class indexWithDynamic2 {
     //intra index data structure that store the distance information between nodes in each layer
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> intra_index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
     public ArrayList<Hashtable<Long, ArrayList<Long>>> nodesToHighway_index = new ArrayList();
-    int graphsize = 20;
+    int graphsize = 30;
     int degree = 3;
     int dimension = 3;
     GraphDatabaseService graphdb;
