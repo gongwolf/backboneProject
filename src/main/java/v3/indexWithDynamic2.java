@@ -361,20 +361,20 @@ public class indexWithDynamic2 {
 
         System.out.println("pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e);
 
-        System.out.println("Before:Converging the layer index ");
-        printLayerIndex(layer_index);
-        System.out.println("Converging the layer index ");
+//        System.out.println("Before:Converging the layer index ");
+//        printLayerIndex(layer_index);
+//        System.out.println("Converging the layer index ");
         convergeLayerIndex(layer_index, nodesToHighWay);
-        System.out.println("After:Converging the layer index ");
-        printLayerIndex(layer_index);
+//        System.out.println("After:Converging the layer index ");
+//        printLayerIndex(layer_index);
 
 
         if (numberOfNodes != 0) {
             System.out.println("Clearing the layer index ");
             clearLayerIndex(layer_index, nodesToHighWay, deletedNodes, intra_layer_index);
-            printLayerIndex(layer_index);
+//            printLayerIndex(layer_index);
             System.out.println("--------------");
-            printLayerIndex(intra_layer_index);
+//            printLayerIndex(intra_layer_index);
         }
 
         this.index.add(layer_index);
@@ -495,7 +495,7 @@ public class indexWithDynamic2 {
                         sum_single += e.getValue().size();
                         for (Long rel_id : e.getValue()) {
                             Relationship r = graphdb.getRelationshipById(rel_id);
-//                            System.out.println("deleted single relationship  ");
+                            System.out.println("====remove single edge  "+r);
 
                             for (Map.Entry<Integer, SpanningForests> sp_forest_mapkey : this.dforests.dforests.entrySet()) {
                                 int level = sp_forest_mapkey.getKey();
@@ -568,6 +568,8 @@ public class indexWithDynamic2 {
                              *****/
                             sptree_base.rbtree.delete((Integer) r.getProperty("pFirstID" + level));
                             sptree_base.rbtree.delete((Integer) r.getProperty("pSecondID" + level));
+
+                            System.out.println(" ====remove single edge at level 0  "+r);
 
                             sptree_base.deleteAdditionalInformationByRelationship(r);
 
@@ -770,7 +772,7 @@ public class indexWithDynamic2 {
                                 for (double[] costs_sub_to_source : sub_costs_list) {
                                     for (double[] costs_source_to_highway : source_costs_list) {
                                         double[] newcosts = addCosts(costs_source_to_highway, costs_sub_to_source);
-                                        System.out.println("    " + sub_source + "-->" + source_node + "-->" + h_id + " " + newcosts[0] + " " + newcosts[1] + " " + newcosts[2]);
+//                                        System.out.println("    " + sub_source + "-->" + source_node + "-->" + h_id + " " + newcosts[0] + " " + newcosts[1] + " " + newcosts[2]);
                                         updated = addToLayerIndex(layer_index, h_id, sub_source, newcosts, nodesToHighWay, false);
                                         if (!updated && updated) {
                                             updated = true;
@@ -789,7 +791,7 @@ public class indexWithDynamic2 {
             e.printStackTrace();
             System.exit(0);
         }
-        System.out.println("Updated " + updated);
+//        System.out.println("Updated " + updated);
         return updated;
     }
 
@@ -983,7 +985,6 @@ public class indexWithDynamic2 {
 
                         boolean flag = deleteEdge(r, neo4j, layer_index, nodesToHighWay, deletedNodes);
 
-
                         if (!deleted && flag) {
                             deleted = true;
                         }
@@ -1020,15 +1021,20 @@ public class indexWithDynamic2 {
 //                System.out.println("level of deleted edge r : " + level_r + " level of replacement edge : " + l_idx);
 
                 if (l_idx != -1 || r.getStartNode().getDegree(Direction.BOTH) == 1 || r.getEndNode().getDegree(Direction.BOTH) == 1) {
+                    System.out.println("====remove tree edge  "+r);
                     updateDynamicForest(level_r, l_idx, r, replacement_edge);
                     updateLayerIndex(r, layer_index, nodesToHighWay, multiple);
                     deleteRelationshipFromDB(r, deletedNodes);
                     tx.success();
                     return true;
+
                 }
             } else {
+                System.out.println("====remove non-tree edge  "+r );
                 updateLayerIndex(r, layer_index, nodesToHighWay, multiple);
                 deleteRelationshipFromDB(r, deletedNodes);
+                tx.success();
+                return true;
             }
 
             tx.success();
