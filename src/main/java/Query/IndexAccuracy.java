@@ -41,7 +41,7 @@ public class IndexAccuracy {
         IndexAccuracy i = new IndexAccuracy(30, 3, 3, readIntraIndex);
         long running_start_ms = System.currentTimeMillis();
 
-        i.test(16, 22, readIntraIndex);
+        i.test(22, 25, readIntraIndex);
 //        long end_ms = System.currentTimeMillis();
 //        System.out.println("running time (include index reading ): " + (end_ms - start_ms) + " ms");
 //        System.out.println("running time: " + (end_ms - running_start_ms) + " ms");
@@ -178,7 +178,7 @@ public class IndexAccuracy {
                 }
             }
 
-//            System.out.println("intra-index ============================== ");
+            System.out.println("intra-index ============================== ");
 
             if (useIntraIndex) {
                 for (long src_key : source_to_highway_results.keySet()) {
@@ -186,7 +186,7 @@ public class IndexAccuracy {
                         Hashtable<Long, ArrayList<double[]>> src_dest_list = intra_index.get(l).get(src_key);
                         for (long dest_key : destination_to_highway_results.keySet()) {
                             if (src_dest_list.get(dest_key) != null) {
-//                                System.out.println(src_key + "------------>" + dest_key);
+                                System.out.println(src_key + "------------>" + dest_key);
                                 ArrayList<backbonePath> src_to_hw_list = source_to_highway_results.get(src_key);
                                 ArrayList<backbonePath> hw_to_dest_list = destination_to_highway_results.get(dest_key);
 
@@ -213,8 +213,8 @@ public class IndexAccuracy {
                     combinationResult(source_to_highway_results.get(common_node), destination_to_highway_results.get(common_node));
                 }
             }
-            System.out.println("the result at level" + l + ":");
-            printResult();
+//            System.out.println("the result at level" + l + ":");
+//            printResult();
 //
 //            System.out.println("=======-----------------------=======");
 //
@@ -236,7 +236,7 @@ public class IndexAccuracy {
 //                }
 //            }
 
-            System.out.println("======================================================================");
+//            System.out.println("======================================================================");
         }
 //        System.out.println(monitor.callAddToSkyline + "     " + monitor.finnalCallAddToSkyline);
 
@@ -246,6 +246,7 @@ public class IndexAccuracy {
 
 //        System.out.println("======= find the temp-results");
         supplementAllIndex();
+//        printResult();
 
 //        printResult();
 //        System.out.println(monitor.getRunningtime_supplement_addtoskylineByms() + "     " + monitor.getRunningtime_supplement_constructionByms());
@@ -260,7 +261,7 @@ public class IndexAccuracy {
     }
 
     private HashSet<Long> getHighways(long node_id, int level) {
-        System.out.println("Find Highway of the node "+node_id+" at level "+level);
+//        System.out.println("Find Highway of the node "+node_id+" at level "+level);
         HashSet<Long> result = new HashSet<>();
         if(this.nodesToHighway_index.get(level).get(node_id)!=null){
             result.addAll(nodesToHighway_index.get(level).get(node_id));//get highways of s_id
@@ -283,6 +284,7 @@ public class IndexAccuracy {
             for (backbonePath bp : sh.getValue()) {
                 System.out.println(" " + bp);
             }
+
             for (Map.Entry<Long, ArrayList<backbonePath>> dh : destination_to_highway_results.entrySet()) {
                 long dhid = dh.getKey();
                 System.out.println("    [" + dhid + "]");
@@ -295,10 +297,12 @@ public class IndexAccuracy {
                     if (!costs.isEmpty()) {
                         for (double[] c : costs) {
                             backbonePath tmp_src_dest_bp = new backbonePath(shid, dhid, c);
-                            if (!dominatedByResult(tmp_src_dest_bp)) {
+                            boolean isdominated=dominatedByResult(tmp_src_dest_bp);
+                            if (!isdominated) {
                                 for (backbonePath s_t_h_bpath : sh.getValue()) {
                                     for (backbonePath d_t_h_bpath : dh.getValue()) {
                                         backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath, c);
+                                        System.out.println("    "+result_backbone+"  "+isdominated);
                                         addToSkyline(this.result, result_backbone);
                                     }
                                 }

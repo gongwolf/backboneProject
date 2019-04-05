@@ -2,6 +2,7 @@ package Baseline;
 
 import DataStructure.Monitor;
 import Query.Index;
+import Query.IndexAccuracy;
 import Query.backbonePath;
 import javafx.util.Pair;
 
@@ -14,7 +15,7 @@ public class Test {
 
 //        t.batchRnadomTest(1000);
 //        t.test(20000);
-        t.ResultTest(30, 3,16, 22, true);
+        t.ResultTest(30, 3,22, 25, true);
 
 //        t.pairwiseResultTest(30, 3, true);
     }
@@ -33,7 +34,7 @@ public class Test {
     }
 
     private boolean compareMethods(long graphsize, int degree, long src, long dest, boolean readIntraIndex) {
-        Index i = new Index(graphsize, 3, degree, readIntraIndex);
+        IndexAccuracy i = new IndexAccuracy(graphsize, 3, degree, readIntraIndex);
         i.test(src, dest, readIntraIndex);
 
         BaselineQuery bq = new BaselineQuery(graphsize, degree);
@@ -50,7 +51,7 @@ public class Test {
             boolean flag = false;
             for (path p : baseline_result) {
                 double distance = Math.sqrt(Math.pow(bp.costs[0] - p.costs[0], 2) + Math.pow(bp.costs[1] - p.costs[1], 2) + Math.pow(bp.costs[2] - p.costs[2], 2));
-//                System.out.println(distance);
+                System.out.println(distance);
                 if (Math.abs(distance) < 0.01) {
                     flag = true;
                 }
@@ -68,7 +69,7 @@ public class Test {
     }
 
     private void ResultTest(long graphsize, int degree, long src, long dest, boolean readIntraIndex) {
-        Index i = new Index(graphsize, 3, degree, readIntraIndex);
+        IndexAccuracy i = new IndexAccuracy(graphsize, 3, degree, readIntraIndex);
         i.test(src, dest, readIntraIndex);
         for (backbonePath p : i.result) {
             System.out.println(p);
