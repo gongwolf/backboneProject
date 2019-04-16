@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 public class IndexAccuracy {
+    private final boolean readIntraIndex;
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> intra_index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
 
@@ -32,13 +33,14 @@ public class IndexAccuracy {
         index_folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension;
         nth_folder = index_folder + "/nodeToHighway_index";
         readIndexFromDisk(readIntraIndex);
+        this.readIntraIndex = readIntraIndex;
         this.monitor = new Monitor();
     }
 
     public static void main(String args[]) {
         long start_ms = System.currentTimeMillis();
         boolean readIntraIndex = true;
-        IndexAccuracy i = new IndexAccuracy(30, 3, 3, readIntraIndex);
+        IndexAccuracy i = new IndexAccuracy(1000, 3, 4, readIntraIndex);
         long running_start_ms = System.currentTimeMillis();
 
         i.test(22, 25, readIntraIndex);
@@ -69,7 +71,7 @@ public class IndexAccuracy {
         HashSet<Long> needs_to_add_to_destination = new HashSet<>();
 
         for (int l = 0; l <= this.total_level; l++) {
-            System.out.println("Find the index information at level " + l);
+//            System.out.println("Find the index information at level " + l);
             needs_to_add_to_source.clear();
             needs_to_add_to_destination.clear();
 
@@ -88,7 +90,7 @@ public class IndexAccuracy {
                                     for (double[] costs : source_to_highway_list) {
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
                                         addToSkyline(this.result, new_bp);
-                                        System.out.println("find highway is the destination node " + s_id + "   " + h_node + " : " + old_path + " --> " + new_bp);
+//                                        System.out.println("find highway is the destination node " + s_id + "   " + h_node + " : " + old_path + " --> " + new_bp);
                                         monitor.finnalCallAddToSkyline++;
                                     }
                                 }
@@ -99,7 +101,7 @@ public class IndexAccuracy {
                                     for (double[] costs : source_to_highway_list) {
                                         long s_creat_rt_src = System.nanoTime();
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
-                                        System.out.println(s_id + "   " + h_node + " : " + old_path + "  " + new_bp + " --> " + new_bp.hasCycle);
+//                                        System.out.println(s_id + "   " + h_node + " : " + old_path + "  " + new_bp + " --> " + new_bp.hasCycle);
 
                                         long e_creat_rt_src = System.nanoTime();
                                         monitor.runningtime_src_create_newpath += (e_creat_rt_src - s_creat_rt_src);
@@ -125,10 +127,10 @@ public class IndexAccuracy {
                 }
             }
 
-            System.out.println("~~~~~~~~~~~~~~~~~~~~~~");
+//            System.out.println("~~~~~~~~~~~~~~~~~~~~~~");
 
             for (long d_id : dhList) {
-                HashSet<Long> highwaysOfDestNode = getHighways(d_id,l);//get highways of did
+                HashSet<Long> highwaysOfDestNode = getHighways(d_id, l);//get highways of did
                 if (highwaysOfDestNode != null) {
                     for (long h_node : highwaysOfDestNode) {//h_node is highway node of the did, it's the destination node to the next level
                         ArrayList<double[]> destination_to_highway_list = readHighwaysInformation(h_node, l, d_id); //costs from did to h_node
@@ -139,7 +141,7 @@ public class IndexAccuracy {
                                     for (double[] costs : destination_to_highway_list) {
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the did->old_highway->destination (the highway node)
                                         addToSkyline(this.result, new_bp);
-                                        System.out.println("find highway is the source node " + h_node + "     " + d_id + " : " + old_path + " --> " + new_bp);
+//                                        System.out.println("find highway is the source node " + h_node + "     " + d_id + " : " + old_path + " --> " + new_bp);
                                         monitor.finnalCallAddToSkyline++;
                                     }
                                 }
@@ -150,7 +152,7 @@ public class IndexAccuracy {
                                     for (double[] costs : destination_to_highway_list) {
                                         long s_creat_rt_dest = System.nanoTime();
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the destination->old_highway->new_highway
-                                        System.out.println(h_node + "     " + d_id + " : " + old_path + " --> " + new_bp);
+//                                        System.out.println(h_node + "     " + d_id + " : " + old_path + " --> " + new_bp);
 
                                         long e_creat_rt_dest = System.nanoTime();
                                         monitor.runningtime_dest_create_newpath += (e_creat_rt_dest - s_creat_rt_dest);
@@ -178,7 +180,7 @@ public class IndexAccuracy {
                 }
             }
 
-            System.out.println("intra-index ============================== ");
+//            System.out.println("intra-index ============================== ");
 
             if (useIntraIndex) {
                 for (long src_key : source_to_highway_results.keySet()) {
@@ -186,7 +188,7 @@ public class IndexAccuracy {
                         Hashtable<Long, ArrayList<double[]>> src_dest_list = intra_index.get(l).get(src_key);
                         for (long dest_key : destination_to_highway_results.keySet()) {
                             if (src_dest_list.get(dest_key) != null) {
-                                System.out.println(src_key + "------------>" + dest_key);
+//                                System.out.println(src_key + "------------>" + dest_key);
                                 ArrayList<backbonePath> src_to_hw_list = source_to_highway_results.get(src_key);
                                 ArrayList<backbonePath> hw_to_dest_list = destination_to_highway_results.get(dest_key);
 
@@ -245,7 +247,7 @@ public class IndexAccuracy {
 
 
 //        System.out.println("======= find the temp-results");
-        supplementAllIndex();
+//        supplementAllIndex();
 //        printResult();
 
 //        printResult();
@@ -263,16 +265,19 @@ public class IndexAccuracy {
     private HashSet<Long> getHighways(long node_id, int level) {
 //        System.out.println("Find Highway of the node "+node_id+" at level "+level);
         HashSet<Long> result = new HashSet<>();
-        if(this.nodesToHighway_index.get(level).get(node_id)!=null){
+        if (this.nodesToHighway_index.get(level).get(node_id) != null) {
             result.addAll(nodesToHighway_index.get(level).get(node_id));//get highways of s_id
         }
 
-        for (Map.Entry<Long, Hashtable<Long, ArrayList<double[]>>> intraLevel : this.intra_index.get(level).entrySet()) {
-            Long hid = intraLevel.getKey();
-            if (intraLevel.getValue().containsKey(node_id)) {
-                result.add(hid);
-            }
+        //where the node_id could expand from the intra-level index
 
+        if (this.readIntraIndex) {
+            for (Map.Entry<Long, Hashtable<Long, ArrayList<double[]>>> intraLevel : this.intra_index.get(level).entrySet()) {
+                Long hid = intraLevel.getKey();
+                if (intraLevel.getValue().containsKey(node_id)) {
+                    result.add(hid);
+                }
+            }
         }
         return result;
     }
@@ -280,29 +285,29 @@ public class IndexAccuracy {
     private void supplementAllIndex() {
         for (Map.Entry<Long, ArrayList<backbonePath>> sh : source_to_highway_results.entrySet()) {
             long shid = sh.getKey();
-            System.out.println(shid);
-            for (backbonePath bp : sh.getValue()) {
-                System.out.println(" " + bp);
-            }
+//            System.out.println(shid);
+//            for (backbonePath bp : sh.getValue()) {
+//                System.out.println(" " + bp);
+//            }
 
             for (Map.Entry<Long, ArrayList<backbonePath>> dh : destination_to_highway_results.entrySet()) {
                 long dhid = dh.getKey();
-                System.out.println("    [" + dhid + "]");
-                for (backbonePath bp : dh.getValue()) {
-                    System.out.println("        --" + bp);
-                }
+//                System.out.println("    [" + dhid + "]");
+//                for (backbonePath bp : dh.getValue()) {
+//                    System.out.println("        --" + bp);
+//                }
 
                 if (dhid != shid) {
                     ArrayList<double[]> costs = findLinkBackbonePath(shid, dhid);
                     if (!costs.isEmpty()) {
                         for (double[] c : costs) {
                             backbonePath tmp_src_dest_bp = new backbonePath(shid, dhid, c);
-                            boolean isdominated=dominatedByResult(tmp_src_dest_bp);
+                            boolean isdominated = dominatedByResult(tmp_src_dest_bp);
                             if (!isdominated) {
                                 for (backbonePath s_t_h_bpath : sh.getValue()) {
                                     for (backbonePath d_t_h_bpath : dh.getValue()) {
                                         backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath, c);
-                                        System.out.println("    "+result_backbone+"  "+isdominated);
+//                                        System.out.println("    " + result_backbone + "  " + isdominated);
                                         addToSkyline(this.result, result_backbone);
                                     }
                                 }
@@ -317,7 +322,7 @@ public class IndexAccuracy {
 
     private ArrayList<double[]> findLinkBackbonePath(long shid, long dhid) {
         ArrayList<double[]> result = new ArrayList<>();
-        System.out.println("    find     " + shid + "   " + dhid);
+//        System.out.println("    find     " + shid + "   " + dhid);
         int i = 0;
         for (Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> l_index : this.index) {
             Hashtable<Long, ArrayList<double[]>> s = l_index.get(shid);
@@ -326,7 +331,7 @@ public class IndexAccuracy {
                 ArrayList<double[]> stod = s.get(dhid);
                 if (stod != null) {
                     for (double costs[] : stod) {
-                        System.out.println("    " + shid + "---->" + dhid + " [" + costs[0] + "," + costs[1] + "," + costs[2] + "]    at level " + i);
+//                        System.out.println("    " + shid + "---->" + dhid + " [" + costs[0] + "," + costs[1] + "," + costs[2] + "]    at level " + i);
                         result.add(costs);
                     }
                 }
@@ -568,21 +573,17 @@ public class IndexAccuracy {
 
         }
 
-        ArrayList<double[]> source_to_intra_nodes = new ArrayList<>();
-        if (this.intra_index.get(level) != null && this.intra_index.get(level).get(h_node) != null && this.intra_index.get(level).get(h_node).get(source_node) != null) {
-            source_to_intra_nodes.addAll(this.intra_index.get(level).get(h_node).get(source_node));
+        if (this.readIntraIndex) {
+            ArrayList<double[]> source_to_intra_nodes = new ArrayList<>();
+            if (this.intra_index.get(level) != null && this.intra_index.get(level).get(h_node) != null && this.intra_index.get(level).get(h_node).get(source_node) != null) {
+                source_to_intra_nodes.addAll(this.intra_index.get(level).get(h_node).get(source_node));
+            }
 
+            if (!source_to_intra_nodes.isEmpty()) {
+                source_to_highway_list.addAll(source_to_intra_nodes);
+            }
         }
 
-        if (!source_to_intra_nodes.isEmpty()) {
-            source_to_highway_list.addAll(source_to_intra_nodes);
-        }
-
-//        if(source_node==22){
-//            for(double[] a:source_to_highway_list){
-//                System.out.println(a[0]+" "+a[1]+" "+a[2]+" ");
-//            }
-//        }
         return !source_to_highway_list.isEmpty() ? source_to_highway_list : null;
     }
 

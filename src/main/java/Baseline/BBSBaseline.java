@@ -50,7 +50,6 @@ public class BBSBaseline {
         neo4j.startDB(true);
         graphdb = neo4j.graphDB;
         this.monitor = new Monitor();
-
     }
 
     public static void main(String args[]) {

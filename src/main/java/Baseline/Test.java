@@ -13,11 +13,11 @@ public class Test {
     public static void main(String args[]) {
         Test t = new Test();
 
-//        t.batchRnadomTest(1000);
+        t.batchRnadomTest(10000, false);
 //        t.test(20000);
-        t.ResultTest(30, 3,22, 25, true);
+//        t.ResultTest(1000, 4,22, 25, true);
 
-//        t.pairwiseResultTest(30, 3, true);
+//        t.pairwiseResultTest(1000, 4, true);
     }
 
     private void pairwiseResultTest(long graphsize, int degree, boolean readIntraIndex) {
@@ -36,10 +36,8 @@ public class Test {
     private boolean compareMethods(long graphsize, int degree, long src, long dest, boolean readIntraIndex) {
         IndexAccuracy i = new IndexAccuracy(graphsize, 3, degree, readIntraIndex);
         i.test(src, dest, readIntraIndex);
-
         BaselineQuery bq = new BaselineQuery(graphsize, degree);
         ArrayList<path> baseline_result = bq.query(src, dest, true);
-
         boolean sameResult = compareResult(i.result, baseline_result);
         return sameResult;
     }
@@ -102,13 +100,12 @@ public class Test {
 
     public void runningTimeTest(long graphsize, long src, long dest, boolean readIntraIndex) {
         long start_ms = System.currentTimeMillis();
-        Index i = new Index(graphsize, 3, 4, readIntraIndex);
+        IndexAccuracy i = new IndexAccuracy(graphsize, 3, 4, readIntraIndex);
         long st_time = System.currentTimeMillis();
         i.test(src, dest, readIntraIndex);
         long ed_time = System.currentTimeMillis();
         i.monitor.overallRuningtime = ed_time - start_ms;
         i.monitor.indexQueryTime = ed_time - st_time;
-
 
         Monitor index_monitor = i.monitor;
 
@@ -122,7 +119,7 @@ public class Test {
 
         StringBuilder sb = new StringBuilder();
         sb.append(src + "  >>>  " + dest + "|");
-        sb.append(base_monitor_2.overallRuningtime).append(" ").append(base_monitor_1.overallRuningtime).append(" ").append(index_monitor.indexQueryTime).append(" ").append(index_monitor.overallRuningtime).append(" | ");
+        sb.append(base_monitor_2.overallRuningtime).append(" ").append(base_monitor_1.overallRuningtime).append(" ").append(index_monitor.indexQueryTime).append(" ").append(index_monitor.overallRuningtime).append(" ").append(index_monitor.overallRuningtime-index_monitor.indexQueryTime).append(" | ");
         sb.append(base_monitor_2.node_call_addtoskyline).append(" ").append(base_monitor_1.node_call_addtoskyline).append(" ").append(index_monitor.callAddToSkyline).append(" | ");
         sb.append(base_monitor_2.callAddToSkyline).append(" ").append(base_monitor_1.callAddToSkyline).append(" ").append(index_monitor.finnalCallAddToSkyline).append(" | ");
         sb.append(base_monitor_2.callcheckdominatedbyresult).append(" ").append(base_monitor_1.callcheckdominatedbyresult).append(" ").append(index_monitor.callcheckdominatedbyresult).append(" | ");
