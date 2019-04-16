@@ -27,9 +27,6 @@ public class indexWithDynamic2 {
     int degree = 4;
     int dimension = 3;
     GraphDatabaseService graphdb;
-    //    int graphsize = 14;
-//    int degree = 0;
-//    int dimension = 0;
     double percentage = 0.1;
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
@@ -52,25 +49,6 @@ public class indexWithDynamic2 {
         construction();
         createIndexFolder();
         printSummurizationInformation();
-        test();
-    }
-
-
-    private void test() {
-        long source_node = 9;
-        for (int l = 0; l <= 7; l++) {
-            System.out.println("level " + l + " : " + this.nodesToHighway_index.get(l).get(source_node));
-            ArrayList<Long> highways = this.nodesToHighway_index.get(l).get(source_node);
-            if (highways != null) {
-                for (long h_node : highways) {
-                    readHighwaysInformation(h_node, l);
-                }
-            }
-        }
-    }
-
-    private void readHighwaysInformation(long h_node, int level) {
-        System.out.println("        highway node :" + h_node + "  " + this.index.get(level).get(h_node));
     }
 
     private void createIndexFolder() {

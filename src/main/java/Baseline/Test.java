@@ -13,7 +13,7 @@ public class Test {
     public static void main(String args[]) {
         Test t = new Test();
 
-        t.batchRnadomTest(10000, false);
+        t.batchRnadomTest(1000, false);
 //        t.test(20000);
 //        t.ResultTest(1000, 4,22, 25, true);
 
@@ -38,31 +38,50 @@ public class Test {
         i.test(src, dest, readIntraIndex);
         BaselineQuery bq = new BaselineQuery(graphsize, degree);
         ArrayList<path> baseline_result = bq.query(src, dest, true);
-        boolean sameResult = compareResult(i.result, baseline_result);
-        return sameResult;
+        comResultObj sameResult = compareResult(i.result, baseline_result);
+        return sameResult.isSame;
     }
 
-    private boolean compareResult(ArrayList<backbonePath> result, ArrayList<path> baseline_result) {
+    private comResultObj compareResult(ArrayList<backbonePath> result, ArrayList<path> baseline_result) {
+
+        comResultObj compare_result = new comResultObj(result.size(), baseline_result.size());
+
         boolean same = true;
+        int i = 0;
 
         for (backbonePath bp : result) {
+            double min = Double.MAX_VALUE;
             boolean flag = false;
             for (path p : baseline_result) {
                 double distance = Math.sqrt(Math.pow(bp.costs[0] - p.costs[0], 2) + Math.pow(bp.costs[1] - p.costs[1], 2) + Math.pow(bp.costs[2] - p.costs[2], 2));
-                System.out.println(distance);
-                if (Math.abs(distance) < 0.01) {
-                    flag = true;
+
+                if (distance < min) {
+                    if (Math.abs(distance) < 0.01) {
+                        min = 0;
+                    } else {
+                        min = distance;
+                    }
                 }
             }
 
-            //if one bp path can not find same path in baseline return false.
-            if (!flag) {
-                same = false;
-                break;
+            if (min == 0) {
+                flag = true;
             }
+
+            compare_result.min_distance[i] = min;
+            compare_result.isSame_result[i] = flag;
+
+
+            if (!flag & same) {
+                same = false;
+            }
+
+            i++;
         }
 
-        return same;
+        compare_result.isSame = same;
+
+        return compare_result;
 
     }
 
@@ -88,7 +107,7 @@ public class Test {
     }
 
     private void batchRnadomTest(long graphsize, boolean readIntraIndex) {
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 10; i++) {
             long startNode = getRandomNumberInRange(graphsize);
             long endNode = getRandomNumberInRange(graphsize);
             if (startNode != endNode) {
@@ -113,16 +132,17 @@ public class Test {
         Monitor base_monitor_2 = new Monitor();
 
         BaselineQuery bq = new BaselineQuery(graphsize);
-        bq.onlineQueryTest(src, dest, true, base_monitor_1);
-        bq.onlineQueryTest(src, dest, false, base_monitor_2);
+        ArrayList<path> r1 = bq.onlineQueryTest(src, dest, true, base_monitor_1);
+        ArrayList<path> r2 = bq.onlineQueryTest(src, dest, false, base_monitor_2);
 
 
         StringBuilder sb = new StringBuilder();
-        sb.append(src + "  >>>  " + dest + "|");
-        sb.append(base_monitor_2.overallRuningtime).append(" ").append(base_monitor_1.overallRuningtime).append(" ").append(index_monitor.indexQueryTime).append(" ").append(index_monitor.overallRuningtime).append(" ").append(index_monitor.overallRuningtime-index_monitor.indexQueryTime).append(" | ");
+        sb.append(src + "  >>>  " + dest + " | ");
+        sb.append(base_monitor_2.overallRuningtime).append(" ").append(base_monitor_1.overallRuningtime).append(" ").append(index_monitor.indexQueryTime).append(" ").append(index_monitor.overallRuningtime).append(" ").append(index_monitor.overallRuningtime - index_monitor.indexQueryTime).append(" | ");
         sb.append(base_monitor_2.node_call_addtoskyline).append(" ").append(base_monitor_1.node_call_addtoskyline).append(" ").append(index_monitor.callAddToSkyline).append(" | ");
         sb.append(base_monitor_2.callAddToSkyline).append(" ").append(base_monitor_1.callAddToSkyline).append(" ").append(index_monitor.finnalCallAddToSkyline).append(" | ");
         sb.append(base_monitor_2.callcheckdominatedbyresult).append(" ").append(base_monitor_1.callcheckdominatedbyresult).append(" ").append(index_monitor.callcheckdominatedbyresult).append(" | ");
+        sb.append(compareResult(i.result, r1)).append(" ");
         System.out.println(sb);
     }
 
@@ -154,5 +174,45 @@ public class Test {
         }
 
         return ThreadLocalRandom.current().nextLong(graphsize);
+    }
+
+
+    class comResultObj {
+        public boolean[] isSame_result;
+        int number_app_results = 0;
+        int number_baseline_results = 0;
+        boolean isSame = false;
+
+        double[] min_distance;
+
+        public comResultObj(int number_app_results, int number_baseline_results) {
+            this.number_app_results = number_app_results;
+            this.number_baseline_results = number_baseline_results;
+            min_distance = new double[number_app_results];
+            isSame_result = new boolean[number_app_results];
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("comResultObj:" + isSame+"    ");
+            for (double d : min_distance) {
+                sb.append(d).append(",");
+            }
+
+            sb.append("  ");
+
+            int same_num = 0;
+            for (boolean s : this.isSame_result) {
+                if (s) {
+                    same_num++;
+                }
+            }
+
+            sb.append(same_num+"/"+this.number_app_results);
+
+
+            return sb.toString();
+        }
     }
 }
