@@ -14,7 +14,7 @@ public class Monitor {
     public long runningtime_dest_create_newpath;
     public long runningtime_check_domination_result;
     public long node_call_addtoskyline; // The number of times of calling the addToSkyline function on each myNode object, in the baseline function.
-    public long callcheckdominatedbyresult;
+    public long callcheckdominatedbyresult; // The number of times of check whether the temporary results are dominated by the results in the final result set.
     public long allsizeofthecheckdominatedbyresult;
 
 

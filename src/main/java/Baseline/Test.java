@@ -12,8 +12,9 @@ import java.util.concurrent.ThreadLocalRandom;
 public class Test {
     public static void main(String args[]) {
         Test t = new Test();
+        t.test(1000,false);
 
-        t.batchRnadomTest(1000, false);
+//        t.batchRnadomTest(1000, false);
 //        t.test(20000);
 //        t.ResultTest(1000, 4,22, 25, true);
 
@@ -107,7 +108,7 @@ public class Test {
     }
 
     private void batchRnadomTest(long graphsize, boolean readIntraIndex) {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 40; i++) {
             long startNode = getRandomNumberInRange(graphsize);
             long endNode = getRandomNumberInRange(graphsize);
             if (startNode != endNode) {
@@ -148,16 +149,47 @@ public class Test {
 
     private void test(long graphsize, boolean readIntraIndex) {
         ArrayList<Pair<Long, Long>> queries = new ArrayList<>();
-        queries.add(new Pair<>(18229L, 17123L));
-        queries.add(new Pair<>(5190L, 2895L));
-        queries.add(new Pair<>(19874L, 1404L));
-        queries.add(new Pair<>(10703L, 1284L));
-        queries.add(new Pair<>(4516L, 6273L));
-        queries.add(new Pair<>(576L, 10196L));
-        queries.add(new Pair<>(18602L, 1244L));
-        queries.add(new Pair<>(16593L, 13580L));
-        queries.add(new Pair<>(445L, 16010L));
-        queries.add(new Pair<>(11246L, 8453L));
+        queries.add(new Pair<>(242L,121L));
+        queries.add(new Pair<>(619L,38L));
+        queries.add(new Pair<>(904L,892L));
+        queries.add(new Pair<>(82L,64L));
+        queries.add(new Pair<>(174L,499L));
+        queries.add(new Pair<>(454L,821L));
+        queries.add(new Pair<>(904L,828L));
+        queries.add(new Pair<>(994L,337L));
+        queries.add(new Pair<>(834L,741L));
+        queries.add(new Pair<>(638L,229L));
+        queries.add(new Pair<>(262L,922L));
+        queries.add(new Pair<>(358L,714L));
+        queries.add(new Pair<>(562L,575L));
+        queries.add(new Pair<>(133L,112L));
+        queries.add(new Pair<>(639L,242L));
+        queries.add(new Pair<>(468L,41L));
+        queries.add(new Pair<>(243L,908L));
+        queries.add(new Pair<>(351L,280L));
+        queries.add(new Pair<>(518L,64L));
+        queries.add(new Pair<>(145L,701L));
+        queries.add(new Pair<>(653L,453L));
+        queries.add(new Pair<>(403L,167L));
+        queries.add(new Pair<>(120L,809L));
+        queries.add(new Pair<>(671L,937L));
+        queries.add(new Pair<>(305L,450L));
+        queries.add(new Pair<>(932L,666L));
+        queries.add(new Pair<>(155L,328L));
+        queries.add(new Pair<>(414L,108L));
+        queries.add(new Pair<>(143L,8L));
+        queries.add(new Pair<>(301L,587L));
+        queries.add(new Pair<>(764L,302L));
+        queries.add(new Pair<>(305L,252L));
+        queries.add(new Pair<>(39L,359L));
+        queries.add(new Pair<>(651L,548L));
+        queries.add(new Pair<>(95L,649L));
+        queries.add(new Pair<>(994L,881L));
+        queries.add(new Pair<>(360L,859L));
+        queries.add(new Pair<>(152L,129L));
+        queries.add(new Pair<>(325L,960L));
+        queries.add(new Pair<>(104L,359L));
+
 
         for (Pair<Long, Long> query : queries) {
             long src = query.getKey();
@@ -195,12 +227,9 @@ public class Test {
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            sb.append("comResultObj:" + isSame+"    ");
-            for (double d : min_distance) {
-                sb.append(d).append(",");
-            }
 
-            sb.append("  ");
+            sb.append("comResultObj:" + isSame+"    ");
+
 
             int same_num = 0;
             for (boolean s : this.isSame_result) {
@@ -209,10 +238,13 @@ public class Test {
                 }
             }
 
-            sb.append(same_num+"/"+this.number_app_results);
+            sb.append(same_num+"/"+this.number_app_results+"/"+number_baseline_results+"    ");
 
+            for (double d : min_distance) {
+                sb.append(d).append(",");
+            }
 
-            return sb.toString();
+            return sb.toString().substring(0,sb.toString().lastIndexOf(","));
         }
     }
 }

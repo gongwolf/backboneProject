@@ -15,7 +15,7 @@ import java.util.*;
 
 import static DataStructure.STATIC.nil;
 
-public class indexWithDynamic2 {
+public class indexWithDynamic3 {
 
     final int single = 1;
     final int multiple = 2;
@@ -24,7 +24,7 @@ public class indexWithDynamic2 {
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
     public ArrayList<Hashtable<Long, ArrayList<Long>>> nodesToHighway_index = new ArrayList();
     int graphsize = 1000;
-    int degree = 4;
+    int degree = 3;
     int dimension = 3;
     GraphDatabaseService graphdb;
     double percentage = 0.1;
@@ -35,13 +35,14 @@ public class indexWithDynamic2 {
     int degree_pairs_sum;
     private Neo4jDB neo4j;
     private long numberOfNodes;
+    private long addToskyline_index_layer;
 
     public static void main(String args[]) throws CloneNotSupportedException {
         long start = System.currentTimeMillis();
-        indexWithDynamic2 index = new indexWithDynamic2();
+        indexWithDynamic3 index = new indexWithDynamic3();
         index.build();
         long end = System.currentTimeMillis();
-        System.out.println((end-start)*1.0/1000);
+        System.out.println((end - start) * 1.0 / 1000);
     }
 
     private void build() throws CloneNotSupportedException {
@@ -266,11 +267,9 @@ public class indexWithDynamic2 {
             SpanningTree sptree_base = new SpanningTree(neo4j, true);
             System.out.println("=======================================");
             sptree_base.EulerTourString(0);
-
             removeSingletonEdges(sptree_base, 0, layer_index, nodesToHighWay, deletedNodes);
             getDegreePairs();
             threshold_p = updateThreshold(percentage);
-
             this.dforests.createBase(sptree_base);
             System.out.println("================Finish finding the level 0 spanning tree =======================");
         } else {
@@ -295,7 +294,11 @@ public class indexWithDynamic2 {
         System.out.println("pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e);
 
         System.out.println("Converging the layer index ");
+        long converge_s = System.currentTimeMillis();
         convergeLayerIndex(layer_index, nodesToHighWay);
+        System.out.println("converge process used " + (System.currentTimeMillis() - converge_s) + "  ms");
+        System.out.println("The time used to add to skyline checking are "+this.addToskyline_index_layer+" ms");
+
         if (numberOfNodes != 0) {
             System.out.println("Clearing the layer index ");
             clearLayerIndex(layer_index, nodesToHighWay, deletedNodes);
@@ -313,6 +316,7 @@ public class indexWithDynamic2 {
 
     private void convergeLayerIndex(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay) {
         boolean converged = false;
+        long counter_iter = 0;
         while (!converged) {
             boolean i_f = false;
             for (long highway_n_id : layer_index.keySet()) {
@@ -326,7 +330,9 @@ public class indexWithDynamic2 {
             if (!i_f) {
                 converged = true;
             }
+            counter_iter++;
         }
+        System.out.println("number of iteration of converge " + counter_iter);
     }
 
     private boolean clearLayerIndex(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay, HashSet<Long> deletedNodes) {
@@ -466,7 +472,6 @@ public class indexWithDynamic2 {
                              *****/
                             sptree_base.rbtree.delete((Integer) r.getProperty("pFirstID" + level));
                             sptree_base.rbtree.delete((Integer) r.getProperty("pSecondID" + level));
-
                             sptree_base.deleteAdditionalInformationByRelationship(r);
 
                             updateLayerIndex(r, layer_index, nodesToHighWay, single);
@@ -489,7 +494,6 @@ public class indexWithDynamic2 {
     }
 
     private void updateLayerIndex(Relationship r, Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay, int type) {
-        //Todo； fix the bugs
         long s_degree = r.getStartNode().getDegree(Direction.BOTH);
         long e_degree = r.getEndNode().getDegree(Direction.BOTH);
 
@@ -507,32 +511,25 @@ public class indexWithDynamic2 {
                 Node source_node = r.getStartNode();
                 long h_id = highway_node.getId();
                 long s_id = source_node.getId();
-                addToLayerIndex(layer_index, h_id, s_id, costs, nodesToHighWay, true);
+                addToLayerIndex(layer_index, h_id, s_id, costs, nodesToHighWay, false, false);
             } else if (e_degree == 1) {
                 Node highway_node = r.getStartNode();
                 Node source_node = r.getEndNode();
                 long h_id = highway_node.getId();
                 long s_id = source_node.getId();
-                addToLayerIndex(layer_index, h_id, s_id, costs, nodesToHighWay, true);
+                addToLayerIndex(layer_index, h_id, s_id, costs, nodesToHighWay, false, false);
             }
         } else if (type == multiple) {
             Node highway_node = r.getStartNode();
             Node source_node = r.getEndNode();
             long h_id = highway_node.getId();
             long s_id = source_node.getId();
-            addToLayerIndex(layer_index, h_id, s_id, costs, nodesToHighWay, true);
-//            System.out.println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+            addToLayerIndex(layer_index, h_id, s_id, costs, nodesToHighWay, false, false);
 
             h_id = source_node.getId();
             s_id = highway_node.getId();
-            addToLayerIndex(layer_index, h_id, s_id, costs, nodesToHighWay, true);
+            addToLayerIndex(layer_index, h_id, s_id, costs, nodesToHighWay, false, false);
         }
-
-//        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-
-
-        //add the information that s_id's highway node is h_id
-
     }
 
     /**
@@ -543,9 +540,10 @@ public class indexWithDynamic2 {
      * @param s_id           : Source node id that can go to the highway node to higher layer
      * @param costs          : The costs from source node to highway node
      * @param nodesToHighWay : The data structure that store the information of source-highway mapping
+     * @param monitorRunningTime : whether monitor the running time of the addToskyline operation in the index building process.
      * @return Ture, if the h_id's index is updated. Otherwise return False.
      */
-    public boolean addToLayerIndex(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, long h_id, long s_id, double[] costs, Hashtable<Long, ArrayList<Long>> nodesToHighWay, boolean callRecursively) {
+    public boolean addToLayerIndex(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, long h_id, long s_id, double[] costs, Hashtable<Long, ArrayList<Long>> nodesToHighWay, boolean callRecursively, boolean monitorRunningTime) {
         //update the highway nodes information of sd_id
         if (!nodesToHighWay.containsKey(s_id)) {
             ArrayList<Long> highways = new ArrayList<>();
@@ -558,6 +556,7 @@ public class indexWithDynamic2 {
                 nodesToHighWay.put(s_id, highways);
             }
         }
+
 
         //if the layer index is updated, fix the index
         boolean updated = true;
@@ -575,7 +574,17 @@ public class indexWithDynamic2 {
                 highway_index.put(s_id, skyline_index);
             } else {
                 ArrayList<double[]> skyline_index = highway_index.get(s_id);
+                long s=0,e=0;
+                if (monitorRunningTime) {
+                    s = System.currentTimeMillis();
+                }
                 updated = addToSkyline(skyline_index, costs);
+
+                if (monitorRunningTime && s != 0) {
+                    e = System.currentTimeMillis();
+                    this.addToskyline_index_layer += (e-s);
+                }
+
                 highway_index.put(s_id, skyline_index);
             }
         }
@@ -634,7 +643,7 @@ public class indexWithDynamic2 {
                             for (double[] s_t_h_cost : sid_to_hid_costs) {//costs from sid to h_id
                                 for (double[] cost : sidAsHighway.getValue()) {//costs from nid to sid
                                     double[] newcosts = addCosts(s_t_h_cost, cost);
-                                    boolean t_updated = addToLayerIndex(layer_index, h_id, node_id, newcosts, nodesToHighWay, false);
+                                    boolean t_updated = addToLayerIndex(layer_index, h_id, node_id, newcosts, nodesToHighWay, false, true);
                                     if (!updated && t_updated) {
                                         updated = true;
                                     }
@@ -675,7 +684,7 @@ public class indexWithDynamic2 {
                     for (double[] org_costs : sub_source_skylines_costs) {
                         double[] new_costs = addCosts(costs, org_costs);
                         //sub_source node can go to the highway node h_id by using the new_costs
-                        boolean updated = addToLayerIndex(layer_index, h_id, sub_source_node, new_costs, nodesToHighWay, false);
+                        boolean updated = addToLayerIndex(layer_index, h_id, sub_source_node, new_costs, nodesToHighWay, false, false);
 
                         if (!result && updated) {
                             result = true;
@@ -730,10 +739,9 @@ public class indexWithDynamic2 {
         for (int i = 0; i < costs.length; i++) {
 
 
-            BigDecimal ci = new BigDecimal(String.valueOf(costs[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
-            BigDecimal ei = new BigDecimal(String.valueOf(estimatedCosts[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
-
-            if (ci.doubleValue() > ei.doubleValue()) {
+//            BigDecimal ci = new BigDecimal(String.valueOf(costs[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
+//            BigDecimal ei = new BigDecimal(String.valueOf(estimatedCosts[i])).setScale(3, BigDecimal.ROUND_HALF_UP);
+            if (costs[i]>estimatedCosts[i]) {
                 return false;
             }
         }
