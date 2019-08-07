@@ -489,7 +489,6 @@ public class indexWithDynamic2 {
     }
 
     private void updateLayerIndex(Relationship r, Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay, int type) {
-        //Todo； fix the bugs
         long s_degree = r.getStartNode().getDegree(Direction.BOTH);
         long e_degree = r.getEndNode().getDegree(Direction.BOTH);
 
