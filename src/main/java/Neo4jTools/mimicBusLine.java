@@ -18,25 +18,25 @@ public class mimicBusLine {
     String EdgesPath = DBBase + "SegInfo.txt";
     String NodePath = DBBase + "NodeInfo.txt";
     double movement;
-    double samnode_t;
+    double same_node_t; // if there is a node within same_node_t distance, then treat them as same node.
     int maxtry = 200; //max time of tries to generate next bus stop.
+    int min_num_bus_stop = 2;
+    int max_num_bus_stop = 5;
 
     HashMap<Integer, node> Nodes = new HashMap<>();
     HashMap<Pair<Integer, Integer>, String[]> Edges = new HashMap<>();
 
     int max_node_id;
 
-    public mimicBusLine(int numofNode, double movement, double samnode_t, int maxtry) {
-        this.DBBase = this.DBBase + "_" + numofNode + "_" + samnode_t + "/data/";
+    public mimicBusLine(int numofNode, double movement, double samenode_t, int maxtry) {
+        this.DBBase = this.DBBase + "_" + numofNode + "_" + samenode_t + "/data/";
         this.EdgesPath = DBBase + "SegInfo.txt";
         this.NodePath = DBBase + "NodeInfo.txt";
         this.numofNode = numofNode;
         this.max_node_id = 0;
-        this.samnode_t = samnode_t;
+        this.same_node_t = samenode_t;
         this.movement = movement;
         this.maxtry = maxtry;
-
-
     }
 
     public static void main(String args[]) {
@@ -68,34 +68,28 @@ public class mimicBusLine {
     }
 
     public void generateBusline() {
-
         int num_bus_inLine; // number of bus stops in one busline
-
-
-        if (numofNode - Nodes.size() < 20) {
+        if (numofNode - Nodes.size() < max_num_bus_stop) {
             num_bus_inLine = numofNode - Nodes.size();
         } else {
-            num_bus_inLine = getRandomNumberInRange_int(10, 20);
+            num_bus_inLine = getRandomNumberInRange_int(min_num_bus_stop, max_num_bus_stop);
         }
+
         System.out.println("length of new bus line:" + num_bus_inLine);
-
         int[] bus_ids = new int[num_bus_inLine];
-
         for (int i = 0; i < num_bus_inLine; i++) {
             node new_n = new node();
-
-//            System.out.print(i);
             if (i == 0) {
                 new_n.latitude = getRandomNumberInRange(0, 360);
                 new_n.longitude = getRandomNumberInRange(0, 360);
-
             } else if (i == 1) { //the first and the second bus stop can go any direction
-                double p_l = Nodes.get(bus_ids[i - 1]).latitude;
-                double p_g = Nodes.get(bus_ids[i - 1]).longitude;
+                double p_l = Nodes.get(bus_ids[i - 1]).latitude; //previous stop's latitude
+                double p_g = Nodes.get(bus_ids[i - 1]).longitude; //previous stop's longitude
+
                 int next_direction = getRandomNumberInRange_int(1, 4);
                 updateLocationsOfNewNode(new_n, p_l, p_g, next_direction);
 
-                while (Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) < samnode_t ||
+                while (Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) < same_node_t || //must generate a new node
                         (new_n.latitude > 360 || new_n.latitude < 0) ||
                         (new_n.longitude > 360 || new_n.longitude < 0)) {
                     next_direction = getRandomNumberInRange_int(1, 4);
@@ -119,8 +113,8 @@ public class mimicBusLine {
                  *
                  * Re-generate a new position for the new node.
                  *****/
-                while (Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) < samnode_t ||
-                        Math.sqrt(Math.pow(new_n.latitude - Nodes.get(bus_ids[i - 2]).latitude, 2) + Math.pow(new_n.longitude - Nodes.get(bus_ids[i - 2]).longitude, 2)) < samnode_t ||
+                while (Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) < same_node_t ||
+                        Math.sqrt(Math.pow(new_n.latitude - Nodes.get(bus_ids[i - 2]).latitude, 2) + Math.pow(new_n.longitude - Nodes.get(bus_ids[i - 2]).longitude, 2)) < same_node_t ||
                         getAngleInDegree(new double[]{p_l - Nodes.get(bus_ids[i - 2]).latitude, p_g - Nodes.get(bus_ids[i - 2]).longitude}, new double[]{new_n.latitude - p_l, new_n.longitude - p_g}) > 80 ||
                         (new_n.latitude > 360 || new_n.latitude < 0) ||
                         (new_n.longitude > 360 || new_n.longitude < 0)) {
@@ -138,8 +132,8 @@ public class mimicBusLine {
 
 
                 if (tried_times == maxtry) {
-                    while (Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) < samnode_t ||
-                            Math.sqrt(Math.pow(new_n.latitude - Nodes.get(bus_ids[i - 2]).latitude, 2) + Math.pow(new_n.longitude - Nodes.get(bus_ids[i - 2]).longitude, 2)) < samnode_t ||
+                    while (Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) < same_node_t ||
+                            Math.sqrt(Math.pow(new_n.latitude - Nodes.get(bus_ids[i - 2]).latitude, 2) + Math.pow(new_n.longitude - Nodes.get(bus_ids[i - 2]).longitude, 2)) < same_node_t ||
                             (new_n.latitude > 360 || new_n.latitude < 0) ||
                             (new_n.longitude > 360 || new_n.longitude < 0)) {
 
@@ -147,8 +141,6 @@ public class mimicBusLine {
                         updateLocationsOfNewNode(new_n, p_l, p_g, next_direction);
                     }
                 }
-
-
             }
 
             int newid;
@@ -198,7 +190,7 @@ public class mimicBusLine {
         double dist = Double.POSITIVE_INFINITY;
         for (Map.Entry<Integer, node> n : this.Nodes.entrySet()) {
             double t_dist = Math.sqrt(Math.pow(n.getValue().latitude - node.latitude, 2) + Math.pow(n.getValue().longitude - node.longitude, 2));
-            if (t_dist < samnode_t && t_dist < dist) {
+            if (t_dist < same_node_t && t_dist < dist) {
                 flag = n.getKey();
                 dist = t_dist;
             }

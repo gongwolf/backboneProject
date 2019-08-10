@@ -7,6 +7,8 @@ import org.apache.commons.io.FileUtils;
 import java.io.*;
 import java.util.*;
 
+
+//Generate the random graph
 public class generateGraph {
     String DBBase = "/home/gqxwolf/mydata/projectData/testGraph10_2/data/";
     String EdgesPath = DBBase + "SegInfo.txt";
@@ -89,11 +91,12 @@ public class generateGraph {
         HashMap<String, String[]> Nodes = new HashMap<>();
 
 
-        //生成经度和纬度
+        //generate the latitude and the longitude in the range from 1 to 360
         for (int i = 0; i < numberNodes; i++) {
             String cost1 = String.valueOf(getRandomNumberInRange(1, 360));
             String cost2 = String.valueOf(getRandomNumberInRange(1, 360));
             Nodes.put(String.valueOf(i), new String[]{cost1, cost2});
+            System.out.println(i+"   ["+cost1+","+cost2+"]");
         }
 
         //Create the Edges information.
@@ -104,10 +107,10 @@ public class generateGraph {
                 endNode = String.valueOf(getRandomNumberInRange_int(0, numberNodes - 1));
             }
 
-            double x1 = Double.valueOf(Nodes.get(startNode)[0]);
-            double y1 = Double.valueOf(Nodes.get(startNode)[1]);
-            double x2 = Double.valueOf(Nodes.get(endNode)[0]);
-            double y2 = Double.valueOf(Nodes.get(endNode)[1]);
+            double x1 = Double.parseDouble(Nodes.get(startNode)[0]);
+            double y1 = Double.parseDouble(Nodes.get(startNode)[1]);
+            double x2 = Double.parseDouble(Nodes.get(endNode)[0]);
+            double y2 = Double.parseDouble(Nodes.get(endNode)[1]);
 
             double dist = Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
 
@@ -127,8 +130,7 @@ public class generateGraph {
         }
 
         for (String node : Nodes.keySet()) {
-            //if there is the node does not have any edge start with it
-            //Create edge for it
+            //if there is the node does not have any edge start with it, then create edge for it
             if (!containedNodes.contains(node)) {
                 String startNode = String.valueOf(node);
                 String endNode = String.valueOf(getRandomNumberInRange_int(0, numberNodes - 1));
@@ -136,10 +138,10 @@ public class generateGraph {
                     endNode = String.valueOf(getRandomNumberInRange_int(0, numberNodes - 1));
                 }
 
-                double x1 = Double.valueOf(Nodes.get(startNode)[0]);
-                double y1 = Double.valueOf(Nodes.get(startNode)[1]);
-                double x2 = Double.valueOf(Nodes.get(endNode)[0]);
-                double y2 = Double.valueOf(Nodes.get(endNode)[1]);
+                double x1 = Double.parseDouble(Nodes.get(startNode)[0]);
+                double y1 = Double.parseDouble(Nodes.get(startNode)[1]);
+                double x2 = Double.parseDouble(Nodes.get(endNode)[0]);
+                double y2 = Double.parseDouble(Nodes.get(endNode)[1]);
 
                 double dist = Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
 
