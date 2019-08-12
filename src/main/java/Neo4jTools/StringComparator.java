@@ -1,7 +1,5 @@
 package Neo4jTools;
 
-import javafx.util.Pair;
-
 import java.util.Comparator;
 
 public class StringComparator implements Comparator<String> {

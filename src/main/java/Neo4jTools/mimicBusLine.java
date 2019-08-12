@@ -20,8 +20,8 @@ public class mimicBusLine {
     double movement;
     double same_node_t; // if there is a node within same_node_t distance, then treat them as same node.
     int maxtry = 200; //max time of tries to generate next bus stop.
-    int min_num_bus_stop = 2;
-    int max_num_bus_stop = 5;
+    int min_num_bus_stop = 3;
+    int max_num_bus_stop = 7;
 
     HashMap<Integer, node> Nodes = new HashMap<>();
     HashMap<Pair<Integer, Integer>, String[]> Edges = new HashMap<>();
@@ -40,8 +40,8 @@ public class mimicBusLine {
     }
 
     public static void main(String args[]) {
-        int graphsize = 30;
-        mimicBusLine m = new mimicBusLine(graphsize, 20, 25, 1000);
+        int graphsize = 60;
+        mimicBusLine m = new mimicBusLine(graphsize, 20, 15, 1000);
         m.generateGraph(true);
         m.readFromDist();
         while (m.findComponent(m.Nodes).size() != graphsize) {
