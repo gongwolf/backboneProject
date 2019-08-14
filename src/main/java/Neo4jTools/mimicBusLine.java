@@ -18,7 +18,7 @@ public class mimicBusLine {
     String EdgesPath = DBBase + "SegInfo.txt";
     String NodePath = DBBase + "NodeInfo.txt";
     double movement;
-    double same_node_t; // if there is a node within same_node_t distance, then treat them as same node.
+    double same_node_t; // if there is a node within same_node_t distance, then treat them as same node. the movement*1.414 >= same_node_t, if not, there is no node will be generated.
     int maxtry = 200; //max time of tries to generate next bus stop.
     int min_num_bus_stop = 3;
     int max_num_bus_stop = 7;
@@ -40,8 +40,8 @@ public class mimicBusLine {
     }
 
     public static void main(String args[]) {
-        int graphsize = 60;
-        mimicBusLine m = new mimicBusLine(graphsize, 20, 15, 1000);
+        int graphsize = 100;
+        mimicBusLine m = new mimicBusLine(graphsize, 20, 29, 500);
         m.generateGraph(true);
         m.readFromDist();
         while (m.findComponent(m.Nodes).size() != graphsize) {
@@ -78,6 +78,7 @@ public class mimicBusLine {
         System.out.println("length of new bus line:" + num_bus_inLine);
         int[] bus_ids = new int[num_bus_inLine];
         for (int i = 0; i < num_bus_inLine; i++) {
+            boolean isNewNodeGenerated = true;
             node new_n = new node();
             if (i == 0) {
                 new_n.latitude = getRandomNumberInRange(0, 360);
@@ -89,13 +90,14 @@ public class mimicBusLine {
                 int next_direction = getRandomNumberInRange_int(1, 4);
                 updateLocationsOfNewNode(new_n, p_l, p_g, next_direction);
 
+                System.out.println(Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2))+"  "+same_node_t);
+
                 while (Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) < same_node_t || //must generate a new node
                         (new_n.latitude > 360 || new_n.latitude < 0) ||
                         (new_n.longitude > 360 || new_n.longitude < 0)) {
                     next_direction = getRandomNumberInRange_int(1, 4);
                     updateLocationsOfNewNode(new_n, p_l, p_g, next_direction);
                 }
-
             } else {
                 //find the direction can not go
                 int not_go_direction = getNotToGoDirection(Nodes.get(bus_ids[i - 1]), Nodes.get(bus_ids[i - 2]));
@@ -126,54 +128,70 @@ public class mimicBusLine {
                     next_direction = getRandomDirection(not_go_direction);
                     updateLocationsOfNewNode(new_n, p_l, p_g, next_direction);
 
-
                     tried_times++;
+                    System.out.println("tried_times   " + tried_times + "   !!!!");
                 }
 
 
                 if (tried_times == maxtry) {
-                    while (Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) < same_node_t ||
+                    long last_tried_time = 0;
+                    while ((Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) < same_node_t ||
                             Math.sqrt(Math.pow(new_n.latitude - Nodes.get(bus_ids[i - 2]).latitude, 2) + Math.pow(new_n.longitude - Nodes.get(bus_ids[i - 2]).longitude, 2)) < same_node_t ||
                             (new_n.latitude > 360 || new_n.latitude < 0) ||
-                            (new_n.longitude > 360 || new_n.longitude < 0)) {
+                            (new_n.longitude > 360 || new_n.longitude < 0)) && last_tried_time < maxtry) {
 
                         next_direction = getRandomDirection(not_go_direction);
                         updateLocationsOfNewNode(new_n, p_l, p_g, next_direction);
+                        last_tried_time++;
+                        System.out.println("last_tried_time   " + last_tried_time + "   !!!!");
+                    }
+
+                    if (last_tried_time == maxtry) {
+                        isNewNodeGenerated = false;
                     }
                 }
             }
 
-            int newid;
-            if ((newid = hasNodes(new_n)) == -1) {
-                newid = max_node_id;
-                max_node_id++;
-                this.Nodes.put(newid, new_n);
-                this.Nodes.get(newid).adjustCenter(new_n);
-            } else {
-                this.Nodes.get(newid).adjustCenter(new_n);
-                new_n.latitude = this.Nodes.get(newid).latitude;
-                new_n.longitude = this.Nodes.get(newid).longitude;
-            }
-            new_n.id = newid;
-            bus_ids[i] = newid;
+            System.out.println(isNewNodeGenerated);
 
-
-            if (i > 0) {
-                double p_l = Nodes.get(bus_ids[i - 1]).latitude;
-                double p_g = Nodes.get(bus_ids[i - 1]).longitude;
-                double dist = Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2));
-
-//                System.out.println(newid + "  " + bus_ids[i - 1] + "  " + new_n.latitude + " " + new_n.longitude + " " + p_l + " " + p_g + " " + dist);
-
-                String[] costs = new String[3];
-                for (int j = 0; j < 3; j++) {
-//                    costs[j] = String.valueOf(getRandomNumberInRange(0, 5));
-                    costs[j] = String.valueOf(getGaussian(dist, dist));
+            if (isNewNodeGenerated) {
+                int newid;
+                if ((newid = hasNodes(new_n)) == -1) {
+                    newid = max_node_id;
+                    max_node_id++;
+                    this.Nodes.put(newid, new_n);
+                    this.Nodes.get(newid).adjustCenter(new_n);
+                } else {
+                    this.Nodes.get(newid).adjustCenter(new_n);
+                    new_n.latitude = this.Nodes.get(newid).latitude;
+                    new_n.longitude = this.Nodes.get(newid).longitude;
                 }
+                new_n.id = newid;
+                bus_ids[i] = newid;
 
-                System.out.println(bus_ids[i - 1] + "," + new_n.id + " " + costs[0] + " " + costs[1] + " " + costs[2]);
-                Edges.put(new Pair<>(bus_ids[i - 1], new_n.id), costs);
+                System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+
+                if (i > 0) {
+                    double p_l = Nodes.get(bus_ids[i - 1]).latitude;
+                    double p_g = Nodes.get(bus_ids[i - 1]).longitude;
+                    double dist = Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2));
+
+                    System.out.println(newid + "  " + bus_ids[i - 1] + "  " + new_n.latitude + " " + new_n.longitude + " " + p_l + " " + p_g + " " + dist);
+
+                    String[] costs = new String[3];
+                    for (int j = 0; j < 3; j++) {
+//                    costs[j] = String.valueOf(getRandomNumberInRange(0, 5));
+                        costs[j] = String.valueOf(getGaussian(dist, dist));
+                    }
+
+                    System.out.println(bus_ids[i - 1] + "," + new_n.id + " " + costs[0] + " " + costs[1] + " " + costs[2]);
+                    Edges.put(new Pair<>(bus_ids[i - 1], new_n.id), costs);
+                }
+            } else {
+                System.out.println("no new node is generated !!!!!!");
             }
+
+            System.out.println(i+"-------------------"+(i < num_bus_inLine));
         }
 
 
@@ -317,7 +335,7 @@ public class mimicBusLine {
                     costs[j] = String.valueOf(getGaussian(dist, dist));
                 }
                 this.Edges.put(new Pair<>(sid, eid), costs);
-                System.out.println("Created singleton edge: "+sid+"->"+eid+" "+costs[0]+" "+costs[1]+" "+costs[2]);
+                System.out.println("Created singleton edge: " + sid + "->" + eid + " " + costs[0] + " " + costs[1] + " " + costs[2]);
             }
 
         }
@@ -605,11 +623,11 @@ class node {
         double sum_lat = 0;
         double sum_lng = 0;
         for (int i = 0; i < k; i++) {
-            sum_lat+= sub_nodes_list.get(i).getKey();
-            sum_lng+= sub_nodes_list.get(i).getValue();
+            sum_lat += sub_nodes_list.get(i).getKey();
+            sum_lng += sub_nodes_list.get(i).getValue();
         }
 
-        this.latitude = sum_lat/k;
-        this.longitude = sum_lng/k;
+        this.latitude = sum_lat / k;
+        this.longitude = sum_lng / k;
     }
 }

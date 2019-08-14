@@ -27,8 +27,8 @@ public class CreateDB {
         int dimension = 3;
 
         CreateDB c = new CreateDB();
-        c.createRandomGraph(graphsize,degree,dimension);
-//        c.createBusLineDataBase(30 ,     25);
+//        c.createRandomGraph(graphsize,degree,dimension);
+        c.createBusLineDataBase(100 , 28);
     }
 
     private void createRandomGraph(int graphsize, int degree, int dimension) {
@@ -127,7 +127,7 @@ public class CreateDB {
     }
 
     public void createBusLineDataBase(int graph_size, double samnode_t) {
-        String sub_db_name = graph_size + "-" + samnode_t + "-" + "Level0";
+        String sub_db_name = graph_size + "_" + samnode_t + "_" + "Level0";
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);
         neo4j.deleleDB();
         System.out.println("====================================================================");

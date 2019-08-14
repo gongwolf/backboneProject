@@ -6,7 +6,9 @@ import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -242,6 +244,50 @@ public class Neo4jDB {
 
 //            System.out.println(propertiesName.size());
             tx.success();
+        }
+    }
+
+    public void saveGraphToTextFormation(String textFilePath) {
+
+        try(Transaction tx = graphDB.beginTx()){
+
+            File dataF = new File(textFilePath);
+            try {
+                FileUtils.deleteDirectory(dataF);
+                dataF.mkdirs();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+
+            BufferedWriter Nodewriter = new BufferedWriter(new FileWriter(textFilePath+"/NodeInfo.txt"));
+            BufferedWriter Edgewriter = new BufferedWriter(new FileWriter(textFilePath+"/SegInfo.txt"));
+
+            //Get nodes' information and save
+            ResourceIterable<Node> nodes_iterable = graphDB.getAllNodes();
+            ResourceIterator<Node> nodes_iter = nodes_iterable.iterator();
+            while(nodes_iter.hasNext()){
+                Node n = nodes_iter.next();
+//                System.out.println(n.getId()+" "+n.getProperty("lat")+" "+n.getProperty("log"));
+                Nodewriter.write(n.getId()+" "+n.getProperty("lat")+" "+n.getProperty("log")+"\n");
+            }
+            Nodewriter.close();
+
+
+            //Get nodes' information and save
+            ResourceIterable<Relationship> edges_iterable = graphDB.getAllRelationships();
+            ResourceIterator<Relationship> edges_iter = edges_iterable.iterator();
+            while(edges_iter.hasNext()){
+                Relationship r = edges_iter.next();
+//                System.out.println(r.getStartNodeId()+" "+r.getEndNodeId()+" "+r.getProperty("EDistence")+" "+r.getProperty("MetersDistance")+" "+r.getProperty("RunningTime"));
+                Edgewriter.write(r.getStartNodeId()+" "+r.getEndNodeId()+" "+r.getProperty("EDistence")+" "+r.getProperty("MetersDistance")+" "+r.getProperty("RunningTime")+"\n");
+            }
+
+            Edgewriter.close();
+            tx.success();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
