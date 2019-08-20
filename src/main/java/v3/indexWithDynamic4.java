@@ -6,6 +6,7 @@ import javafx.util.Pair;
 import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.*;
 
+import javax.sound.midi.SysexMessage;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -20,13 +21,13 @@ public class indexWithDynamic4 {
     final int multiple = 2;
     public ProgramProperty prop = new ProgramProperty();
     //index data structure
-    public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
+    public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <highway id --->{ source node id ==> <skyline paths > }  >
     public ArrayList<Hashtable<Long, ArrayList<Long>>> nodesToHighway_index = new ArrayList();
     int graphsize = 100;
     int degree = 3;
     int dimension = 3;
     GraphDatabaseService graphdb;
-    double percentage = 0.01;
+    double percentage = 0.1;
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
     DynamicForests dforests;
@@ -48,12 +49,13 @@ public class indexWithDynamic4 {
     private void build() throws CloneNotSupportedException {
         initLevel();
         construction();
-//        createIndexFolder();
-//        printSummurizationInformation();
+        createIndexFolder();
+        printSummurizationInformation();
     }
 
     private void createIndexFolder() {
-        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension;
+//        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension;
+        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + same_t;
         File idx_folder = new File(folder);
         try {
             if (idx_folder.exists()) {
@@ -89,7 +91,7 @@ public class indexWithDynamic4 {
     private void writeNodesToHighwayToDisk(ArrayList<Hashtable<Long, ArrayList<Long>>> nodes_to_highway_index) {
         BufferedWriter writer = null;
         try {
-            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "/nodeToHighway_index";
+            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" +same_t + "/nodeToHighway_index";
             File sub_folder_f = new File(sub_folder_str);
             if (sub_folder_f.exists()) {
                 sub_folder_f.delete();
@@ -126,7 +128,7 @@ public class indexWithDynamic4 {
     private void writeToDisk(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, int level) {
         BufferedWriter writer = null;
         try {
-            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "/level" + level;
+            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + same_t + "/level" + level;
             File sub_folder_f = new File(sub_folder_str);
             if (sub_folder_f.exists()) {
                 sub_folder_f.delete();
@@ -195,7 +197,9 @@ public class indexWithDynamic4 {
         int max = (int) (this.numberOfEdges * percentage);
 
         System.out.println("percentage: " + max + "   number of nodes :" + cn + "   degree pair sum( number of edges ):" + degree_pairs_sum + "\nIs the Max is less than the number of degree pair ?" + (max < this.degree_pairs_sum));
-
+        for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> p : this.degree_pairs.entrySet()) {
+            System.out.println(p.getKey() + "  ==>>> " + p.getValue());
+        }
 
         //get the last degree pair
         if (max > this.degree_pairs_sum) {
@@ -204,14 +208,18 @@ public class indexWithDynamic4 {
 
 
         int t_num = 0;
-        int idx = 0;
+        int idx;
 
 
-        while (t_num < max && idx < t_degree_pair.size()) {
+        for (idx = 0; idx < t_degree_pair.size(); idx++) {
             Pair<Integer, Integer> key = t_degree_pair.get(idx);
             t_num += this.degree_pairs.get(key).size();
-            idx++;
+            if (t_num >= max) {
+                break;
+            }
         }
+
+        System.out.println(t_num + "   " + idx);
 
         //idx is the index of the first degree pair which summation number is greater than |E|*p
         if (0 <= idx && idx < t_degree_pair.size()) {
@@ -275,8 +283,7 @@ public class indexWithDynamic4 {
             getDegreePairs();
             threshold_p = updateThreshold(percentage);
             System.out.println(threshold_p);
-            String textFilePath = prefix + "busline_" + this.graphsize + "_" + this.same_t + "/level"+currentLevel+"/removed_single";
-            neo4j.saveGraphToTextFormation(textFilePath);
+
 
             this.dforests.createBase(sptree_base);
             System.out.println("================Finish finding the level 0 spanning tree =======================");
@@ -284,11 +291,15 @@ public class indexWithDynamic4 {
             updateNeb4jConnectorInDynamicForests();
         }
 
+        //The graph before the process
+        String textFilePath = prefix + "busline_" + this.graphsize + "_" + this.same_t + "/level" + currentLevel + "/removed_single";
+        neo4j.saveGraphToTextFormation(textFilePath);
 
         //remove edges less than threshold
         deleted = removeLowerDegreePairEdgesByThreshold(threshold_p, threshold_t, layer_index, nodesToHighWay, deletedNodes);
         System.out.println("Does delete edges with lower degree pairs ?  " + (deleted ? "Yes" : "No"));
-        String textFilePath = prefix + "busline_" + this.graphsize + "_" + this.same_t + "/level"+currentLevel+"/final";
+
+        textFilePath = prefix + "busline_" + this.graphsize + "_" + this.same_t + "/level" + currentLevel + "/final";
         neo4j.saveGraphToTextFormation(textFilePath);
 
         getDegreePairs();
@@ -307,7 +318,7 @@ public class indexWithDynamic4 {
         long converge_s = System.currentTimeMillis();
         convergeLayerIndex(layer_index, nodesToHighWay);
         System.out.println("converge process used " + (System.currentTimeMillis() - converge_s) + "  ms");
-        System.out.println("The time used to add to skyline checking are " + this.addToskyline_index_layer + " ms");
+        System.out.println("The time used to add to skyline checking are " + (this.addToskyline_index_layer / 1000000.0) + " ms");
 
         if (numberOfNodes != 0) {
             System.out.println("Clearing the layer index ");
@@ -320,9 +331,6 @@ public class indexWithDynamic4 {
 
 //        String textFilePath = prefix + "busline_" + this.graphsize + "_" + this.same_t + "/level"+currentLevel+"/final";
 //        neo4j.saveGraphToTextFormation(textFilePath);
-
-        System.exit(0);
-
         System.out.println("==========================================");
 
         neo4j.closeDB();
@@ -332,7 +340,9 @@ public class indexWithDynamic4 {
     private void convergeLayerIndex(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay) {
         boolean converged = false;
         long counter_iter = 0;
+
         while (!converged) {
+            long start_iter_rt = System.nanoTime();
             boolean i_f = false;
             for (long highway_n_id : layer_index.keySet()) {
                 boolean t_f = updatedHighwayofHnode(highway_n_id, layer_index, nodesToHighWay);
@@ -344,8 +354,10 @@ public class indexWithDynamic4 {
             //If there is no update operation in current iteration.
             if (!i_f) {
                 converged = true;
+            } else {
+                counter_iter++;
+                System.out.println("The running time of " + counter_iter + " iteration is " + ((System.nanoTime() - start_iter_rt) / 1000000.0) + " ms");
             }
-            counter_iter++;
         }
         System.out.println("number of iteration of converge " + counter_iter);
     }
@@ -401,6 +413,13 @@ public class indexWithDynamic4 {
         }
     }
 
+    /**
+     * Removed the single edges from all level spanning trees
+     *
+     * @param layer_index
+     * @param nodesToHighWay
+     * @param deletedNodes
+     */
     private void removeSingletonEdgesInForests(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay, HashSet<Long> deletedNodes) {
         while (hasSingletonPairs(degree_pairs)) {
             long pre_edge_num = neo4j.getNumberofEdges();
@@ -424,8 +443,8 @@ public class indexWithDynamic4 {
                                     SpanningTree sp_tree = sp_forest.trees.get(sp_tree_idx);
                                     sp_tree.rbtree.delete((Integer) r.getProperty("pFirstID" + level));
                                     sp_tree.rbtree.delete((Integer) r.getProperty("pSecondID" + level));
-                                    sp_tree.deleteAdditionalInformationByRelationship(r);
 
+                                    sp_tree.deleteAdditionalInformationByRelationship(r);
                                     if (sp_tree.rbtree.root == nil) {
                                         sp_forest.trees.remove(sp_tree_idx);
                                     }
@@ -467,6 +486,15 @@ public class indexWithDynamic4 {
     }
 
 
+    /**
+     * Remove the single edges on the first level
+     *
+     * @param sptree_base
+     * @param level
+     * @param layer_index
+     * @param nodesToHighWay
+     * @param deletedNodes
+     */
     private void removeSingletonEdges(SpanningTree sptree_base, int level, Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, Hashtable<Long, ArrayList<Long>> nodesToHighWay, HashSet<Long> deletedNodes) {
         while (hasSingletonPairs(degree_pairs)) {
             long pre_edge_num = neo4j.getNumberofEdges();
@@ -559,7 +587,7 @@ public class indexWithDynamic4 {
      * @return Ture, if the h_id's index is updated. Otherwise return False.
      */
     public boolean addToLayerIndex(Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> layer_index, long h_id, long s_id, double[] costs, Hashtable<Long, ArrayList<Long>> nodesToHighWay, boolean callRecursively, boolean monitorRunningTime) {
-        //update the highway nodes information of sd_id
+        //update the highway nodes information of s_id
         if (!nodesToHighWay.containsKey(s_id)) {
             ArrayList<Long> highways = new ArrayList<>();
             highways.add(h_id);
@@ -589,17 +617,15 @@ public class indexWithDynamic4 {
                 highway_index.put(s_id, skyline_index);
             } else {
                 ArrayList<double[]> skyline_index = highway_index.get(s_id);
-                long s = 0, e = 0;
+                long s = 0, e ;
                 if (monitorRunningTime) {
-                    s = System.currentTimeMillis();
+                    s = System.nanoTime();
                 }
                 updated = addToSkyline(skyline_index, costs);
-
                 if (monitorRunningTime && s != 0) {
-                    e = System.currentTimeMillis();
+                    e = System.nanoTime();
                     this.addToskyline_index_layer += (e - s);
                 }
-
                 highway_index.put(s_id, skyline_index);
             }
         }
@@ -669,7 +695,6 @@ public class indexWithDynamic4 {
                 }
             }
         } catch (NullPointerException e) {
-            System.out.println("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
             printLayerIndex(layer_index);
             e.printStackTrace();
             System.exit(0);
@@ -693,13 +718,13 @@ public class indexWithDynamic4 {
         if (layer_index.containsKey(s_id)) {
             Hashtable<Long, ArrayList<double[]>> sid_as_highway_info = layer_index.get(s_id); //get the node whose highway node is sid
             for (Map.Entry<Long, ArrayList<double[]>> highway_information_entry : sid_as_highway_info.entrySet()) {
-                long sub_source_node = highway_information_entry.getKey();
+                long sub_source_node = highway_information_entry.getKey(); // the node id whose highway is sid
                 if (h_id != sub_source_node) {
-                    ArrayList<double[]> sub_source_skylines_costs = highway_information_entry.getValue();
+                    ArrayList<double[]> sub_source_skylines_costs = highway_information_entry.getValue(); //the cost from node sub_source_node to sid
                     for (double[] org_costs : sub_source_skylines_costs) {
                         double[] new_costs = addCosts(costs, org_costs);
                         //sub_source node can go to the highway node h_id by using the new_costs
-                        boolean updated = addToLayerIndex(layer_index, h_id, sub_source_node, new_costs, nodesToHighWay, false, false);
+                        boolean updated = addToLayerIndex(layer_index, h_id, sub_source_node, new_costs, nodesToHighWay, false, true);
 
                         if (!result && updated) {
                             result = true;
@@ -723,9 +748,6 @@ public class indexWithDynamic4 {
 
     public boolean addToSkyline(ArrayList<double[]> skyline_index, double[] costs) {
         int i = 0;
-//        if (r.end.getPlaceId() == checkedDataId) {
-//            System.out.println(r);
-//        }
         if (skyline_index.isEmpty()) {
             skyline_index.add(costs);
         } else {
@@ -746,6 +768,7 @@ public class indexWithDynamic4 {
                 skyline_index.add(costs);
                 return true;
             }
+
         }
         return false;
     }
@@ -866,7 +889,7 @@ public class indexWithDynamic4 {
 
                     for (long rel : dp.getValue()) {
                         Relationship r = graphdb.getRelationshipById(rel);
-                        System.out.println("delete the edge "+r+"  "+sd+" "+ed+" "+ct+" "+threshold_t+" "+threshold_p);
+                        System.out.println("delete the edge " + r + "  " + sd + " " + ed + " " + ct + " " + threshold_t + " " + threshold_p);
                         boolean flag = deleteEdge(r, neo4j, layer_index, nodesToHighWay, deletedNodes);
                         if (!deleted && flag) {
                             deleted = true;
@@ -892,7 +915,6 @@ public class indexWithDynamic4 {
             if (dforests.isTreeEdge(r)) {
                 int l_idx = level_r;
                 while (l_idx >= 0) {
-//                    System.out.println("Finding the replacement relationship in level " + l_idx + " spanning tree");
                     replacement_edge = dforests.replacement(r, l_idx);
                     if (null == replacement_edge) {
                         l_idx--;
@@ -923,9 +945,14 @@ public class indexWithDynamic4 {
     }
 
 
+    /**
+     * Remove the edge r, if the degree of one end node become 0 after the remove, delete the node and put the node id to the deletedNodes
+     *
+     * @param r            the relationship that needs to be removed from the graph
+     * @param deletedNodes the list of the nodes needs to be remove from the graph
+     */
     private void deleteRelationshipFromDB(Relationship r, HashSet<Long> deletedNodes) {
         try (Transaction tx = this.neo4j.graphDB.beginTx()) {
-//            System.out.println("remove edge " + r + " at " + this.neo4j.graphDB);
             r.delete();
             Node sNode = r.getStartNode();
             Node eNode = r.getEndNode();

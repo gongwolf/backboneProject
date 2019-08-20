@@ -714,6 +714,7 @@ public class SpanningTree {
                  */
 
                 if (org_level == level && rel.getId() != deletedRel.getId() && !this.SpTree.contains(rel.getId())) {
+                    //A convenience operation that, given an id of a node that is attached to this relationship, returns the id of the other node.
                     if (another_sub_tree.N_nodes.contains(rel.getOtherNodeId(nid))) {
                         return rel;
                     } else {
@@ -835,6 +836,7 @@ public class SpanningTree {
         long sid = r.getStartNodeId();
         long eid = r.getEndNodeId();
 
+        /**If there is no relationship connect the node sid or the node eid, remove it**/
         if (SpTree.stream().filter(rid -> neo4j.graphDB.getRelationshipById(rid).getStartNodeId() == sid || neo4j.graphDB.getRelationshipById(rid).getEndNodeId() == sid).count() == 0) {
             N_nodes.remove(sid);
         }

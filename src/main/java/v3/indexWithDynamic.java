@@ -506,7 +506,7 @@ public class indexWithDynamic {
 
 }
 
-
+//a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater than the second.
 class PairComparator implements Comparator<Pair<Integer, Integer>> {
     @Override
     public int compare(Pair<Integer, Integer> o1, Pair<Integer, Integer> o2) {
