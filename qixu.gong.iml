@@ -75,6 +75,15 @@
     <orderEntry type="library" name="Maven: com.profesorfalken:WMI4Java:1.6.1" level="project" />
     <orderEntry type="library" name="Maven: com.profesorfalken:jPowerShell:1.9" level="project" />
     <orderEntry type="library" name="Maven: org.apache.commons:commons-compress:1.16.1" level="project" />
+    <orderEntry type="module-library">
+      <library name="Maven: jdk.tools:jdk.tools:1.6">
+        <CLASSES>
+          <root url="jar:///opt/java-jdk/jdk1.8.0_221/lib/tools.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
     <orderEntry type="library" name="Maven: org.neo4j:neo4j-bolt:3.4.8" level="project" />
     <orderEntry type="library" name="Maven: org.neo4j:neo4j-values:3.4.8" level="project" />
     <orderEntry type="library" name="Maven: org.neo4j:neo4j-ssl:3.4.8" level="project" />
