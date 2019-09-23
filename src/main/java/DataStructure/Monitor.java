@@ -2,7 +2,7 @@ package DataStructure;
 
 public class Monitor {
     public long callAddToSkyline = 0; //the number of times of calling the add to skyline function
-    public long finnalCallAddToSkyline = 0; //the number of times to try to add new backbone path into the result set in the index version function.
+    public long finnalCallAddToSkyline = 0; // the number of times to try to add new backbone path into the result set in the index version function.
 
     public long runningtime_supplement_addtoskyline = 0;
     public long runningtime_supplement_construction = 0;
@@ -15,12 +15,15 @@ public class Monitor {
     public long runningtime_check_domination_result;
     public long node_call_addtoskyline; // The number of times of calling the addToSkyline function on each myNode object, in the baseline function.
     public long callcheckdominatedbyresult; // The number of times of check whether the temporary results are dominated by the results in the final result set.
-    public long allsizeofthecheckdominatedbyresult;
+    public long allsizeofthecheckdominatedbyresult; // the total size of the result is the dominate checking by (final or temp) the backbone path　
 
 
     public long overallRuningtime; //overall running time of the index query, t= index_reading_time + query_time.
     public long indexQueryTime; //the time that is used to query by using the backbone index
     public long spInitTimeInBaseline; //the time that is used to find the shortest path at the beginning of the baseline algorithm.
+
+    public long sizeOfResult;
+
 
     public void clone(Monitor m) {
         callAddToSkyline = m.callAddToSkyline;
@@ -44,6 +47,8 @@ public class Monitor {
         overallRuningtime = m.overallRuningtime;
         indexQueryTime = m.indexQueryTime;
         spInitTimeInBaseline = m.spInitTimeInBaseline;
+
+        this.sizeOfResult = m.sizeOfResult;
     }
 
     public Monitor() {
@@ -93,5 +98,13 @@ public class Monitor {
 
     public double getRunningtime_check_domination_resultByms() {
         return runningtime_check_domination_result / 1000000.0;
+    }
+
+    public long getSizeOfResult() {
+        return sizeOfResult;
+    }
+
+    public void setSizeOfResult(long sizeOfResult) {
+        this.sizeOfResult = sizeOfResult;
     }
 }

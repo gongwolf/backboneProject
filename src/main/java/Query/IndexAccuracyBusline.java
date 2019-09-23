@@ -6,10 +6,12 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.util.*;
 
-public class Index {
+public class IndexAccuracyBusline {
+    private final boolean readIntraIndex;
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
-    public ArrayList<Hashtable<Long, ArrayList<Long>>> nodesToHighway_index = new ArrayList();        //level --> <source_node_id --> list of the highway>
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> intra_index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
+
+    public ArrayList<Hashtable<Long, ArrayList<Long>>> nodesToHighway_index = new ArrayList();        //level --> <source_node_id --> list of the highway>
 
 
     public Monitor monitor;
@@ -24,27 +26,30 @@ public class Index {
     HashMap<Long, ArrayList<backbonePath>> destination_to_highway_results = new HashMap<>(); //the temporary results from destination node to highways
 
 
-    public Index(long graphsize, int dimension, int degree, boolean readIntraIndex) {
+    public IndexAccuracyBusline(long graphsize, int dimension, int degree, boolean readIntraIndex,double same_t) {
         this.graphsize = graphsize;
         this.degree = degree;
         this.dimension = dimension;
-        index_folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension;
+        index_folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/busline_" + graphsize + "_" + same_t;
+        System.out.println(index_folder);
         nth_folder = index_folder + "/nodeToHighway_index";
         readIndexFromDisk(readIntraIndex);
+        this.readIntraIndex = readIntraIndex;
         this.monitor = new Monitor();
     }
 
     public static void main(String args[]) {
         long start_ms = System.currentTimeMillis();
-        boolean readIntraIndex = true;
-        Index i = new Index(30, 3, 3, readIntraIndex);
+        boolean readIntraIndex = false;
+        IndexAccuracyBusline i = new IndexAccuracyBusline(100, 3, 4, readIntraIndex,28);
         long running_start_ms = System.currentTimeMillis();
 
-        i.test(16, 22, readIntraIndex);
-//        long end_ms = System.currentTimeMillis();
-//        System.out.println("running time (include index reading ): " + (end_ms - start_ms) + " ms");
-//        System.out.println("running time: " + (end_ms - running_start_ms) + " ms");
-//        System.out.println(i.monitor.callAddToSkyline + "   " + i.monitor.finnalCallAddToSkyline);
+        i.test(65, 55, readIntraIndex);
+        long end_ms = System.currentTimeMillis();
+        System.out.println("running time (include index reading ): " + (end_ms - start_ms) + " ms");
+        System.out.println("running time: " + (end_ms - running_start_ms) + " ms");
+        System.out.println(i.monitor.callAddToSkyline + "   " + i.monitor.finnalCallAddToSkyline);
+        i.printResult();
     }
 
     public void test(long source_node, long destination_node, boolean useIntraIndex) {
@@ -68,26 +73,26 @@ public class Index {
         HashSet<Long> needs_to_add_to_destination = new HashSet<>();
 
         for (int l = 0; l <= this.total_level; l++) {
-            System.out.println("Find the index information at level " + l);
+//            System.out.println("Find the index information at level " + l);
             needs_to_add_to_source.clear();
             needs_to_add_to_destination.clear();
 
-            HashSet<Long> shList = new HashSet<>(source_to_highway_results.keySet());
-            HashSet<Long> dhList = new HashSet<>(destination_to_highway_results.keySet());
+            HashSet<Long> shList = new HashSet<>(source_to_highway_results.keySet()); //the candidate source node in the previous level
+            HashSet<Long> dhList = new HashSet<>(destination_to_highway_results.keySet()); //the candidate destination node in the previous level
 
             for (long s_id : shList) {
-                ArrayList<Long> highwaysOfsrcNode = this.nodesToHighway_index.get(l).get(s_id);//get highways of s_id
+                HashSet<Long> highwaysOfsrcNode = getHighways(s_id, l);
                 if (highwaysOfsrcNode != null) {
                     for (long h_node : highwaysOfsrcNode) {//h_node is highway node of the sid, it's the source node to the next level
                         ArrayList<double[]> source_to_highway_list = readHighwaysInformation(h_node, l, s_id);
                         if (source_to_highway_list != null || !source_to_highway_list.isEmpty()) {
-                            if (h_node == destination_node) {
+                            if (h_node == destination_node) { // if the highway is the destination node
+                                //get the results from source --> highway --> destination node
                                 ArrayList<backbonePath> bps_src_to_sid = source_to_highway_results.get(s_id); // the backbone paths from source node to s_id;
                                 for (backbonePath old_path : bps_src_to_sid) {
                                     for (double[] costs : source_to_highway_list) {
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
                                         addToSkyline(this.result, new_bp);
-                                        System.out.println("find highway is the destination node " + s_id + "   " + h_node + " : " + old_path + " --> " + new_bp);
                                         monitor.finnalCallAddToSkyline++;
                                     }
                                 }
@@ -98,7 +103,6 @@ public class Index {
                                     for (double[] costs : source_to_highway_list) {
                                         long s_creat_rt_src = System.nanoTime();
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
-                                        System.out.println(s_id + "   " + h_node + " : " + old_path + "  " + new_bp + " --> " + new_bp.hasCycle);
                                         long e_creat_rt_src = System.nanoTime();
                                         monitor.runningtime_src_create_newpath += (e_creat_rt_src - s_creat_rt_src);
 
@@ -107,7 +111,7 @@ public class Index {
                                             boolean flag = addToResultSet(new_bp, source_to_highway_results);
                                             long e_add_rt_src = System.nanoTime();
                                             monitor.runningtime_src_addtoskyline += (e_add_rt_src - s_add_rt_src);
-                                            if (flag && !needtoinserted) {
+                                            if (flag && !needtoinserted) { //if h_node could be a candidate source node in next level
                                                 needtoinserted = true;
                                             }
                                         }
@@ -123,21 +127,21 @@ public class Index {
                 }
             }
 
-            System.out.println("~~~~~~~~~~~~~~~~~~~~~~");
+//            System.out.println("~~~~~~~~~~~~~~~~~~~~~~");
 
             for (long d_id : dhList) {
-                ArrayList<Long> highwaysOfDestNode = this.nodesToHighway_index.get(l).get(d_id);//get highways of did
+                HashSet<Long> highwaysOfDestNode = getHighways(d_id, l);//get highways of did
                 if (highwaysOfDestNode != null) {
                     for (long h_node : highwaysOfDestNode) {//h_node is highway node of the did, it's the destination node to the next level
                         ArrayList<double[]> destination_to_highway_list = readHighwaysInformation(h_node, l, d_id); //costs from did to h_node
                         if (destination_to_highway_list != null || !destination_to_highway_list.isEmpty()) {
-                            if (h_node == source_node) {
+                            if (h_node == source_node) { //if the highway is the source node
                                 ArrayList<backbonePath> bps_dest_to_did = destination_to_highway_results.get(d_id); // the backbone paths from destination node to d_id;
                                 for (backbonePath old_path : bps_dest_to_did) {
                                     for (double[] costs : destination_to_highway_list) {
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the did->old_highway->destination (the highway node)
                                         addToSkyline(this.result, new_bp);
-                                        System.out.println("find highway is the source node " + h_node + "     " + d_id + " : " + old_path + " --> " + new_bp);
+//                                        System.out.println("find highway is the source node " + h_node + "     " + d_id + " : " + old_path + " --> " + new_bp);
                                         monitor.finnalCallAddToSkyline++;
                                     }
                                 }
@@ -148,7 +152,7 @@ public class Index {
                                     for (double[] costs : destination_to_highway_list) {
                                         long s_creat_rt_dest = System.nanoTime();
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the destination->old_highway->new_highway
-                                        System.out.println(h_node + "     " + d_id + " : " + old_path + " --> " + new_bp);
+//                                        System.out.println(h_node + "     " + d_id + " : " + old_path + " --> " + new_bp);
 
                                         long e_creat_rt_dest = System.nanoTime();
                                         monitor.runningtime_dest_create_newpath += (e_creat_rt_dest - s_creat_rt_dest);
@@ -178,13 +182,17 @@ public class Index {
 
 //            System.out.println("intra-index ============================== ");
 
+            /** the path is created by three parts
+             * 1. source node to highway node s_h in current level
+             * 2. Intra index, from s_h to d_h.
+             * 3. destination node to highway node d_h in current level
+             */
             if (useIntraIndex) {
                 for (long src_key : source_to_highway_results.keySet()) {
                     if (intra_index.get(l).get(src_key) != null) {
                         Hashtable<Long, ArrayList<double[]>> src_dest_list = intra_index.get(l).get(src_key);
                         for (long dest_key : destination_to_highway_results.keySet()) {
                             if (src_dest_list.get(dest_key) != null) {
-//                                System.out.println(src_key + "------------>" + dest_key);
                                 ArrayList<backbonePath> src_to_hw_list = source_to_highway_results.get(src_key);
                                 ArrayList<backbonePath> hw_to_dest_list = destination_to_highway_results.get(dest_key);
 
@@ -205,80 +213,71 @@ public class Index {
             }
 
             HashSet<Long> commonset = findCommandHighways(source_to_highway_results.keySet(), destination_to_highway_results.keySet());
-//            System.out.println("commond set : " + commonset);
+
             if (!commonset.isEmpty()) {
                 for (long common_node : commonset) {
                     combinationResult(source_to_highway_results.get(common_node), destination_to_highway_results.get(common_node));
                 }
             }
-            System.out.println("the result at level" + l + ":");
-            printResult();
-//
-//            System.out.println("=======-----------------------=======");
-//
-//            for (Map.Entry<Long, ArrayList<backbonePath>> sh : source_to_highway_results.entrySet()) {
-//                long shid = sh.getKey();
-//                System.out.println(shid);
-//                for (backbonePath bp : sh.getValue()) {
-//                    System.out.println("    " + bp);
-//                }
-//            }
-//
-//            System.out.println("-------------------------------------------------------------------------------------------------------");
-//
-//            for (Map.Entry<Long, ArrayList<backbonePath>> dh : destination_to_highway_results.entrySet()) {
-//                long dhid = dh.getKey();
-//                System.out.println(dhid);
-//                for (backbonePath bp : dh.getValue()) {
-//                    System.out.println("    " + bp);
-//                }
-//            }
-
-            System.out.println("======================================================================");
         }
-//        System.out.println(monitor.callAddToSkyline + "     " + monitor.finnalCallAddToSkyline);
 
         HashSet<Long> commonset = findCommandHighways(needs_to_add_to_source, needs_to_add_to_destination);
         supplementHighestLevel(needs_to_add_to_source, needs_to_add_to_destination);
 
 
-//        System.out.println("======= find the temp-results");
+        System.out.println("======= find the temp-results");
         supplementAllIndex();
+//        printResult();
 
+        System.out.println(monitor.getRunningtime_supplement_addtoskylineByms() + "     " + monitor.getRunningtime_supplement_constructionByms());
+        System.out.println(monitor.getRunningtime_combination_addtoskylineByms() + "     " + monitor.getRunningtime_combination_constructionByms());
+        System.out.println(monitor.getRunningtime_src_addtoskylineByms() + "     " + monitor.getRunningtime_dest_addtoskylineByms() + "  " + monitor.getRunningtime_intermedia_addtoskyline());
+        System.out.println(monitor.getRunningtime_src_createlineByms() + "     " + monitor.getRunningtime_dest_createByms() + "  " + monitor.getRunningtime_intermedia_createline());
+        System.out.println(monitor.getRunningtime_check_domination_resultByms());
+        System.out.println(monitor.callcheckdominatedbyresult);
+        System.out.println(monitor.allsizeofthecheckdominatedbyresult);
 //        printResult();
-//        System.out.println(monitor.getRunningtime_supplement_addtoskylineByms() + "     " + monitor.getRunningtime_supplement_constructionByms());
-//        System.out.println(monitor.getRunningtime_combination_addtoskylineByms() + "     " + monitor.getRunningtime_combination_constructionByms());
-//        System.out.println(monitor.getRunningtime_src_addtoskylineByms() + "     " + monitor.getRunningtime_dest_addtoskylineByms() + "  " + monitor.getRunningtime_intermedia_addtoskyline());
-//        System.out.println(monitor.getRunningtime_src_createlineByms() + "     " + monitor.getRunningtime_dest_createByms() + "  " + monitor.getRunningtime_intermedia_createline());
-//        System.out.println(monitor.getRunningtime_check_domination_resultByms());
-//        System.out.println(monitor.callcheckdominatedbyresult);
-//        System.out.println(monitor.allsizeofthecheckdominatedbyresult);
-//        System.out.println("the result at final level:");
-//        printResult();
+    }
+
+    private HashSet<Long> getHighways(long node_id, int level) {
+//        System.out.println("Find Highway of the node "+node_id+" at level "+level);
+        HashSet<Long> result = new HashSet<>();
+        if (this.nodesToHighway_index.get(level).get(node_id) != null) {
+            result.addAll(nodesToHighway_index.get(level).get(node_id));//get highways of s_id
+        }
+
+        //where the node_id could expand from the intra-level index
+
+        if (this.readIntraIndex) {
+            for (Map.Entry<Long, Hashtable<Long, ArrayList<double[]>>> intraLevel : this.intra_index.get(level).entrySet()) {
+                Long hid = intraLevel.getKey();
+                if (intraLevel.getValue().containsKey(node_id)) {
+                    result.add(hid);
+                }
+            }
+        }
+        return result;
     }
 
     private void supplementAllIndex() {
         for (Map.Entry<Long, ArrayList<backbonePath>> sh : source_to_highway_results.entrySet()) {
             long shid = sh.getKey();
-//            System.out.println(shid);
-//            for (backbonePath bp : sh.getValue()) {
-//                System.out.println(" " + bp);
-//            }
+
             for (Map.Entry<Long, ArrayList<backbonePath>> dh : destination_to_highway_results.entrySet()) {
                 long dhid = dh.getKey();
-//                System.out.println("    [" + dhid + "]");
 
                 if (dhid != shid) {
                     ArrayList<double[]> costs = findLinkBackbonePath(shid, dhid);
                     if (!costs.isEmpty()) {
                         for (double[] c : costs) {
                             backbonePath tmp_src_dest_bp = new backbonePath(shid, dhid, c);
-                            if (!dominatedByResult(tmp_src_dest_bp)) {
+                            boolean isdominated = dominatedByResult(tmp_src_dest_bp);
+                            if (!isdominated) {
                                 for (backbonePath s_t_h_bpath : sh.getValue()) {
                                     for (backbonePath d_t_h_bpath : dh.getValue()) {
                                         backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath, c);
+//                                        System.out.println("    " + result_backbone + "  " + isdominated);
                                         addToSkyline(this.result, result_backbone);
-
                                     }
                                 }
                             }
@@ -292,34 +291,30 @@ public class Index {
 
     private ArrayList<double[]> findLinkBackbonePath(long shid, long dhid) {
         ArrayList<double[]> result = new ArrayList<>();
-//        System.out.println("    find     " + shid + "   " + dhid);
         int i = 0;
         for (Hashtable<Long, Hashtable<Long, ArrayList<double[]>>> l_index : this.index) {
             Hashtable<Long, ArrayList<double[]>> s = l_index.get(shid);
-//            Hashtable<Long, ArrayList<double[]>> d = l_index.get(dhid);
             if (s != null) {
                 ArrayList<double[]> stod = s.get(dhid);
                 if (stod != null) {
                     for (double costs[] : stod) {
-//                        System.out.println("    " + shid + "---->" + dhid + " [" + costs[0] + "," + costs[1] + "," + costs[2] + "]    at level " + i);
                         result.add(costs);
                     }
                 }
             }
             i++;
-//            if (d != null) {
-//                ArrayList<double[]> dtos = d.get(shid);
-//                if (dtos != null) {
-//                    for (double costs[] : dtos) {
-//                        System.out.println("    "+dhid + "---->" + shid + " [" + costs[0] + "," + costs[1] + "," + costs[2] + "]");
-//                    }
-//                }
-//            }
         }
 
         return result;
     }
 
+
+    /**
+     * Find the levels that the source and destination node share the same highway node
+     *
+     * @param source_node the source node of the query
+     * @param destination_node the destination node of the query
+     */
     private void findCommonLayer(long source_node, long destination_node) {
         for (int l = 0; l <= this.total_level; l++) {
             ArrayList<Long> src_highways = this.nodesToHighway_index.get(l).get(source_node);
@@ -335,11 +330,10 @@ public class Index {
                 if (src_highways == null) {
                     a = true;
                 }
-
                 if (dest_highways == null) {
                     b = true;
                 }
-                System.out.println("there is no highways of " + (a ? "src node " : "") + "   " + (b ? " dest node" : ""));
+                System.out.println("there is no highways of " + (a ? "src node " : "") + "   " + (b ? "dest node" : ""));
             }
             System.out.println("=======================================================");
         }
@@ -386,6 +380,8 @@ public class Index {
     }
 
     private void printResult() {
+        monitor.sizeOfResult = result.size();
+        System.out.println("Size of result = "+monitor.sizeOfResult);
         for (backbonePath r : result) {
             System.out.println("the temp results:" + r);
         }
@@ -420,7 +416,6 @@ public class Index {
 
         return bps_results;
     }
-
 
     private boolean addToResultSet(backbonePath new_bp, HashMap<Long, ArrayList<backbonePath>> highway_results) {
         long h_node = new_bp.destination;// h_node is the highway node of next layer.
@@ -507,15 +502,21 @@ public class Index {
 
     }
 
+    /**
+     *
+     * Find the command highway nodes from two given sets
+     *
+     * @param src_set highway nodes list of the src node
+     * @param dest_set highway nodes list of the dest node
+     * @return
+     */
     private HashSet<Long> findCommandHighways(HashSet<Long> src_set, HashSet<Long> dest_set) {
         HashSet<Long> commonset = new HashSet<>();
-
         for (long s_element : src_set) {
             if (dest_set.contains(s_element)) {
                 commonset.add(s_element);
             }
         }
-
         return commonset;
     }
 
@@ -532,19 +533,31 @@ public class Index {
     }
 
     /**
+     * the skyline costs from the source node to the highway node
+     *
      * @param h_node      highway node id
      * @param level       the level of the index
      * @param source_node the source node id
      * @return the skyline costs from the source node to the highway node
      */
     private ArrayList<double[]> readHighwaysInformation(long h_node, int level, long source_node) {
-        ArrayList<double[]> source_to_highway_list = this.index.get(level).get(h_node).get(source_node); // get the skyline costs from source node to h_node
-        if (source_to_highway_list != null) {
-            return source_to_highway_list;
-        } else {
-            return null;
+        ArrayList<double[]> source_to_highway_list = new ArrayList<>(); // get the skyline costs from source node to h_node
+        if (this.index.get(level) != null && this.index.get(level).get(h_node) != null && this.index.get(level).get(h_node).get(source_node) != null) {
+            source_to_highway_list.addAll(this.index.get(level).get(h_node).get(source_node));
         }
 
+        if (this.readIntraIndex) {
+            ArrayList<double[]> source_to_intra_nodes = new ArrayList<>();
+            if (this.intra_index.get(level) != null && this.intra_index.get(level).get(h_node) != null && this.intra_index.get(level).get(h_node).get(source_node) != null) {
+                source_to_intra_nodes.addAll(this.intra_index.get(level).get(h_node).get(source_node));
+            }
+
+            if (!source_to_intra_nodes.isEmpty()) {
+                source_to_highway_list.addAll(source_to_intra_nodes);
+            }
+        }
+
+        return !source_to_highway_list.isEmpty() ? source_to_highway_list : null;
     }
 
     private void readIndexFromDisk(boolean readIntraIndex) {
@@ -707,7 +720,7 @@ public class Index {
     private int getlevel() {
         int level = 0;
         File index_dir = new File(this.index_folder);
-//        System.out.println(this.index_folder);
+        System.out.println(this.index_folder);
         for (File f : index_dir.listFiles(new levelFileNameFilter())) {
             String fname = f.getName();
             int c_level = Integer.parseInt(fname.substring(fname.indexOf("level") + 5, fname.length()));

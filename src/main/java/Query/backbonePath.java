@@ -32,7 +32,6 @@ public class backbonePath {
 
         this.highwayList.add(h_node);
 
-
         calculatedCosts(costs, old_path.costs);
     }
 

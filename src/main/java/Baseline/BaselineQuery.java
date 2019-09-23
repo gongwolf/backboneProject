@@ -22,11 +22,11 @@ public class BaselineQuery {
 
     public static void main(String arg[]) {
 
-        long graphsize = 14;
+        long graphsize = 100;
 
         BaselineQuery bq = new BaselineQuery(graphsize);
 //        bq.batchRandomQueries();
-        bq.query(9, 10, false);
+        bq.query(65, 55, true);
 //        bq.query(7732, 167, true);
     }
 
@@ -38,6 +38,8 @@ public class BaselineQuery {
 //        for (path p : skylines) {
 //            System.out.println(p);
 //        }
+
+        System.out.println(skylines.size());
 
         return skylines;
 
@@ -59,7 +61,8 @@ public class BaselineQuery {
 
 
     public ArrayList<path> onlineQueryTest(long startNode, long endNode, boolean init, Monitor monitor) {
-        BBSBaseline baseline = new BBSBaseline(this.graphsize, this.degree, 3);
+//        BBSBaseline baseline = new BBSBaseline(this.graphsize, this.degree, 3);
+        BBSBaselineBusline baseline = new BBSBaselineBusline(this.graphsize, 28);
         baseline.results.clear();
 
         long start_ms = System.currentTimeMillis();
@@ -85,6 +88,7 @@ public class BaselineQuery {
 //        System.out.println(baseline.monitor.callcheckdominatedbyresult);
 //        System.out.println(baseline.monitor.getRunningtime_check_domination_resultByms());
 //        System.out.println(baseline.monitor.allsizeofthecheckdominatedbyresult);
+        System.out.println("number of time to call the add to skyline function :"+ monitor.callAddToSkyline+"    !!!!");
         return results;
     }
 

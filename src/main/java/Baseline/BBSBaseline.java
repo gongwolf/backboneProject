@@ -3,6 +3,8 @@ package Baseline;
 import DataStructure.Monitor;
 import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
+import Neo4jTools.generateGraph;
+import org.apache.commons.cli.*;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
@@ -19,10 +21,10 @@ import java.util.Map;
 public class BBSBaseline {
 
     public double[] iniLowerBound;
-    int graphsize = 1000;
+    int graphsize = 10000;
     int degree = 4;
     int dimension = 3;
-    HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>();
+    HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>(); //source node id ==> HashMap < destination node id, myNode objects that stores skyline paths>
     ArrayList<path> results = new ArrayList<>();
     Monitor monitor;
     private GraphDatabaseService graphdb;
@@ -52,14 +54,63 @@ public class BBSBaseline {
         this.monitor = new Monitor();
     }
 
-    public static void main(String args[]) {
-        BBSBaseline baseline = new BBSBaseline();
-        for (int i = 0; i < baseline.graphsize; i++) {
-            baseline.bbs(i);
-//            System.out.println("Finished the finding of the index of the node " + i);
+    public static void main(String args[])  {
+
+
+        Options options = new Options();
+        options.addOption("g", "grahpsize", true, "number of nodes in the graph");
+        options.addOption("de", "degree", true, "degree of the graphe");
+        options.addOption("di", "dimension", true, "dimension of the graph");
+        options.addOption("h", "help", false, "print the help of this command");
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = null;
+        try {
+            cmd = parser.parse(options, args);
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
-        baseline.printSummurizationInformation();
-        baseline.closeDB();
+
+        String g_str = cmd.getOptionValue("g");
+        String de_str = cmd.getOptionValue("de");
+        String di_str = cmd.getOptionValue("di");
+
+        int numberNodes, numberofDegree, numberofDimen;
+
+        if (cmd.hasOption("h")) {
+            HelpFormatter formatter = new HelpFormatter();
+            String header = "Run the code to build the indexes by using the basic bbs algorithm :";
+            formatter.printHelp("java -jar BBSIndexBuilt.jar", header, options, "", false);
+        } else {
+
+            if (g_str == null) {
+                numberNodes = 10000;
+            } else {
+                numberNodes = Integer.parseInt(g_str);
+            }
+
+            if (de_str == null) {
+                numberofDegree = 4;
+            } else {
+                numberofDegree = Integer.parseInt(de_str);
+            }
+
+            if (di_str == null) {
+                numberofDimen = 3;
+            } else {
+                numberofDimen = Integer.parseInt(di_str);
+            }
+
+            BBSBaseline baseline = new BBSBaseline(numberNodes, numberofDegree, numberofDimen);
+            for (int i = 0; i < baseline.graphsize; i++) {
+                baseline.bbs(i);
+                System.out.println("Finished the finding of the index of the node " + i);
+            }
+            baseline.printSummurizationInformation();
+            baseline.closeDB();
+        }
+
+
     }
 
     private void printSummurizationInformation() {
@@ -71,18 +122,19 @@ public class BBSBaseline {
             HashMap<Long, myNode> destination_index = this.index.get((long) nodeID);
             writeToDisk(destination_index, nodeID);
 
-            for (long i = 0; i < 1000; i++) {
+            for (long i = 0; i < graphsize; i++) {
                 ArrayList<path> skys = destination_index.get(i).skyPaths;
                 long size = skys.size();
 //                for (path p : skys) {
 //                    System.out.println(nodeID + " " + i + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2]);
 //                }
                 summation += size;
-//                System.out.println(nodeID + " to " + i + "  " + size);
+                System.out.println( nodeID + " to " + i + "  " + size);
             }
             System.out.println("the number of the skyline paths from  " + nodeID + " to others is " + summation);
             overall_summation += summation;
         }
+
         System.out.println("the total index size is " + overall_summation + "/=" + (overall_summation / 2));
     }
 
@@ -168,7 +220,6 @@ public class BBSBaseline {
 
             tx.success();
         }
-
         this.index.put(nodeID, tmpStoreNodes);
     }
 
@@ -225,7 +276,7 @@ public class BBSBaseline {
     private boolean dominatedByResult(path np) {
 
         monitor.callcheckdominatedbyresult++;
-        monitor.allsizeofthecheckdominatedbyresult+=this.results.size();
+        monitor.allsizeofthecheckdominatedbyresult += this.results.size();
         long rt_check_dominatedByresult = System.nanoTime();
         for (path rp : results) {
             if (checkDominated(rp.costs, np.costs)) {

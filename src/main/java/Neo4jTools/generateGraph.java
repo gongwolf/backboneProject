@@ -22,7 +22,7 @@ public class generateGraph {
         this.numberofEdges = Math.round(numberNodes * (degree));
         this.numberofDimens = dimensions;
 
-        this.DBBase = "/home/gqxwolf/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/";
+        this.DBBase = "/home/gqxwolf/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "_" + dimensions + "/data/";
         EdgesPath = DBBase + "SegInfo.txt";
         NodePath = DBBase + "NodeInfo.txt";
 
@@ -54,13 +54,13 @@ public class generateGraph {
         } else {
 
             if (g_str == null) {
-                numberNodes = 30;
+                numberNodes = 10000;
             } else {
                 numberNodes = Integer.parseInt(g_str);
             }
 
             if (de_str == null) {
-                numberofDegree = 3;
+                numberofDegree = 4;
             } else {
                 numberofDegree = Integer.parseInt(de_str);
             }
@@ -93,10 +93,10 @@ public class generateGraph {
 
         //generate the latitude and the longitude in the range from 1 to 360
         for (int i = 0; i < numberNodes; i++) {
-            String cost1 = String.valueOf(getRandomNumberInRange(1, 360));
-            String cost2 = String.valueOf(getRandomNumberInRange(1, 360));
-            Nodes.put(String.valueOf(i), new String[]{cost1, cost2});
-            System.out.println(i+"   ["+cost1+","+cost2+"]");
+            String lat = String.valueOf(getRandomNumberInRange(1, 360));
+            String lng = String.valueOf(getRandomNumberInRange(1, 360));
+            Nodes.put(String.valueOf(i), new String[]{lat, lng});
+            System.out.println(i + "   [" + lat + "," + lng + "]");
         }
 
         //Create the Edges information.
@@ -116,7 +116,15 @@ public class generateGraph {
 
             String[] costs = new String[numberofDimens];
             for (int j = 0; j < numberofDimens; j++) {
-                costs[j] = String.valueOf(getGaussian(dist, dist * 0.2));
+                //Gaussian distribution value
+//                costs[j] = String.valueOf(getGaussian(dist, dist * 0.2));
+
+                //total random value attribute
+                if (j == 0) {
+                    costs[j] = String.valueOf(dist);
+                } else {
+                    costs[j] = String.valueOf(getRandomNumberInRange(0.1 * dist, dist));
+                }
             }
 
 
@@ -147,7 +155,12 @@ public class generateGraph {
 
                 String[] costs = new String[numberofDimens];
                 for (int j = 0; j < numberofDimens; j++) {
-                    costs[j] = String.valueOf(getGaussian(dist * 2, dist * 0.3));
+//                    costs[j] = String.valueOf(getGaussian(dist * 2, dist * 0.3));
+                    if (j == 0) {
+                        costs[j] = String.valueOf(dist);
+                    } else {
+                        costs[j] = String.valueOf(getRandomNumberInRange(0.1 * dist, dist));
+                    }
                 }
 
                 Edges.put(new Pair(startNode, endNode), costs);
@@ -203,7 +216,7 @@ public class generateGraph {
         }
     }
 
-    private double getRandomNumberInRange(int min, int max) {
+    private double getRandomNumberInRange(double min, double max) {
 
         if (min >= max) {
             throw new IllegalArgumentException("max must be greater than min");
@@ -233,6 +246,15 @@ public class generateGraph {
         }
 
         return value;
+    }
+
+    private double getRandomNumberInRange_double(int min, int max) {
+        if (min >= max) {
+            throw new IllegalArgumentException("max must be greater than min");
+        }
+
+        Random r = new Random();
+        return min + (max - min) * r.nextDouble();
     }
 
 

@@ -18,29 +18,27 @@ public class CreateDB {
     private final String home_folder = System.getProperty("user.home");
 
 
-
-
     public static void main(String args[]) {
 
-        int graphsize=1000;
-        int degree = 3;
+        int graphsize = 10000;
+        int degree = 4;
         int dimension = 3;
 
         CreateDB c = new CreateDB();
-//        c.createRandomGraph(graphsize,degree,dimension);
-        c.createBusLineDataBase(100 , 28);
+        c.createRandomGraph(graphsize, degree, dimension);
+//        c.createBusLineDataBase(100 , 28);
     }
 
     private void createRandomGraph(int graphsize, int degree, int dimension) {
-        String sub_db_name = graphsize +"_" +degree +"_"+dimension+ "_Level0";
+        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level0";
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);
         neo4j.deleleDB();
         System.out.println("====================================================================");
         neo4j.startDB(false);
         System.out.println(neo4j.DB_PATH);
         System.out.println("====================================================================");
-        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/NodeInfo.txt";
-        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "/data/SegInfo.txt";
+        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "_" + dimension + "/data/NodeInfo.txt";
+        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "_" + dimension + "/data/SegInfo.txt";
 //        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/busline_14_0.0/data/NodeInfo.txt";
 //        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/busline_14_0.0/data/SegInfo.txt";
 
@@ -110,7 +108,7 @@ public class CreateDB {
             str.append(e.getValue()[1]).append(" "); //c2
             str.append(e.getValue()[2]); //c3
             ss.add(str.toString());
-            if (idx_i % 100000 == 0) {
+            if (idx_i % 10000 == 0) {
                 process_batch_edges(ss, graphdb);
                 ss.clear();
                 System.out.println(idx_i + " edges were created");
@@ -226,14 +224,16 @@ public class CreateDB {
     private boolean existedEdges(Pair<Integer, Integer> relations, HashMap<Pair<Integer, Integer>, double[]> edges) {
         int sid = relations.getKey();
         int did = relations.getValue();
-        for (Map.Entry<Pair<Integer, Integer>, double[]> e : edges.entrySet()) {
-            if (e.getKey().getKey() == sid && e.getKey().getValue() == did) {
-                return true;
-            } else if (e.getKey().getKey() == did && e.getKey().getValue() == sid) {
-                return true;
-            }
-        }
-        return false;
+        Pair<Integer,Integer> reverse_rel = new Pair<>(did,sid);
+        return edges.containsKey(reverse_rel) || edges.containsKey(relations);
+//        for (Map.Entry<Pair<Integer, Integer>, double[]> e : edges.entrySet()) {
+//            if (e.getKey().getKey() == sid && e.getKey().getValue() == did) {
+//                return true;
+//            } else if (e.getKey().getKey() == did && e.getKey().getValue() == sid) {
+//                return true;
+//            }
+//        }
+//        return false;
     }
 
     private Node createNode(String id, double lat, double log, GraphDatabaseService graphdb) {
