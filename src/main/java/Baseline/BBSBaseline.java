@@ -24,7 +24,7 @@ public class BBSBaseline {
     int graphsize = 10000;
     int degree = 4;
     int dimension = 3;
-    HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>(); //source node id ==> HashMap < destination node id, myNode objects that stores skyline paths>
+//    HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>(); //source node id ==> HashMap < destination node id, myNode objects that stores skyline paths>
     ArrayList<path> results = new ArrayList<>();
     Monitor monitor;
     private GraphDatabaseService graphdb;
@@ -49,14 +49,13 @@ public class BBSBaseline {
 
         String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + 0;
         neo4j = new Neo4jDB(sub_db_name);
+        System.out.println(neo4j.DB_PATH);
         neo4j.startDB(true);
         graphdb = neo4j.graphDB;
         this.monitor = new Monitor();
     }
 
     public static void main(String args[])  {
-
-
         Options options = new Options();
         options.addOption("g", "grahpsize", true, "number of nodes in the graph");
         options.addOption("de", "degree", true, "degree of the graphe");
@@ -102,41 +101,42 @@ public class BBSBaseline {
             }
 
             BBSBaseline baseline = new BBSBaseline(numberNodes, numberofDegree, numberofDimen);
+            baseline.createIndexFolder();
             for (int i = 0; i < baseline.graphsize; i++) {
                 baseline.bbs(i);
                 System.out.println("Finished the finding of the index of the node " + i);
             }
-            baseline.printSummurizationInformation();
+//            baseline.printSummurizationInformation();
             baseline.closeDB();
         }
 
 
     }
 
-    private void printSummurizationInformation() {
-        createIndexFolder();
-
-        long overall_summation = 0;
-        for (int nodeID = 0; nodeID < graphsize; nodeID++) {
-            long summation = 0;
-            HashMap<Long, myNode> destination_index = this.index.get((long) nodeID);
-            writeToDisk(destination_index, nodeID);
-
-            for (long i = 0; i < graphsize; i++) {
-                ArrayList<path> skys = destination_index.get(i).skyPaths;
-                long size = skys.size();
-//                for (path p : skys) {
-//                    System.out.println(nodeID + " " + i + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2]);
-//                }
-                summation += size;
-                System.out.println( nodeID + " to " + i + "  " + size);
-            }
-            System.out.println("the number of the skyline paths from  " + nodeID + " to others is " + summation);
-            overall_summation += summation;
-        }
-
-        System.out.println("the total index size is " + overall_summation + "/=" + (overall_summation / 2));
-    }
+//    private void printSummurizationInformation() {
+//        createIndexFolder();
+//
+//        long overall_summation = 0;
+//        for (int nodeID = 0; nodeID < graphsize; nodeID++) {
+//            long summation = 0;
+//            HashMap<Long, myNode> destination_index = this.index.get((long) nodeID);
+////            writeToDisk(destination_index, nodeID);
+//
+//            for (long i = 0; i < graphsize; i++) {
+//                ArrayList<path> skys = destination_index.get(i).skyPaths;
+//                long size = skys.size();
+////                for (path p : skys) {
+////                    System.out.println(nodeID + " " + i + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2]);
+////                }
+//                summation += size;
+//                System.out.println( nodeID + " to " + i + "  " + size);
+//            }
+//            System.out.println("the number of the skyline paths from  " + nodeID + " to others is " + summation);
+//            overall_summation += summation;
+//        }
+//
+//        System.out.println("the total index size is " + overall_summation + "/=" + (overall_summation / 2));
+//    }
 
     private void createIndexFolder() {
         String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/baseline_" + graphsize + "_" + degree + "_" + dimension;
@@ -220,7 +220,7 @@ public class BBSBaseline {
 
             tx.success();
         }
-        this.index.put(nodeID, tmpStoreNodes);
+        writeToDisk(tmpStoreNodes,nodeID);
     }
 
     public ArrayList<path> queryOnline(long src, long dest) {
