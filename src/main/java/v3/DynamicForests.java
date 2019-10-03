@@ -40,9 +40,16 @@ public class DynamicForests {
         return false;
     }
 
+    /**
+     * Find the replacement edge of r in current level spanning forest.
+     * @param r the deleted relatoinship
+     * @param level_r the level of the specific spanning forests
+     * @return if the replacement relationship is found, return it. If not, return null.
+     */
     public Relationship replacement(Relationship r, int level_r) {
         //Find the tree that contains given relationship r in the level level_r
         SpanningTree sp_tree = this.dforests.get(level_r).findTree(r);
+
         //Find the minimum node, the first node|relationship of the Euler tour of the spanning tree sp_tree
         TNode<RelationshipExt> min_node = sp_tree.findMinimum();
 
@@ -94,7 +101,7 @@ public class DynamicForests {
             right_sub_tree.copyTree(middle_sub_tree);
         } else if (left_sub_tree.isEmpty() && !middle_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
 //            System.out.println("case3: left and right sub tree are empty, middle tree is a non-empty tree. " +
-//                    "create a single node tree whose id is the end_id of the first splitter");
+//                    "create a single node tree whose id is the start_id of the first splitter");
             int nodeid = firstSplitor.item.start_id;
             left_sub_tree.initializedAsSingleTree(nodeid);
             right_sub_tree.copyTree(middle_sub_tree);
@@ -112,7 +119,7 @@ public class DynamicForests {
             }
         } else if (!middle_sub_tree.isEmpty()) {
             if (!left_sub_tree.isEmpty() && right_sub_tree.isEmpty()) {
-//                System.out.println("case 5.1 left and middle tree are non0empty, right tree is a empty tree.");
+//                System.out.println("case 5.1 left and middle tree are non empty, right tree is a empty tree.");
                 right_sub_tree.copyTree(middle_sub_tree);
             } else if (left_sub_tree.isEmpty() && !right_sub_tree.isEmpty()) {
 //                System.out.println("case 5.2 middle and right tree are empty, left tree is a empty tree.");

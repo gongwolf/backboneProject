@@ -83,7 +83,7 @@ public class BBSBaseline {
         } else {
 
             if (g_str == null) {
-                numberNodes = 10000;
+                numberNodes = 1000;
             } else {
                 numberNodes = Integer.parseInt(g_str);
             }
@@ -274,7 +274,6 @@ public class BBSBaseline {
     }
 
     private boolean dominatedByResult(path np) {
-
         monitor.callcheckdominatedbyresult++;
         monitor.allsizeofthecheckdominatedbyresult += this.results.size();
         long rt_check_dominatedByresult = System.nanoTime();

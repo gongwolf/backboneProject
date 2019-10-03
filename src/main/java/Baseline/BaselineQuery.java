@@ -3,10 +3,12 @@ package Baseline;
 import DataStructure.Monitor;
 
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class BaselineQuery {
 
+    private int dimension;
     private int graphsize;
     private int degree;
 
@@ -20,13 +22,28 @@ public class BaselineQuery {
         this.degree = degree;
     }
 
+    public BaselineQuery(int graphsize, int degree, int dimension){
+        this.degree = degree;
+        this.graphsize = graphsize;
+        this.dimension = dimension;
+    }
+
     public static void main(String arg[]) {
 
-        long graphsize = 100;
+        int graphsize = 10000;
+        int degree = 4;
+        int dimension = 3;
 
-        BaselineQuery bq = new BaselineQuery(graphsize);
+        BaselineQuery bq = new BaselineQuery(graphsize,degree,dimension);
+        int src = bq.getRandomNumberInRange_int(0, graphsize - 1);
+        int dest = bq.getRandomNumberInRange_int(0, graphsize - 1);
+        if(src != dest){
+            Monitor m = new Monitor();
+            bq.onlineQueryTest(src,degree,false, m);
+
+        }
 //        bq.batchRandomQueries();
-        bq.query(65, 55, true);
+//        bq.query(65, 55, true);
 //        bq.query(7732, 167, true);
     }
 
@@ -61,11 +78,12 @@ public class BaselineQuery {
 
 
     public ArrayList<path> onlineQueryTest(long startNode, long endNode, boolean init, Monitor monitor) {
-//        BBSBaseline baseline = new BBSBaseline(this.graphsize, this.degree, 3);
-        BBSBaselineBusline baseline = new BBSBaselineBusline(this.graphsize, 28);
+        long start_ms = System.currentTimeMillis();
+
+        BBSBaseline baseline = new BBSBaseline(this.graphsize, this.degree, 3);
+//        BBSBaselineBusline baseline = new BBSBaselineBusline(this.graphsize, 28);
         baseline.results.clear();
 
-        long start_ms = System.currentTimeMillis();
 
         int sizeofinit = 0;
         if (init) {
@@ -84,11 +102,12 @@ public class BaselineQuery {
 
         ArrayList<path> results = new ArrayList<>();
         results.addAll(baseline.results);
-//        System.out.println(baseline.monitor.node_call_addtoskyline+"    "+baseline.monitor.callAddToSkyline);
-//        System.out.println(baseline.monitor.callcheckdominatedbyresult);
-//        System.out.println(baseline.monitor.getRunningtime_check_domination_resultByms());
-//        System.out.println(baseline.monitor.allsizeofthecheckdominatedbyresult);
-        System.out.println("number of time to call the add to skyline function :"+ monitor.callAddToSkyline+"    !!!!");
+        System.out.println("# of node add to skyline function : "+ baseline.monitor.node_call_addtoskyline+"    # of add to skyline in final:"+baseline.monitor.callAddToSkyline);
+        System.out.println("# dominated checking :"+ baseline.monitor.callcheckdominatedbyresult);
+        System.out.println(baseline.monitor.getRunningtime_check_domination_resultByms());
+        System.out.println(baseline.monitor.allsizeofthecheckdominatedbyresult);
+        System.out.println(baseline.monitor.getOverallRuningtime_in_Sec());
+
         return results;
     }
 
@@ -99,6 +118,16 @@ public class BaselineQuery {
         }
 
         return ThreadLocalRandom.current().nextLong(graphsize);
+    }
+
+    private int getRandomNumberInRange_int(int min, int max) {
+
+        if (min >= max) {
+            throw new IllegalArgumentException("max must be greater than min");
+        }
+
+        Random r = new Random();
+        return r.nextInt((max - min) + 1) + min;
     }
 
 }

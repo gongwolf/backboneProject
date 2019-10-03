@@ -107,4 +107,8 @@ public class Monitor {
     public void setSizeOfResult(long sizeOfResult) {
         this.sizeOfResult = sizeOfResult;
     }
+
+    public double getOverallRuningtime_in_Sec() {
+        return overallRuningtime / 1000.0;
+    }
 }

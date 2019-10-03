@@ -57,7 +57,6 @@ public class SpanningTree {
 
     public SpanningTree(int graphsize, int degree, int dimension, int current_level) {
         this.graphsize = graphsize;
-        this.graphsize = graphsize;
         this.degree = degree;
         this.dimension = dimension;
         this.level = current_level;
@@ -257,8 +256,8 @@ public class SpanningTree {
             et_edge_id++;
         }
 
-        StringBuilder sb = new StringBuilder();
-        StringBuilder sb1 = new StringBuilder();
+        StringBuilder sb = new StringBuilder(); //record the edge with order (start to the end)
+        StringBuilder sb1 = new StringBuilder(); // only record the node id
         sb.append("[").append(current_start_id).append(",").append(current_end_id).append("]-");
         sb1.append(current_start_id).append(",");
 
@@ -299,15 +298,16 @@ public class SpanningTree {
         while (current != null) {
 //            System.out.println(current);
             boolean forward_visited = current.item.visited;
-            boolean backward_visited = IsBackVisited(current.item.end_id, current.item.start_id);
+            boolean backward_visited = IsBackVisited(current.item.end_id, current.item.start_id); //if the end_id to start_id is already visited.
 //            System.out.println(current.item+"    "+forward_visited+"  "+backward_visited+" ");
 //            System.out.println(current.next);
-            if (!forward_visited && !backward_visited) {
+            if (!forward_visited && !backward_visited) { // the edge never visited before
                 next_edge = current.item;
                 break;
 //            } else if(forward_visited && next_edge.relationship==null && !backward_visited){
 //                next_edge = current.item;
             } else if (!forward_visited && next_edge.relationship == null && backward_visited) {
+                /** can not stop early, need to guarantee the unvisited edge be found */
                 next_edge = current.item;
             }
             current = current.next;
@@ -333,7 +333,6 @@ public class SpanningTree {
     public void FindAdjList() {
 
         //because the nodes id starts from 0, the number of node is 1 greater than the max id
-
         int max_n = (int) (Collections.max(N_nodes) + 1);
 
         adjList = new Bag[max_n];
@@ -592,6 +591,7 @@ public class SpanningTree {
             }
         } catch (NullPointerException e) {
             this.rbtree.root.print();
+            System.out.println("Null pointer exception in findLeftSubTree function");
             System.out.println(r);
             System.out.println(min_node.item);
 
