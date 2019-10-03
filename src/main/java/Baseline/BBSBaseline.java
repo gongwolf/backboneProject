@@ -3,7 +3,6 @@ package Baseline;
 import DataStructure.Monitor;
 import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
-import Neo4jTools.generateGraph;
 import org.apache.commons.cli.*;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
@@ -83,7 +82,7 @@ public class BBSBaseline {
         } else {
 
             if (g_str == null) {
-                numberNodes = 1000;
+                numberNodes = 2000;
             } else {
                 numberNodes = Integer.parseInt(g_str);
             }
@@ -102,10 +101,13 @@ public class BBSBaseline {
 
             BBSBaseline baseline = new BBSBaseline(numberNodes, numberofDegree, numberofDimen);
             baseline.createIndexFolder();
+            int overallskylinesize=0;
             for (int i = 0; i < baseline.graphsize; i++) {
-                baseline.bbs(i);
-                System.out.println("Finished the finding of the index of the node " + i);
+                int size = baseline.bbs(i);
+                overallskylinesize+=size;
+                System.out.println("Finished the finding of the index of the node " + i+"   size of skyline paths : "+size);
             }
+            System.out.println(overallskylinesize);
 //            baseline.printSummurizationInformation();
             baseline.closeDB();
         }
@@ -181,7 +183,7 @@ public class BBSBaseline {
         }
     }
 
-    public void bbs(long nodeID) {
+    public int bbs(long nodeID) {
         HashMap<Long, myNode> tmpStoreNodes = new HashMap();
 
         try (Transaction tx = this.graphdb.beginTx()) {
@@ -217,10 +219,17 @@ public class BBSBaseline {
                 }
 
             }
-
             tx.success();
         }
+
+
+        int sum = 0 ;
+        for(Map.Entry<Long, myNode> e:tmpStoreNodes.entrySet()){
+            int size = e.getValue().skyPaths.size();
+            sum+=size;
+        }
         writeToDisk(tmpStoreNodes,nodeID);
+        return sum;
     }
 
     public ArrayList<path> queryOnline(long src, long dest) {

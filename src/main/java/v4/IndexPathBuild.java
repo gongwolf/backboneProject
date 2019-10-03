@@ -17,7 +17,7 @@ import static DataStructure.STATIC.nil;
 
 public class IndexPathBuild {
 
-    private int graphsize = 1000;
+    private int graphsize = 2000;
     private int degree = 4;
     private int dimension = 3;
     private Neo4jDB neo4j;
@@ -31,6 +31,9 @@ public class IndexPathBuild {
 
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
+
+    //deleted edges record the relationship deleted in each layer, the index of each layer is based on the expansion on previous level graph
+    ArrayList<HashSet<Long>> deletedEdges_layer = new ArrayList<>();
     private int degree_pairs_sum;
 
     public static void main(String args[]) throws CloneNotSupportedException {
@@ -45,11 +48,17 @@ public class IndexPathBuild {
     private void build() throws CloneNotSupportedException {
         initLevel();
         construction();
-//        createIndexFolder();
+//        System.out.println(deletedEdges_layer.size());
+//        long numberofedges = 0;
+//        for(HashSet<Long> de:deletedEdges_layer){
+//            numberofedges+= de.size();
+//        }
+//        System.out.println(numberofedges);
+        createIndexFolder();
+        indexBuild();
 //        printSummurizationInformation();
 //        test();
     }
-
 
     private void initLevel() {
         int currentLevel = 0;
@@ -105,6 +114,7 @@ public class IndexPathBuild {
         System.out.println("deal with level " + currentLevel + " graph at " + neo4j.DB_PATH);
 
         HashSet<Long> deletedNodes = new HashSet<>();
+        // record the edges that is deleted in this layer, the index is build based on it
         HashSet<Long> deletedEdges = new HashSet<>();
 
         if (currentLevel == 1) {
@@ -131,7 +141,7 @@ public class IndexPathBuild {
         long post_e = neo4j.getNumberofEdges();
 
         System.out.println("pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e+"   # of deleted Edges:"+ deletedEdges.size());
-
+        this.deletedEdges_layer.add(deletedEdges);
         neo4j.closeDB();
         return numberOfNodes;
     }
@@ -475,6 +485,102 @@ public class IndexPathBuild {
             FileUtils.copyDirectory(src_db_folder, dest_db_folder);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void createIndexFolder() {
+        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension;
+        File idx_folder = new File(folder);
+        try {
+            if (idx_folder.exists()) {
+                System.out.println("delete the folder : " + folder);
+                FileUtils.deleteDirectory(idx_folder);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        idx_folder.mkdirs();
+    }
+
+    /***
+     * Build the index for each layer based on the deletedEdges_layers information
+     */
+    private void indexBuild() {
+        long overallIndex = 0 ;
+        int maxlevel = this.deletedEdges_layer.size();
+        for(int l = 0 ; l < maxlevel;l++){
+            int level = l;
+
+            HashSet<Long> de = deletedEdges_layer.get(level);
+            
+            String graph_db_folder = graphsize + "_" + degree + "_" + dimension + "_Level" + level;
+            Neo4jDB neo4j_level = new Neo4jDB(graph_db_folder);
+            System.out.println(neo4j_level.DB_PATH+"   "+de.size());
+            neo4j_level.startDB(false);
+            GraphDatabaseService graphdb_level = neo4j_level.graphDB;
+
+            long numIndex=0;
+            long sizeOverallSkyline=0;
+            try (Transaction tx = graphdb_level.beginTx()) {
+                ResourceIterable<Node> allnodes_iteratable = graphdb_level.getAllNodes();
+                ResourceIterator<Node> allnodes_iter = allnodes_iteratable.iterator();
+                while (allnodes_iter.hasNext()){
+                    HashMap<Long, myNode> tmpStoreNodes = new HashMap();
+                    Node node = allnodes_iter.next();
+                    long nodeID = node.getId();
+                    myNode snode = new myNode(nodeID, neo4j_level);
+                    myNodePriorityQueue mqueue = new myNodePriorityQueue();
+                    tmpStoreNodes.put(snode.id, snode);
+
+                    mqueue.add(snode);
+                    while (!mqueue.isEmpty()) {
+                        myNode v = mqueue.pop();
+                        for (int i = 0; i < v.skyPaths.size(); i++) {
+                            path p = v.skyPaths.get(i);
+                            if (!p.expaned) {
+                                p.expaned = true;
+                                ArrayList<path> new_paths = p.expand(neo4j_level, de);
+                                for (path np : new_paths) {
+                                    myNode next_n;
+                                    if (tmpStoreNodes.containsKey(np.endNode)) {
+                                        next_n = tmpStoreNodes.get(np.endNode);
+                                    } else {
+                                        next_n = new myNode(snode, np.endNode, neo4j_level);
+                                        tmpStoreNodes.put(next_n.id, next_n);
+                                    }
+
+
+                                    if (next_n.addToSkyline(np) && !next_n.inqueue) {
+                                        mqueue.add(next_n);
+                                        next_n.inqueue = true;
+                                    }
+
+                                }
+                            }
+                        }
+
+                    }
+                    int sum = 0 ;
+                    for(Map.Entry<Long, myNode> e:tmpStoreNodes.entrySet()){
+                        int size = e.getValue().skyPaths.size();
+                        sum+=size;
+//                        for(path p : e.getValue().skyPaths){
+//                            System.out.println(e.getKey()+"  "+p);
+//                        }
+                    }
+//                    System.out.println(nodeID+"   "+tmpStoreNodes.size()+"   "+sum);
+                    sizeOverallSkyline+=sum;
+                    if(sum!=0){
+                        numIndex++;
+                    }
+                }
+
+                overallIndex+=sizeOverallSkyline;
+                System.out.println(numIndex+"    "+sizeOverallSkyline);
+                tx.success();
+            }
+            System.out.println(overallIndex);
+            neo4j_level.closeDB();
         }
     }
 }
