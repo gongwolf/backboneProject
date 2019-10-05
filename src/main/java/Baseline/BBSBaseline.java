@@ -23,7 +23,7 @@ public class BBSBaseline {
     int graphsize = 10000;
     int degree = 4;
     int dimension = 3;
-//    HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>(); //source node id ==> HashMap < destination node id, myNode objects that stores skyline paths>
+    //    HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>(); //source node id ==> HashMap < destination node id, myNode objects that stores skyline paths>
     ArrayList<path> results = new ArrayList<>();
     Monitor monitor;
     private GraphDatabaseService graphdb;
@@ -54,7 +54,7 @@ public class BBSBaseline {
         this.monitor = new Monitor();
     }
 
-    public static void main(String args[])  {
+    public static void main(String args[]) {
         Options options = new Options();
         options.addOption("g", "grahpsize", true, "number of nodes in the graph");
         options.addOption("de", "degree", true, "degree of the graphe");
@@ -82,7 +82,7 @@ public class BBSBaseline {
         } else {
 
             if (g_str == null) {
-                numberNodes = 2000;
+                numberNodes = 1000;
             } else {
                 numberNodes = Integer.parseInt(g_str);
             }
@@ -99,17 +99,19 @@ public class BBSBaseline {
                 numberofDimen = Integer.parseInt(di_str);
             }
 
+            long start_time = System.currentTimeMillis();
             BBSBaseline baseline = new BBSBaseline(numberNodes, numberofDegree, numberofDimen);
             baseline.createIndexFolder();
-            int overallskylinesize=0;
+            int overallskylinesize = 0;
             for (int i = 0; i < baseline.graphsize; i++) {
                 int size = baseline.bbs(i);
-                overallskylinesize+=size;
-                System.out.println("Finished the finding of the index of the node " + i+"   size of skyline paths : "+size);
+                overallskylinesize += size;
+                System.out.println("Finished the finding of the index of the node " + i + "   size of skyline paths : " + size);
             }
             System.out.println(overallskylinesize);
 //            baseline.printSummurizationInformation();
             baseline.closeDB();
+            System.out.println("The index built time is " + (System.currentTimeMillis() - start_time));
         }
 
 
@@ -164,12 +166,15 @@ public class BBSBaseline {
 
             writer = new BufferedWriter(new FileWriter(file_path));
 
-            for (long i = 0; i < 1000; i++) {
-                ArrayList<path> skys = destination_index.get(i).skyPaths;
+            for (Map.Entry<Long, myNode> e : destination_index.entrySet()) {
+                long nodeid = e.getKey();
+                myNode node_obj = e.getValue();
+                ArrayList<path> skys = node_obj.skyPaths;
                 for (path p : skys) {
-                    writer.write(i + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
+                    writer.write(nodeid + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
                 }
             }
+
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -208,7 +213,6 @@ public class BBSBaseline {
                                 tmpStoreNodes.put(next_n.id, next_n);
                             }
 
-
                             if (next_n.addToSkyline(np) && !next_n.inqueue) {
                                 mqueue.add(next_n);
                                 next_n.inqueue = true;
@@ -223,12 +227,12 @@ public class BBSBaseline {
         }
 
 
-        int sum = 0 ;
-        for(Map.Entry<Long, myNode> e:tmpStoreNodes.entrySet()){
+        int sum = 0;
+        for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
             int size = e.getValue().skyPaths.size();
-            sum+=size;
+            sum += size;
         }
-        writeToDisk(tmpStoreNodes,nodeID);
+        writeToDisk(tmpStoreNodes, nodeID);
         return sum;
     }
 

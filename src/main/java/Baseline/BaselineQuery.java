@@ -30,16 +30,20 @@ public class BaselineQuery {
 
     public static void main(String arg[]) {
 
-        int graphsize = 10000;
+        int graphsize = 2000;
         int degree = 4;
         int dimension = 3;
 
         BaselineQuery bq = new BaselineQuery(graphsize,degree,dimension);
         int src = bq.getRandomNumberInRange_int(0, graphsize - 1);
         int dest = bq.getRandomNumberInRange_int(0, graphsize - 1);
+
+        src = 1;
+        dest = 1999;
+
         if(src != dest){
             Monitor m = new Monitor();
-            bq.onlineQueryTest(src,degree,false, m);
+            bq.onlineQueryTest(src,dest,false, m);
 
         }
 //        bq.batchRandomQueries();

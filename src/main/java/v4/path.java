@@ -9,6 +9,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 
@@ -41,7 +42,6 @@ public class path {
         this.costs = new double[3];
         this.startNode = old_path.startNode;
         this.endNode = rel.getOtherNodeId(old_path.endNode);
-//        System.out.println("            create new path "+this.startNode+"   "+this.endNode);
         this.propertiesName = new ArrayList<>(old_path.propertiesName);
         expaned = false;
         System.arraycopy(old_path.costs, 0, this.costs, 0, this.costs.length);
@@ -101,7 +101,7 @@ public class path {
      * only expand the path by using the deleted edges
      *
      * @param neo4j the connection to the neo4j database
-     * @param de the list of deleted edges in current layer
+     * @param de    the list of deleted edges in current layer
      * @return the expanded paths
      */
     public ArrayList<path> expand(Neo4jDB neo4j, HashSet<Long> de) {
@@ -113,12 +113,20 @@ public class path {
                 Relationship rel = rel_Iter.next();
                 if (de.contains(rel.getId())) {
                     path nPath = new path(this, rel);
-                    result.add(nPath);
+                    if (!nPath.hasCycle()) {
+                        result.add(nPath);
+                    }
                 }
             }
             tx.success();
         }
         return result;
+    }
+
+    private boolean hasCycle() {
+        Long nextNodeId = nodes.get(nodes.size() - 1);
+        int occurrences = Collections.frequency(this.nodes, nextNodeId);
+        return  occurrences>=2;
     }
 
 

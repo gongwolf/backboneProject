@@ -54,7 +54,7 @@ public class generateGraph {
         } else {
 
             if (g_str == null) {
-                numberNodes = 2000;
+                numberNodes = 100;
             } else {
                 numberNodes = Integer.parseInt(g_str);
             }
