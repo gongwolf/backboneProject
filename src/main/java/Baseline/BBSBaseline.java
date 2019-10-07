@@ -20,7 +20,7 @@ import java.util.Map;
 public class BBSBaseline {
 
     public double[] iniLowerBound;
-    int graphsize = 10000;
+    int graphsize = 2000;
     int degree = 4;
     int dimension = 3;
     //    HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>(); //source node id ==> HashMap < destination node id, myNode objects that stores skyline paths>
@@ -82,7 +82,7 @@ public class BBSBaseline {
         } else {
 
             if (g_str == null) {
-                numberNodes = 1000;
+                numberNodes = 2000;
             } else {
                 numberNodes = Integer.parseInt(g_str);
             }

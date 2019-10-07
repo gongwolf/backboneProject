@@ -19,7 +19,7 @@ import static DataStructure.STATIC.nil;
 
 public class IndexPathBuild {
 
-    private int graphsize = 1000;
+    private int graphsize = 2000;
     private int degree = 4;
     private int dimension = 3;
     private Neo4jDB neo4j;

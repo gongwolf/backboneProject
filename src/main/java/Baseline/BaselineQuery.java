@@ -44,7 +44,6 @@ public class BaselineQuery {
         if(src != dest){
             Monitor m = new Monitor();
             bq.onlineQueryTest(src,dest,false, m);
-
         }
 //        bq.batchRandomQueries();
 //        bq.query(65, 55, true);

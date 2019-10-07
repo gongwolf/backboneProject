@@ -1,9 +1,12 @@
 package v4;
 
+import DataStructure.Monitor;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 public class Query {
     private int level;
@@ -13,6 +16,9 @@ public class Query {
     private int dimension;
     String homefolder = System.getProperty("user.home");
     private ArrayList<HashMap<Long, HashMap<Long, ArrayList<double[]>>>> index = new ArrayList<>(); // < level--> < node--> <highway_nodes, list<skyline paths>>>>
+    public ArrayList<backbonePath> result = new ArrayList<>();
+    Monitor monitor = new Monitor();
+
 
     public Query(int graphsize, int degree, int dimension) {
         this.graphsize = graphsize;
@@ -41,12 +47,46 @@ public class Query {
 
     public void queryBetween(long src, long dest) {
         HashSet<Long> src_nodes = new HashSet<>();
+        HashMap<Long, HighwayNode> temp_source_nodes = new HashMap<>(); // highway_id --> highway node object
+        HighwayNode src_highway_node = new HighwayNode(src);
+        temp_source_nodes.put(src, src_highway_node);
+
         src_nodes.add(src);
         for (int i = 0; i <= level; i++) {
             HashSet<Long> temp_src_nodes = new HashSet<>();
+            boolean found_highway_in_current_level = false;
 
-            for (long node_src : src_nodes) {
-                HashMap<Long, ArrayList<double[]>> index_src = readHighwaysByIndex(i, node_src);
+            for (long src_node_id : src_nodes) {
+                HighwayNode src_node = temp_source_nodes.get(src_node_id);
+
+                HashMap<Long, ArrayList<double[]>> index_src = readHighwaysByIndex(i, src_node_id);
+                if (index_src != null) {
+                    for (Map.Entry<Long, ArrayList<double[]>> src_to_highway : index_src.entrySet()) {
+                        long next_highway_node_id = src_to_highway.getKey();
+                        if(next_highway_node_id==dest){
+                            found_highway_in_current_level=true;
+                        }
+                        ArrayList<double[]> next_skylines = src_to_highway.getValue();
+
+                        HighwayNode next_highway;
+                        if (temp_source_nodes.containsKey(next_highway_node_id)) {
+                            next_highway = temp_source_nodes.get(next_highway_node_id);
+                        } else {
+                            next_highway = new HighwayNode(src, next_highway_node_id);
+                        }
+
+                        //very time consuming
+                        for (backbonePath src_bp : src_node.skylines) {
+                            for (double[] costs : next_skylines) {
+                                backbonePath next_bp = new backbonePath(next_highway_node_id, costs, src_bp);
+                                next_highway.addToSkyline(next_bp,monitor);
+                            }
+                        }
+                        temp_source_nodes.put(next_highway_node_id, next_highway);
+                    }
+                }
+
+
                 if (index_src != null) {
                     for (long next_level_src_nodes : index_src.keySet()) {
                         temp_src_nodes.add(next_level_src_nodes);
@@ -54,18 +94,13 @@ public class Query {
                 }
             }
 
-            for(long new_src:temp_src_nodes){
+            for (long new_src : temp_src_nodes) {
                 src_nodes.add(new_src);
             }
 
-            System.out.println(temp_src_nodes == null ? 0 : temp_src_nodes.size()+"    "+src_nodes.size());
+            System.out.println("level:" + i + " " + (temp_src_nodes == null ? 0 : temp_src_nodes.size() + "    " + src_nodes.size())+"   "+monitor.callAddToSkyline+"  "+found_highway_in_current_level);
 
         }
-//        System.out.println("==========================================================");
-//        for (int i = 0; i <= level; i++) {
-//            HashMap<Long, ArrayList<double[]>> index_src = readHighwaysByIndex(i, dest);
-//            System.out.println(index_src == null ? 0 : index_src.size());
-//        }
     }
 
     private HashMap<Long, ArrayList<double[]>> readHighways(int level, long src) {
