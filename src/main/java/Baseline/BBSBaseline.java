@@ -238,6 +238,7 @@ public class BBSBaseline {
 
     public ArrayList<path> queryOnline(long src, long dest) {
         HashMap<Long, myNode> tmpStoreNodes = new HashMap();
+        boolean haveResult = false;
         try (Transaction tx = this.graphdb.beginTx()) {
             myNode snode = new myNode(src, this.neo4j);
             myNodePriorityQueue mqueue = new myNodePriorityQueue();
@@ -248,7 +249,6 @@ public class BBSBaseline {
                 myNode v = mqueue.pop();
                 for (int i = 0; i < v.skyPaths.size(); i++) {
                     path p = v.skyPaths.get(i);
-
                     if (!p.expaned) {
                         p.expaned = true;
                         ArrayList<path> new_paths = p.expand(neo4j);
@@ -263,6 +263,19 @@ public class BBSBaseline {
 
                             if (np.endNode == dest) {
                                 addToSkyline(np);
+                                if(!haveResult){
+                                    haveResult=true;
+                                    long nodes_add_skyline_when_have_one_result = 0;
+                                    long nodes_covered_when_have_result = 0 ;
+                                    for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
+                                        nodes_add_skyline_when_have_one_result += e.getValue().callAddToSkylineFunction;
+                                        if (!e.getValue().skyPaths.isEmpty()) {
+                                            nodes_covered_when_have_result++;
+                                        }
+                                    }
+                                    System.out.println("    "+monitor.callcheckdominatedbyresult+" "+nodes_add_skyline_when_have_one_result+" "+nodes_covered_when_have_result);
+
+                                }
                             } else if (!dominatedByResult(np)) {
                                 if (next_n.addToSkyline(np) && !next_n.inqueue) {
                                     mqueue.add(next_n);
@@ -280,6 +293,9 @@ public class BBSBaseline {
 
         for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
             this.monitor.node_call_addtoskyline += e.getValue().callAddToSkylineFunction;
+            if (!e.getValue().skyPaths.isEmpty()) {
+                this.monitor.coveredNodes++;
+            }
         }
 
         return tmpStoreNodes.get(dest).skyPaths;

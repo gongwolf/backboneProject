@@ -106,8 +106,10 @@ public class SpanningTree {
         System.out.println("Finished the calling of the KruskalMST() function");
         FindAdjList();
         System.out.println("Finished the calling of the FindAdjList() function");
+        long start_euler_finding = System.currentTimeMillis();
         String elurtourString = FindEulerTourString(0, level);
-        System.out.println("Finished the calling of the elurtourString() function");
+        long end_euler_finding = System.currentTimeMillis();
+        System.out.println("Finished the calling of the elurtourString() function in "+(end_euler_finding-start_euler_finding)/1000);
         return elurtourString;
     }
 

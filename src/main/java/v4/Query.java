@@ -19,12 +19,26 @@ public class Query {
     public ArrayList<backbonePath> result = new ArrayList<>();
     Monitor monitor = new Monitor();
 
+    public static void main(String args[]) {
+        int graphesize = 10000;
+        int degree = 4;
+        int dimension = 3;
+        double p =0.01;
 
-    public Query(int graphsize, int degree, int dimension) {
+        Query q = new Query(graphesize, degree, dimension, p);
+        q.queryBetween(1, graphesize - 1);
+    }
+
+
+    public Query(int graphsize, int degree, int dimension, double p) {
         this.graphsize = graphsize;
         this.degree = degree;
         this.dimension = dimension;
-        indexFolder = homefolder + "/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "/";
+        if (p == -1) {
+            indexFolder = homefolder + "/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "/";
+        } else {
+            indexFolder = homefolder + "/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "_backup_" + p + "/";
+        }
         this.level = getlevel();
         System.out.println(level + " levels in the " + indexFolder);
         readIndex();
@@ -33,6 +47,7 @@ public class Query {
     private int getlevel() {
         int level = 0;
         File index_dir = new File(indexFolder);
+        System.out.println(indexFolder);
 //        System.out.println(this.index_folder);
         for (File f : index_dir.listFiles(new levelFileNameFilter())) {
             String fname = f.getName();
@@ -46,25 +61,37 @@ public class Query {
     }
 
     public void queryBetween(long src, long dest) {
+        long start_time = System.currentTimeMillis();
+        /**deal with the source node **/
         HashSet<Long> src_nodes = new HashSet<>();
         HashMap<Long, HighwayNode> temp_source_nodes = new HashMap<>(); // highway_id --> highway node object
         HighwayNode src_highway_node = new HighwayNode(src);
         temp_source_nodes.put(src, src_highway_node);
 
+        /**deal with the dest node **/
+        HashSet<Long> dest_nodes = new HashSet<>();
+        HashMap<Long, HighwayNode> temp_destination_nodes = new HashMap<>(); // highway_id --> highway node object
+        HighwayNode dest_highway_node = new HighwayNode(dest);
+        temp_destination_nodes.put(dest, dest_highway_node);
+
         src_nodes.add(src);
-        for (int i = 0; i <= level; i++) {
-            HashSet<Long> temp_src_nodes = new HashSet<>();
-            boolean found_highway_in_current_level = false;
+        dest_nodes.add(dest);
+
+        for (int i = 0; i <= this.level; i++) {
+            HashSet<Long> temp_src_nodes = new HashSet<>(); //the highway of src found in this level
+            HashSet<Long> temp_dest_nodes = new HashSet<>(); // the highway of dest found in thie level
+
+            boolean found_highway_in_current_level_src = false;
+            boolean found_highway_in_current_level_dest = false;
 
             for (long src_node_id : src_nodes) {
                 HighwayNode src_node = temp_source_nodes.get(src_node_id);
-
                 HashMap<Long, ArrayList<double[]>> index_src = readHighwaysByIndex(i, src_node_id);
                 if (index_src != null) {
                     for (Map.Entry<Long, ArrayList<double[]>> src_to_highway : index_src.entrySet()) {
                         long next_highway_node_id = src_to_highway.getKey();
-                        if(next_highway_node_id==dest){
-                            found_highway_in_current_level=true;
+                        if (next_highway_node_id == dest) {
+                            found_highway_in_current_level_src = true;
                         }
                         ArrayList<double[]> next_skylines = src_to_highway.getValue();
 
@@ -79,7 +106,7 @@ public class Query {
                         for (backbonePath src_bp : src_node.skylines) {
                             for (double[] costs : next_skylines) {
                                 backbonePath next_bp = new backbonePath(next_highway_node_id, costs, src_bp);
-                                next_highway.addToSkyline(next_bp,monitor);
+                                next_highway.addToSkyline(next_bp, monitor);
                             }
                         }
                         temp_source_nodes.put(next_highway_node_id, next_highway);
@@ -88,19 +115,70 @@ public class Query {
 
 
                 if (index_src != null) {
-                    for (long next_level_src_nodes : index_src.keySet()) {
-                        temp_src_nodes.add(next_level_src_nodes);
-                    }
+                    temp_src_nodes.addAll(index_src.keySet());
                 }
             }
 
-            for (long new_src : temp_src_nodes) {
-                src_nodes.add(new_src);
+
+            for (long dest_node_id : dest_nodes) {
+                HighwayNode dest_node = temp_destination_nodes.get(dest_node_id);
+                HashMap<Long, ArrayList<double[]>> index_dest = readHighwaysByIndex(i, dest_node_id);
+
+                if (index_dest != null) {
+                    for (Map.Entry<Long, ArrayList<double[]>> dest_to_highway : index_dest.entrySet()) {
+                        long next_highway_node_id = dest_to_highway.getKey();
+                        if (next_highway_node_id == src) {
+                            found_highway_in_current_level_dest = true;
+                        }
+                        ArrayList<double[]> next_skylines = dest_to_highway.getValue();
+
+                        HighwayNode next_highway;
+                        if (temp_destination_nodes.containsKey(next_highway_node_id)) {
+                            next_highway = temp_destination_nodes.get(next_highway_node_id);
+                        } else {
+                            next_highway = new HighwayNode(src, next_highway_node_id);
+                        }
+
+                        //very time consuming
+                        for (backbonePath dest_bp : dest_node.skylines) {
+                            for (double[] costs : next_skylines) {
+                                backbonePath next_bp = new backbonePath(next_highway_node_id, costs, dest_bp);
+                                next_highway.addToSkyline(next_bp, monitor);
+                            }
+                        }
+                        temp_destination_nodes.put(next_highway_node_id, next_highway);
+                    }
+                }
+
+
+                if (index_dest != null) {
+                    temp_dest_nodes.addAll(index_dest.keySet());
+                }
             }
 
-            System.out.println("level:" + i + " " + (temp_src_nodes == null ? 0 : temp_src_nodes.size() + "    " + src_nodes.size())+"   "+monitor.callAddToSkyline+"  "+found_highway_in_current_level);
+            src_nodes.addAll(temp_src_nodes);
+            dest_nodes.addAll(temp_dest_nodes);
 
+            System.out.println("level:" + i + " src_found_in_current_level:" + (temp_src_nodes == null ? 0 : temp_src_nodes.size()) + "    overall src:" + src_nodes.size() + "   " + monitor.callAddToSkyline);
+            System.out.println("level:" + i + " des_found_in_current_level:" + (temp_src_nodes == null ? 0 : temp_dest_nodes.size()) + "    overall dest:" + dest_nodes.size() + "   " + monitor.callAddToSkyline);
+            System.out.println(found_highway_in_current_level_src + "  " + found_highway_in_current_level_dest + "  " + (found_highway_in_current_level_src && found_highway_in_current_level_dest));
         }
+
+        System.out.println((System.currentTimeMillis() - start_time) / 1000.0);
+
+        long number_skyline_src = 0;
+        long number_skyline_dest = 0;
+
+        for (Map.Entry<Long, HighwayNode> src_e : temp_source_nodes.entrySet()) {
+            number_skyline_src += src_e.getValue().skylines.size();
+        }
+
+        for (Map.Entry<Long, HighwayNode> dest_e : temp_destination_nodes.entrySet()) {
+            number_skyline_dest += dest_e.getValue().skylines.size();
+        }
+
+        System.out.println(number_skyline_src + "/" + temp_source_nodes.size() + "=" + (number_skyline_src * 1.0 / temp_source_nodes.size()));
+        System.out.println(number_skyline_dest + "/" + temp_destination_nodes.size() + "=" + (number_skyline_dest * 1.0 / temp_destination_nodes.size()));
     }
 
     private HashMap<Long, ArrayList<double[]>> readHighways(int level, long src) {
@@ -116,8 +194,6 @@ public class Query {
             reader = new BufferedReader(new FileReader(index_file));
             String line = "";
             while ((line = reader.readLine()) != null) {
-//                System.out.println(" ~~~~ |" + line + "|" + (line == null));
-
                 String[] informs = line.split(" ");
                 long nodeid = Long.parseLong(informs[0]);
                 double[] costs = new double[3];
@@ -207,16 +283,6 @@ public class Query {
         }
 
 
-    }
-
-
-    public static void main(String args[]) {
-        int graphesize = 2000;
-        int degree = 4;
-        int dimension = 3;
-
-        Query q = new Query(graphesize, degree, dimension);
-        q.queryBetween(1, graphesize - 1);
     }
 
     public static class levelFileNameFilter implements FilenameFilter {

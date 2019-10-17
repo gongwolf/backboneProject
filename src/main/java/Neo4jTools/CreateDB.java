@@ -85,6 +85,8 @@ public class CreateDB {
                 double c3 = Double.parseDouble(line.split(" ")[4]);
                 double[] costs = new double[]{c1, c2, c3};
                 Pair<Integer, Integer> relations = new Pair<>(sid, did);
+
+                //Treat the graph as an in-directional graph
                 if (!existedEdges(relations, edges)) {
                     edges.put(relations, costs);
                 }
@@ -222,18 +224,12 @@ public class CreateDB {
     }
 
     private boolean existedEdges(Pair<Integer, Integer> relations, HashMap<Pair<Integer, Integer>, double[]> edges) {
+
         int sid = relations.getKey();
         int did = relations.getValue();
         Pair<Integer,Integer> reverse_rel = new Pair<>(did,sid);
         return edges.containsKey(reverse_rel) || edges.containsKey(relations);
-//        for (Map.Entry<Pair<Integer, Integer>, double[]> e : edges.entrySet()) {
-//            if (e.getKey().getKey() == sid && e.getKey().getValue() == did) {
-//                return true;
-//            } else if (e.getKey().getKey() == did && e.getKey().getValue() == sid) {
-//                return true;
-//            }
-//        }
-//        return false;
+
     }
 
     private Node createNode(String id, double lat, double log, GraphDatabaseService graphdb) {

@@ -19,7 +19,7 @@ import static DataStructure.STATIC.nil;
 
 public class IndexPathBuild {
 
-    private int graphsize = 2000;
+    private int graphsize = 40000;
     private int degree = 4;
     private int dimension = 3;
     private Neo4jDB neo4j;
@@ -27,7 +27,7 @@ public class IndexPathBuild {
     private long cn; //number of graph nodes
     private long numberOfEdges; // number of edges ;
     private DynamicForests dforests;
-    private double percentage = 0.1;
+    private double percentage = 0.01;
     public ProgramProperty prop = new ProgramProperty();
 
 
@@ -491,7 +491,7 @@ public class IndexPathBuild {
     }
 
     private void createIndexFolder() {
-        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension;
+        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "_backup_" + this.percentage;
         File idx_folder = new File(folder);
         try {
             if (idx_folder.exists()) {
@@ -516,12 +516,12 @@ public class IndexPathBuild {
 
 
             int nextlevel = level + 1;
-            HashSet<Long> remind_nodes = new HashSet<>();
+            HashSet<Long> remind_nodes = new HashSet<>(); // the nodes remain in next level.
             if (nextlevel != maxlevel) {
                 remind_nodes = getNodeListAtLevel(nextlevel);
             }
 
-            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "/level" + level;
+            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "_backup_" + this.percentage+ "/level" + level;
             File sub_folder_f = new File(sub_folder_str);
             if (sub_folder_f.exists()) {
                 sub_folder_f.delete();
@@ -641,9 +641,9 @@ public class IndexPathBuild {
         }
     }
 
-    private HashSet<Long> getNodeListAtLevel(int nextlevel) {
+    private HashSet<Long> getNodeListAtLevel(int level) {
         HashSet<Long> nodeList = new HashSet<Long>();
-        String graph_db_folder = graphsize + "_" + degree + "_" + dimension + "_Level" + nextlevel;
+        String graph_db_folder = graphsize + "_" + degree + "_" + dimension + "_Level" + level;
         Neo4jDB neo4j_level = new Neo4jDB(graph_db_folder);
         neo4j_level.startDB(true);
         GraphDatabaseService graphdb_level = neo4j_level.graphDB;
@@ -655,6 +655,7 @@ public class IndexPathBuild {
                 Node node = allnodes_iter.next();
                 nodeList.add(node.getId());
             }
+            tx.success();
         }
         neo4j_level.closeDB();
         return nodeList;

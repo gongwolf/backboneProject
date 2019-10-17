@@ -23,6 +23,7 @@ public class Monitor {
     public long spInitTimeInBaseline; //the time that is used to find the shortest path at the beginning of the baseline algorithm.
 
     public long sizeOfResult;
+    public int coveredNodes; //number of nodes were accessed during the query process
 
 
     public void clone(Monitor m) {
