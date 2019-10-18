@@ -60,7 +60,7 @@ public class generateGraph {
             }
 
             if (de_str == null) {
-                numberofDegree = 4;
+                numberofDegree = 2;
             } else {
                 numberofDegree = Integer.parseInt(de_str);
             }

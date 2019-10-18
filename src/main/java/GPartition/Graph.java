@@ -18,7 +18,7 @@ public class Graph {
     public long number_of_nodes;
     public long number_of_edges;
 
-    HashMap<PNode, HashMap<Long, double[]>> gp_metis_formation = new HashMap<>(); //  node id --> <neighbor id, costs>
+    HashMap<PNode, HashMap<PNode, double[]>> gp_metis_formation = new HashMap<>(); //  node id --> <neighbor id, costs>
     String graph_info_folder;
 
 
@@ -26,9 +26,22 @@ public class Graph {
 
     public Graph() {
         this.number_of_nodes = 0;
+        this.number_of_edges = 0;
     }
 
-    //Create the Graph from given folder
+    public Graph(HashMap<PNode, HashMap<PNode, double[]>> gp_metis_formation, long edge_numbers) {
+        this.number_of_nodes = gp_metis_formation.size();
+        this.number_of_edges = edge_numbers;
+        this.gp_metis_formation.putAll(gp_metis_formation);
+
+    }
+
+    /**
+     * Create the Graph from given folder
+     * The graph at level 0, is the original graph.
+     * current id is the id that is used to metis partition.
+     * neo4j id is the actual that store by neo4j
+     **/
     public Graph(String graph_info_folder) {
         this.number_of_nodes = 0;
         this.level = 0;
@@ -47,14 +60,14 @@ public class Graph {
     private void builtGraphFromFile(String graph_info_folder) {
         String node_file = graph_info_folder + "/NodeInfo.txt";
         String edges_file = graph_info_folder + "/SegInfo.txt";
-        readTheNodesFromDisk(this.gp_metis_formation, node_file);
+        readTheNodesFromDisk(gp_metis_formation, node_file);
         HashMap<Pair<Long, Long>, double[]> edges = new HashMap<>();
         readTheEdgesFromDisk(gp_metis_formation, edges_file, edges);
         this.number_of_nodes = gp_metis_formation.size();
         this.number_of_edges = edges.size();
     }
 
-    private void readTheEdgesFromDisk(HashMap<PNode, HashMap<Long, double[]>> gp_metis_formation, String edges_file, HashMap<Pair<Long, Long>, double[]> edges) {
+    private void readTheEdgesFromDisk(HashMap<PNode, HashMap<PNode, double[]>> gp_metis_formation, String edges_file, HashMap<Pair<Long, Long>, double[]> edges) {
         BufferedReader br = null;
         try {
             br = new BufferedReader(new FileReader(edges_file));
@@ -66,10 +79,10 @@ public class Graph {
                 long start_id = Long.parseLong(edge_info[0]) + 1; // metis node id start from 1
                 long end_id = Long.parseLong(edge_info[1]) + 1; // metis node is start from 1
 
-
-                if (start_id == 1 || end_id == 1) {
-                    System.out.println(line);
-                }
+//
+//                if (start_id == 1 || end_id == 1) {
+//                    System.out.println(line);
+//                }
 
                 double[] costs = new double[this.dimension];
                 costs[0] = Double.parseDouble(edge_info[2]);
@@ -81,32 +94,36 @@ public class Graph {
                     edges.put(relations, costs);
                 }
 
-                //deal with the edge start_id --> end_id
-                HashMap<Long, double[]> neighbor_information;
+
                 PNode node_key = new PNode(start_id, start_id - 1);
                 PNode reverse_node_key = new PNode(end_id, end_id - 1);
+
+                //deal with the edge start_id --> end_id
+                HashMap<PNode, double[]> neighbor_information;
                 if (gp_metis_formation.get(node_key) != null) {
                     neighbor_information = gp_metis_formation.get(node_key);
                 } else {
                     neighbor_information = new HashMap<>();
                 }
 
-                if (!neighbor_information.containsKey(end_id)) {
-                    neighbor_information.put(end_id, costs);
+                PNode end_node_key = new PNode(end_id, end_id - 1);
+                if (!neighbor_information.containsKey(end_node_key)) {
+                    neighbor_information.put(end_node_key, costs);
                     gp_metis_formation.put(node_key, neighbor_information);
                     this.number_of_edges++;
                 }
 
                 //deal with the edge end_id --> start_id
-                HashMap<Long, double[]> reverse_neighbor_information;
+                HashMap<PNode, double[]> reverse_neighbor_information;
                 if (gp_metis_formation.get(reverse_node_key) != null) {
                     reverse_neighbor_information = gp_metis_formation.get(reverse_node_key);
                 } else {
                     reverse_neighbor_information = new HashMap<>();
                 }
 
-                if (!reverse_neighbor_information.containsKey(start_id)) {
-                    reverse_neighbor_information.put(start_id, costs);
+                PNode start_node_key = new PNode(start_id, start_id - 1);
+                if (!reverse_neighbor_information.containsKey(start_node_key)) {
+                    reverse_neighbor_information.put(start_node_key, costs);
                     gp_metis_formation.put(reverse_node_key, reverse_neighbor_information);
                     this.number_of_edges++;
                 }
@@ -117,11 +134,10 @@ public class Graph {
         }
 
         this.number_of_edges = edges.size();
-        System.out.println(gp_metis_formation.get(new PNode(1, 0)).size());
     }
 
 
-    public void readTheNodesFromDisk(HashMap<PNode, HashMap<Long, double[]>> gp_metis_formation, String nodes_file) {
+    public void readTheNodesFromDisk(HashMap<PNode, HashMap<PNode, double[]>> gp_metis_formation, String nodes_file) {
         BufferedReader br = null;
         try {
             br = new BufferedReader(new FileReader(nodes_file));
@@ -152,6 +168,15 @@ public class Graph {
         return (Object) ngraph;
     }
 
+    public void setGraph_info_folder(String graph_info_folder) {
+        this.graph_info_folder = graph_info_folder;
+        String[] path_infos = graph_info_folder.split("/");
+        graphsize = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[1]);
+        degree = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[2]);
+        dimension = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[3]);
+        weight_index = Constants.weight_index;
+    }
+
     /**
      * Split the graph into k(fan) partitions
      *
@@ -168,41 +193,93 @@ public class Graph {
         String partitioned_file = graph_info_folder + "/metis_formation.graph.part." + nparts;
         HashMap<Long, Long> part_map = readPartitionResult(partitioned_file);
 
-        TreeMap<PNode, HashMap<Long, double[]>> sorted = new TreeMap<>();
+        TreeMap<PNode, HashMap<PNode, double[]>> sorted = new TreeMap<>();
         sorted.putAll(gp_metis_formation);
 
-        ArrayList<HashMap<PNode, HashMap<Long, double[]>>> sub_graphs_array_list = new ArrayList<>();
+        HashMap<Long, HashMap<PNode, HashMap<PNode, double[]>>> sub_graphs_array_list = new HashMap<>();
+        ArrayList<HashMap<Long, Long>> node_id_part_mapping = new ArrayList<>();
+
+
         for (int p = 0; p < nparts; p++) {
-            HashMap<PNode, HashMap<Long, double[]>> gp_sub = new HashMap<>();
-            sub_graphs_array_list.add(gp_sub);
+            HashMap<PNode, HashMap<PNode, double[]>> gp_sub = new HashMap<>();
+            sub_graphs_array_list.put((long) p, gp_sub);
+
+            HashMap<Long, Long> node_mapping = new HashMap<>();
+            node_id_part_mapping.add(node_mapping);
         }
 
 
-        for (Map.Entry<PNode, HashMap<Long, double[]>> e : sorted.entrySet()) {
+        for (Map.Entry<PNode, HashMap<PNode, double[]>> e : sorted.entrySet()) {
             PNode key = e.getKey();
             long node_id = key.current_id;
             long part_no = part_map.get(node_id);
+            HashMap<Long, Long> node_map_in_part = node_id_part_mapping.get((int) part_no);
+            long new_node_id = node_map_in_part.size() + 1;
+            node_map_in_part.put(node_id, new_node_id);
+        }
 
-            HashMap<PNode, HashMap<Long, double[]>> gp_sub = sub_graphs_array_list.get((int) part_no);
-            if (!gp_sub.containsKey(key)) {
-                gp_sub.put(key, sorted.get(key));
+
+        long[] edge_numbers = new long[nparts];
+        long cross_edge_numbers = 0;
+        long[] border_nodes_number = new long[nparts];
+        long[] non_border_nodes_number = new long[nparts];
+
+        for (Map.Entry<PNode, HashMap<PNode, double[]>> e : sorted.entrySet()) {
+            long node_id = e.getKey().current_id;
+            long part_no = part_map.get(node_id);
+
+            HashMap<PNode, HashMap<PNode, double[]>> gp_sub = sub_graphs_array_list.get(part_no);
+            HashMap<Long, Long> node_mapping = node_id_part_mapping.get((int) part_no);
+
+            long new_node_id = node_mapping.get(node_id);
+
+            PNode new_key = new PNode(new_node_id, e.getKey().neo4j_id);
+
+            if (!gp_sub.containsKey(new_key)) {
+                HashMap<PNode, double[]> neighborsInSamePartition = new HashMap<>();
+                HashMap<PNode, double[]> old_neighbors = gp_metis_formation.get(e.getKey());
+                for (Map.Entry<PNode, double[]> edge : old_neighbors.entrySet()) {
+                    long old_id = edge.getKey().current_id;
+                    long old_neo4j_id = edge.getKey().neo4j_id;
+                    long edge_end_part_no = part_map.get(old_id);
+
+                    //Two nodes pf the edgs belong to same partition
+                    if (edge_end_part_no == part_no) {
+                        long new_end_id = node_mapping.get(old_id);
+                        PNode end_pnode = new PNode(new_end_id, old_neo4j_id);
+                        neighborsInSamePartition.put(end_pnode, edge.getValue());
+                        edge_numbers[(int) part_no]++;
+                    } else {
+                        cross_edge_numbers++;
+                    }
+                }
+
+                if (e.getValue().size() != neighborsInSamePartition.size()) {
+                    border_nodes_number[(int) part_no]++;
+                } else {
+                    non_border_nodes_number[(int) part_no]++;
+                }
+
+                gp_sub.put(new_key, neighborsInSamePartition);
             }
+
+            sub_graphs_array_list.put(part_no, gp_sub);
+
         }
 
-        long sum = 0;
         for (int p = 0; p < nparts; p++) {
-            int size = sub_graphs_array_list.get(p).size();
-            sum+=size;
-            System.out.println(size);
+            Graph s_g = new Graph(sub_graphs_array_list.get((long) p), edge_numbers[p] / 2);
+//            System.out.println("::::::" + sub_graphs_array_list.get((long) p).size());
+            s_g.setGraph_info_folder(graph_info_folder);
+            s_g.level = this.level + 1;
+            sub_graphs[p] = s_g;
         }
-
-        System.out.println(sum);
 
         return sub_graphs;
     }
 
     private void callGPMetisCommand(int nparts, String gp_graph_file) {
-        String command = "gpmetis -objtype=vol " + gp_graph_file + " " + nparts;
+        String command = "gpmetis  " + gp_graph_file + " " + nparts;
         String ls_command = "ls " + graph_info_folder;
         ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
         try {
@@ -210,18 +287,18 @@ public class Graph {
             Process process = pb.start();
 
             int exitVal = process.waitFor();
-            if (exitVal == 0) {
-                System.out.println("Success!");
-            } else {
-                System.out.println("failure !!!!");
-            }
+//            if (exitVal == 0) {
+//                System.out.println("Success!");
+//            } else {
+//                System.out.println("failure !!!!");
+//            }
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }
 
-    private void writeToDisk(HashMap<PNode, HashMap<Long, double[]>> gp_metis_formation, long number_of_edges, String target_path) {
+    private void writeToDisk(HashMap<PNode, HashMap<PNode, double[]>> gp_metis_formation, long number_of_edges, String target_path) {
         this.number_of_nodes = gp_metis_formation.size();
         File target_file = new File(target_path);
         if (target_file.exists()) {
@@ -232,17 +309,16 @@ public class Graph {
              BufferedWriter bw = new BufferedWriter(fw)) {
             bw.write(number_of_nodes + " " + number_of_edges + " " + Constants.fmt + " \n");
 
-            TreeMap<PNode, HashMap<Long, double[]>> sorted = new TreeMap<>();
+            TreeMap<PNode, HashMap<PNode, double[]>> sorted = new TreeMap<>();
             sorted.putAll(gp_metis_formation);
 
 
-            for (Map.Entry<PNode, HashMap<Long, double[]>> e : sorted.entrySet()) {
+            for (Map.Entry<PNode, HashMap<PNode, double[]>> e : sorted.entrySet()) {
                 StringBuffer sb = new StringBuffer();
-                for (Map.Entry<Long, double[]> ne : e.getValue().entrySet()) {
-                    sb.append(ne.getKey()).append(" ").append((int) ne.getValue()[weight_index]).append(" ");
+                for (Map.Entry<PNode, double[]> ne : e.getValue().entrySet()) {
+                    sb.append(ne.getKey().current_id).append(" ").append((int) ne.getValue()[weight_index]).append(" ");
                 }
                 String line = sb.toString().trim() + "\n";
-                System.out.print(e.getKey().current_id + "   " + e.getKey().neo4j_id + "  " + line);
 
                 bw.write(line);
             }

@@ -16,22 +16,27 @@ public class GPInterNode extends GPNode implements TreeNode {
     }
 
     public void insert(Graph g) throws CloneNotSupportedException {
+//        System.out.println(" insert ::::::::::: "+g.number_of_nodes+"  "+g.number_of_edges+" "+g.gp_metis_formation.size());
         this.sub_g = (Graph) g.clone();
         if (g.number_of_nodes >= this.vertex_in_leaf) {
             Graph[] sub_graphs = g.split(fan);
-//            for (int i = 0; i < fan; i++) {
-//                Graph sub_graph = sub_graphs[i];
-//                GPNode node = new GPNode(this.my_tree);
-//                node.level = this.level + 1;
-//                son_ptrs[i] = node;
-//
-//                if (sub_graph.number_of_nodes <= this.vertex_in_leaf) {
-//                    is_leaf_son[i] = true;
-//                    ((GPLeafNode) node).insert(sub_graph);
-//                } else {
-//                    ((GPInterNode) node).insert(sub_graph);
-//                }
-//            }
+            for (int i = 0; i < fan; i++) {
+                Graph sub_graph = sub_graphs[i];
+                GPNode node;
+                if (sub_graph.number_of_nodes <= this.vertex_in_leaf) {
+                    is_leaf_son[i] = true;
+                    node = new GPLeafNode(this.my_tree);
+                    node.level = this.level + 1;
+                    ((GPLeafNode) node).insert(sub_graph);
+                    son_ptrs[i] = node;
+                    System.out.println("leaf node at "+ sub_graph.level + " " + sub_graph.number_of_nodes + " " + sub_graph.number_of_edges);
+                } else {
+                    node = new GPInterNode(this.my_tree);
+                    node.level = this.level + 1;
+                    ((GPInterNode) node).insert(sub_graph);
+                    son_ptrs[i] = node;
+                }
+            }
         }
     }
 }

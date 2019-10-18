@@ -21,7 +21,7 @@ public class CreateDB {
     public static void main(String args[]) {
 
         int graphsize = 10000;
-        int degree = 4;
+        int degree = 2;
         int dimension = 3;
 
         CreateDB c = new CreateDB();
@@ -45,7 +45,6 @@ public class CreateDB {
         System.out.println("node file path :" + nodeFilePath);
         System.out.println("edge file path :" + EdgeFilePath);
         GraphDatabaseService graphdb = neo4j.graphDB;
-
         int num_node = 0, num_edge = 0;
 
         try (Transaction tx = graphdb.beginTx()) {
