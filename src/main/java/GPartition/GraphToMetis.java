@@ -47,12 +47,21 @@ public class GraphToMetis {
         this.graph_info_folder = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "_" + dimension + "/data";
     }
 
+    public GraphToMetis(String graph_info_folder) {
+        String[] path_infos = graph_info_folder.split("/");
+        graphsize = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[1]);
+        degree = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[2]);
+        dimension = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[3]);
+//        System.out.println(graphsize + "   " + degree + "   " + dimension);
+        this.weight_index = Constants.weight_index;
+    }
+
     public void MultiLevelGraphPartition(int fan, int nodes_in_leaf) {
         int level = 0;
 
         int max_number_vertex_in_nodes = this.graphsize;
 
-        while(max_number_vertex_in_nodes>= nodes_in_leaf);
+        while (max_number_vertex_in_nodes >= nodes_in_leaf) ;
 
     }
 
@@ -62,17 +71,17 @@ public class GraphToMetis {
         GraphToMetis gTom = new GraphToMetis(weight_index);
 //        gTom.MultiLevelGraphPartition(2, 30);
 
-//        HashMap<Pair<Long, Long>, double[]> edges = new HashMap<>();
-//        HashMap<Long, HashMap<Long, Double>> gp_metis_formation = new HashMap<>();  // the node id -->> <neighborID, cost>
-//        gTom.readTheNodesFromDisk(gp_metis_formation, gTom.init_nodes_file);
-//        gTom.readTheEdgesFromDisk(gp_metis_formation,gTom.init_edges_file,edges);
-//        System.out.println("there are " + gTom.number_of_edges + " edges");
-//        gTom.writeToDisk(gp_metis_formation, gTom.init_target_path);
-//        System.out.println("The graph is saved to : "+gTom.init_target_path);
-//        gTom.callGPMetisCommand(true, 100, gTom.init_target_path);
+        HashMap<Pair<Long, Long>, double[]> edges = new HashMap<>();
+        HashMap<Long, HashMap<Long, double[]>> gp_metis_formation = new HashMap<>();  // the node id -->> <neighborID, cost>
+        gTom.readTheNodesFromDisk(gp_metis_formation, gTom.init_nodes_file);
+        gTom.readTheEdgesFromDisk(gp_metis_formation, gTom.init_edges_file, edges);
+        System.out.println("there are " + gTom.number_of_edges + " edges");
+        gTom.writeToDisk(gp_metis_formation, edges.size(), gTom.init_target_path);
+        System.out.println("The graph is saved to : " + gTom.init_target_path);
+        gTom.callGPMetisCommand(true, 100);
     }
 
-    private void callGPMetisCommand(boolean needLogs, int partition_num, String graph_path) {
+    public void callGPMetisCommand(boolean needLogs, int partition_num) {
         String command = "gpmetis -objtype=vol " + init_target_path + " " + partition_num;
         String ls_command = "ls " + graph_info_folder;
         ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
@@ -118,9 +127,8 @@ public class GraphToMetis {
         }
     }
 
-    private void writeToDisk(HashMap<Long, HashMap<Long, Double>> gp_metis_formation, String target_path) {
+    public void writeToDisk(HashMap<Long, HashMap<Long, double[]>> gp_metis_formation, long number_of_edges, String target_path) {
         this.number_of_nodes = gp_metis_formation.size();
-
         File target_file = new File(target_path);
         if (target_file.exists()) {
             target_file.delete();
@@ -132,19 +140,14 @@ public class GraphToMetis {
              BufferedWriter bw = new BufferedWriter(fw)) {
             bw.write(number_of_nodes + " " + number_of_edges + " " + this.fmt + " \n");
 
-            for (Map.Entry<Long, HashMap<Long, Double>> e : gp_metis_formation.entrySet()) {
+            for (Map.Entry<Long, HashMap<Long, double[]>> e : gp_metis_formation.entrySet()) {
 //                System.out.println(e.getKey());
                 StringBuffer sb = new StringBuffer();
-                for (Map.Entry<Long, Double> ne : e.getValue().entrySet()) {
-                    sb.append(ne.getKey()).append(" ").append(ne.getValue().intValue()).append(" ");
+                for (Map.Entry<Long, double[]> ne : e.getValue().entrySet()) {
+                    sb.append(ne.getKey()).append(" ").append((int) ne.getValue()[weight_index]).append(" ");
                 }
                 String line = sb.toString().trim() + "\n";
-//                System.out.print(line);
                 bw.write(line);
-//                if(count++%10==0){
-//                    break;
-//                }
-
             }
 
 
@@ -154,7 +157,7 @@ public class GraphToMetis {
 
     }
 
-    public void readTheEdgesFromDisk(HashMap<Long, HashMap<Long, Double>> gp_metis_formation, String edges_file, HashMap<Pair<Long, Long>, double[]> edges) {
+    public void readTheEdgesFromDisk(HashMap<Long, HashMap<Long, double[]>> gp_metis_formation, String edges_file, HashMap<Pair<Long, Long>, double[]> edges) {
         BufferedReader br = null;
         try {
             br = new BufferedReader(new FileReader(edges_file));
@@ -177,7 +180,7 @@ public class GraphToMetis {
                 }
 
                 //deal with the edge start_id --> end_id
-                HashMap<Long, Double> neighbor_information;
+                HashMap<Long, double[]> neighbor_information;
                 if (gp_metis_formation.get(start_id) != null) {
                     neighbor_information = gp_metis_formation.get(start_id);
                 } else {
@@ -185,14 +188,13 @@ public class GraphToMetis {
                 }
 
                 if (!neighbor_information.containsKey(end_id)) {
-                    neighbor_information.put(end_id, costs[this.weight_index]);
+                    neighbor_information.put(end_id, costs);
                     gp_metis_formation.put(start_id, neighbor_information);
                     this.number_of_edges++;
                 }
 
-
                 //deal with the edge end_id --> start_id
-                HashMap<Long, Double> reverse_neighbor_information;
+                HashMap<Long, double[]> reverse_neighbor_information;
                 if (gp_metis_formation.get(end_id) != null) {
                     reverse_neighbor_information = gp_metis_formation.get(end_id);
                 } else {
@@ -200,7 +202,7 @@ public class GraphToMetis {
                 }
 
                 if (!reverse_neighbor_information.containsKey(start_id)) {
-                    reverse_neighbor_information.put(start_id, costs[this.weight_index]);
+                    reverse_neighbor_information.put(start_id, costs);
                     gp_metis_formation.put(end_id, reverse_neighbor_information);
                     this.number_of_edges++;
                 }
@@ -210,11 +212,10 @@ public class GraphToMetis {
             e.printStackTrace();
         }
 
-
         this.number_of_edges = edges.size();
     }
 
-    public void readTheNodesFromDisk(HashMap<Long, HashMap<Long, Double>> gp_metis_formation, String nodes_file) {
+    public void readTheNodesFromDisk(HashMap<Long, HashMap<Long, double[]>> gp_metis_formation, String nodes_file) {
         BufferedReader br = null;
         try {
             br = new BufferedReader(new FileReader(nodes_file));

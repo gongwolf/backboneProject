@@ -1,11 +1,13 @@
 package GPartition;
 
-public class GPLeafNode extends GPNode {
-    Graph leaf_graph;
+public class GPLeafNode extends GPNode implements TreeNode {
 
     public GPLeafNode(GPTree rt) {
         super(rt);
-        this.leaf_graph = new Graph();
+    }
 
+    @Override
+    public void insert(Graph g) throws CloneNotSupportedException {
+        this.sub_g = (Graph) g.clone();
     }
 }

@@ -8,7 +8,6 @@ public class GPTree {
 
 
     public GPTree(int fan, int threshold_vertex_in_leaf) {
-
         root_ptr = null;
         this.fan = fan;
         this.threshold_vertex_in_leaf = threshold_vertex_in_leaf;
@@ -20,10 +19,12 @@ public class GPTree {
             is_leaf_node = true;
             root_ptr = new GPLeafNode(this);
             root_ptr.sub_g = (Graph) g.clone();
-
+            root_ptr.level = 0;
         } else {
+            System.out.println("The root is point to an internal tree node ");
             root_ptr = new GPInterNode(this);
             GPInterNode node = (GPInterNode) root_ptr;
+            root_ptr.level = 0;
             node.insert(g);
         }
 
