@@ -23,6 +23,7 @@ public class Graph {
 
 
     int level;
+    public long borderNumber;
 
     public Graph() {
         this.number_of_nodes = 0;
@@ -160,11 +161,11 @@ public class Graph {
 
         ngraph.number_of_nodes = this.number_of_nodes;
         ngraph.number_of_edges = this.number_of_edges;
+        ngraph.borderNumber = this.borderNumber;
 
         ngraph.gp_metis_formation = new HashMap<>(this.gp_metis_formation);
         ngraph.level = this.level;
         ngraph.graph_info_folder = this.graph_info_folder;
-
         return (Object) ngraph;
     }
 
@@ -177,6 +178,10 @@ public class Graph {
         weight_index = Constants.weight_index;
     }
 
+    private void setBorderNumber(long borderNumber) {
+        this.borderNumber = borderNumber;
+    }
+
     /**
      * Split the graph into k(fan) partitions
      *
@@ -184,7 +189,7 @@ public class Graph {
      * @return the sub_graphs
      */
     public Graph[] split(int nparts) {
-        System.out.println("Split the graph at level " + level + "  " + number_of_nodes + "  " + number_of_edges);
+//        System.out.println("Split the graph at level " + level + "  " + number_of_nodes + "  " + number_of_edges+"  "+borderNumber);
         Graph[] sub_graphs = new Graph[nparts];
         String target_path = graph_info_folder + "/metis_formation.graph";
         writeToDisk(gp_metis_formation, number_of_edges, target_path);
@@ -267,19 +272,28 @@ public class Graph {
 
         }
 
+        long sum_border = 0;
         for (int p = 0; p < nparts; p++) {
             Graph s_g = new Graph(sub_graphs_array_list.get((long) p), edge_numbers[p] / 2);
 //            System.out.println("::::::" + sub_graphs_array_list.get((long) p).size());
             s_g.setGraph_info_folder(graph_info_folder);
+//            s_g.setBorderNumber(border_nodes_number[p]);
+            sum_border += border_nodes_number[p];
             s_g.level = this.level + 1;
             sub_graphs[p] = s_g;
+            if (s_g.number_of_nodes <= Constants.vertex_in_leaf) {
+                s_g.setBorderNumber(border_nodes_number[p]);
+            }
         }
 
+//        System.out.println(sum_border);
+        this.setBorderNumber(sum_border);
         return sub_graphs;
     }
 
+
     private void callGPMetisCommand(int nparts, String gp_graph_file) {
-        String command = "gpmetis  " + gp_graph_file + " " + nparts;
+        String command = "gpmetis -objtype=vol " + gp_graph_file + " " + nparts;
         String ls_command = "ls " + graph_info_folder;
         ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
         try {
@@ -316,7 +330,11 @@ public class Graph {
             for (Map.Entry<PNode, HashMap<PNode, double[]>> e : sorted.entrySet()) {
                 StringBuffer sb = new StringBuffer();
                 for (Map.Entry<PNode, double[]> ne : e.getValue().entrySet()) {
-                    sb.append(ne.getKey().current_id).append(" ").append((int) ne.getValue()[weight_index]).append(" ");
+                    int value = (int) ne.getValue()[weight_index];
+
+                    value = value >= 1 ? value : 1;
+
+                    sb.append(ne.getKey().current_id).append(" ").append(value).append(" ");
                 }
                 String line = sb.toString().trim() + "\n";
 

@@ -21,12 +21,20 @@ public class GPTree {
             root_ptr.sub_g = (Graph) g.clone();
             root_ptr.level = 0;
         } else {
-            System.out.println("The root is point to an internal tree node ");
+//            System.out.println("The root is point to an internal tree node ");
             root_ptr = new GPInterNode(this);
             GPInterNode node = (GPInterNode) root_ptr;
             root_ptr.level = 0;
             node.insert(g);
         }
 
+    }
+
+    public void printTree(int printlevel) {
+        if (this.is_leaf_node) {
+            ((TreeNode) root_ptr).print(printlevel);
+        } else {
+            ((TreeNode) root_ptr).print(printlevel);
+        }
     }
 }
