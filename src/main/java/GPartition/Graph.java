@@ -19,7 +19,7 @@ public class Graph {
     public int weight_index;
     public int graphsize;
     public int degree;
-    public int dimension;
+    public int dimension=3;
     public long number_of_nodes;
     public long number_of_edges;
     public GPTree my_tree;
@@ -54,10 +54,11 @@ public class Graph {
         this.graph_info_folder = graph_info_folder;
 
         String[] path_infos = graph_info_folder.split("/");
-        graphsize = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[1]);
-        degree = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[2]);
-        dimension = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[3]);
+//        graphsize = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[1]);
+//        degree = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[2]);
+//        dimension = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[3]);
         weight_index = Constants.weight_index;
+
 
         builtGraphFromFile(graph_info_folder);
 
@@ -84,16 +85,15 @@ public class Graph {
                 String[] edge_info = line.split(" ");
                 long start_id = Long.parseLong(edge_info[0]) + 1; // metis node id start from 1
                 long end_id = Long.parseLong(edge_info[1]) + 1; // metis node is start from 1
-
 //
 //                if (start_id == 1 || end_id == 1) {
 //                    System.out.println(line);
 //                }
 
                 double[] costs = new double[this.dimension];
-                costs[0] = Double.parseDouble(edge_info[2]);
-                costs[1] = Double.parseDouble(edge_info[3]);
-                costs[2] = Double.parseDouble(edge_info[4]);
+                costs[0] = Double.parseDouble(edge_info[2].trim());
+                costs[1] = Double.parseDouble(edge_info[3].trim());
+                costs[2] = Double.parseDouble(edge_info[4].trim());
 
                 Pair<Long, Long> relations = new Pair<>(start_id, end_id);
                 if (!existedEdges(relations, edges)) {
@@ -176,12 +176,17 @@ public class Graph {
         return (Object) ngraph;
     }
 
+    /***
+     * Update the graph size, degree, and dimension information of this Graph instance
+     *
+     * @param graph_info_folder the name of the folder that contains the graph
+     */
     public void setGraph_info_folder(String graph_info_folder) {
         this.graph_info_folder = graph_info_folder;
         String[] path_infos = graph_info_folder.split("/");
-        graphsize = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[1]);
-        degree = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[2]);
-        dimension = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[3]);
+//        graphsize = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[1]);
+//        degree = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[2]);
+//        dimension = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[3]);
         weight_index = Constants.weight_index;
     }
 

@@ -17,7 +17,9 @@ public class GPTree {
     }
 
     public void builtTree(Graph g) throws CloneNotSupportedException {
-        this.neo4jdb = new Neo4jDB(g.graphsize + "_" + g.degree + "_" + g.dimension + "_Level0");
+//        this.neo4jdb = new Neo4jDB(g.graphsize + "_" + g.degree + "_" + g.dimension + "_Level0");
+        this.neo4jdb = new Neo4jDB("col_USA_Level0");
+
         this.neo4jdb.startDB(false);
         System.out.println(neo4jdb.DB_PATH);
         System.out.println(neo4jdb.graphDB);
