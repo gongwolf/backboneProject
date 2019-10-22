@@ -19,6 +19,7 @@ public class GPInterNode extends GPNode implements TreeNode {
 //        System.out.println(" insert ::::::::::: "+g.number_of_nodes+"  "+g.number_of_edges+" "+g.gp_metis_formation.size());
 //        this.sub_g = (Graph) g.clone();
         this.sub_g = (Graph) g.clone();
+
         if (g.number_of_nodes >= this.vertex_in_leaf) {
             Graph[] sub_graphs = this.sub_g.split(fan);
             for (int i = 0; i < fan; i++) {
@@ -43,14 +44,13 @@ public class GPInterNode extends GPNode implements TreeNode {
 
     @Override
     public void print(int printlevel) {
-
         if (this.level <= printlevel) {
             String sb = " ";
             for (int i = 0; i < this.level; i++) {
                 sb += sb;
             }
             double borderRatio = 1.0 * sub_g.borderNumber / sub_g.number_of_nodes;
-            System.out.printf(sb + "level " + this.level + " " + getClass().getName() + " " + this.sub_g.number_of_nodes + " " + this.sub_g.number_of_edges + " " + this.sub_g.borderNumber + " %.2f \n", borderRatio);
+            System.out.printf(sb + "level " + this.level + " " + getClass().getName() + " [nodes]" + this.sub_g.number_of_nodes + " [edges]" + this.sub_g.number_of_edges + " [borderNodes]" + this.sub_g.borderNumber + " %.2f \n", borderRatio);
             for (int i = 0; i < son_ptrs.length; i++) {
                 ((TreeNode) son_ptrs[i]).print(printlevel);
             }

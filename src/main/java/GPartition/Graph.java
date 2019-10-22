@@ -1,7 +1,12 @@
 package GPartition;
 
+import com.google.common.collect.Iterables;
 import javafx.util.Pair;
 import org.apache.commons.lang3.StringUtils;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
 
 import java.io.*;
@@ -17,6 +22,7 @@ public class Graph {
     public int dimension;
     public long number_of_nodes;
     public long number_of_edges;
+    public GPTree my_tree;
 
     HashMap<PNode, HashMap<PNode, double[]>> gp_metis_formation = new HashMap<>(); //  node id --> <neighbor id, costs>
     String graph_info_folder;
@@ -34,7 +40,6 @@ public class Graph {
         this.number_of_nodes = gp_metis_formation.size();
         this.number_of_edges = edge_numbers;
         this.gp_metis_formation.putAll(gp_metis_formation);
-
     }
 
     /**
@@ -166,6 +171,8 @@ public class Graph {
         ngraph.gp_metis_formation = new HashMap<>(this.gp_metis_formation);
         ngraph.level = this.level;
         ngraph.graph_info_folder = this.graph_info_folder;
+        ngraph.my_tree = this.my_tree;
+
         return (Object) ngraph;
     }
 
@@ -259,11 +266,26 @@ public class Graph {
                     }
                 }
 
-                if (e.getValue().size() != neighborsInSamePartition.size()) {
-                    border_nodes_number[(int) part_no]++;
-                } else {
-                    non_border_nodes_number[(int) part_no]++;
+                GraphDatabaseService graphdb = this.my_tree.neo4jdb.graphDB;
+
+                try (Transaction tx = graphdb.beginTx()) {
+                    Iterable<Relationship> rels_neigbors_in_graphs = graphdb.getNodeById(e.getKey().neo4j_id).getRelationships(Direction.BOTH);
+                    int neighbors_size = Iterables.size(rels_neigbors_in_graphs);
+                    if (neighbors_size != neighborsInSamePartition.size()) {
+                        border_nodes_number[(int) part_no]++;
+                    }else{
+                        non_border_nodes_number[(int) part_no]++;
+                    }
+
+                    tx.success();
                 }
+
+
+//                if (e.getValue().size() != neighborsInSamePartition.size()) {
+//                    border_nodes_number[(int) part_no]++;
+//                } else {
+//                    non_border_nodes_number[(int) part_no]++;
+//                }
 
                 gp_sub.put(new_key, neighborsInSamePartition);
             }
@@ -281,6 +303,7 @@ public class Graph {
             sum_border += border_nodes_number[p];
             s_g.level = this.level + 1;
             sub_graphs[p] = s_g;
+            s_g.my_tree = this.my_tree;
             if (s_g.number_of_nodes <= Constants.vertex_in_leaf) {
                 s_g.setBorderNumber(border_nodes_number[p]);
             }

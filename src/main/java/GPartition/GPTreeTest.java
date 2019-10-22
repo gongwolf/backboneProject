@@ -8,10 +8,11 @@ public class GPTreeTest {
         GPTree tree = new GPTree(4, 30);
 
         String home_folder = System.getProperty("user.home");
-        String graph_info_folder = home_folder + "/mydata/projectData/BackBone/testRandomGraph_40000_4_3/data";
+        String graph_info_folder = home_folder + "/mydata/projectData/BackBone/testRandomGraph_10000_4_3/data";
+
         Graph init_graph = new Graph(graph_info_folder);
         tree.builtTree(init_graph);
-        tree.printTree(4);
+        tree.printTree(5);
 
 //        GPNode node;
 //        if (tree.is_leaf_node) {

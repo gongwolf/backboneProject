@@ -20,7 +20,7 @@ public class CreateDB {
 
     public static void main(String args[]) {
 
-        int graphsize = 40000;
+        int graphsize = 10000;
         int degree = 4;
         int dimension = 3;
 
