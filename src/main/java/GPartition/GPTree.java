@@ -17,8 +17,15 @@ public class GPTree {
     }
 
     public void builtTree(Graph g) throws CloneNotSupportedException {
-//        this.neo4jdb = new Neo4jDB(g.graphsize + "_" + g.degree + "_" + g.dimension + "_Level0");
-        this.neo4jdb = new Neo4jDB("col_USA_Level0");
+        if (g.graph_info_folder.contains("USA")) {
+            String[] path_infos = g.graph_info_folder.split("/");
+        } else if (g.graph_info_folder.contains("busline")) {
+            String[] path_infos = g.graph_info_folder.split("/");
+            String[] file_infos = path_infos[path_infos.length-2].split("_");
+            this.neo4jdb = new Neo4jDB(file_infos[1]+"_"+file_infos[2] + "_Level0");
+        } else {
+            this.neo4jdb = new Neo4jDB(g.graphsize + "_" + g.degree + "_" + g.dimension + "_Level0");
+        }
 
         this.neo4jdb.startDB(false);
         System.out.println(neo4jdb.DB_PATH);
@@ -44,11 +51,11 @@ public class GPTree {
 
     }
 
-    public void printTree(int printlevel) {
+    public void printTree(int printlevel, boolean showBorderInfo, boolean showMatrixInfo) {
         if (this.is_leaf_node) {
-            ((TreeNode) root_ptr).print(printlevel);
+            ((TreeNode) root_ptr).print(printlevel, showBorderInfo, showMatrixInfo);
         } else {
-            ((TreeNode) root_ptr).print(printlevel);
+            ((TreeNode) root_ptr).print(printlevel, showBorderInfo, showMatrixInfo);
         }
     }
 }

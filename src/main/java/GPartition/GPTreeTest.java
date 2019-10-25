@@ -5,16 +5,18 @@ import java.util.Map;
 
 public class GPTreeTest {
     public static void main(String args[]) throws CloneNotSupportedException {
-        GPTree tree = new GPTree(8, 30);
+        GPTree tree = new GPTree(2, 4);
+        Constants.Border_finding_stratage = 2;
 
         String home_folder = System.getProperty("user.home");
-//        String graph_info_folder = home_folder + "/mydata/projectData/BackBone/testRandomGraph_10000_4_3/data";
-        String graph_info_folder = home_folder + "/mydata/projectData/BackBone/col_USA";
+//        String graph_info_folder = home_folder + "/mydata/projectData/BackBone/testRandomGraph_10000_2_3/data";
+//        String graph_info_folder = home_folder + "/mydata/projectData/BackBone/test_USA";
+        String graph_info_folder = home_folder+"/mydata/projectData/BackBone/busline_10000_0.0036/data";
 
         Graph init_graph = new Graph(graph_info_folder);
 
         tree.builtTree(init_graph);
-        tree.printTree(200000);
+        tree.printTree(3, false, false);
 
 //        GPNode node;
 //        if (tree.is_leaf_node) {

@@ -21,27 +21,27 @@ public class CreateDB {
     public static void main(String args[]) {
 
         int graphsize = 10000;
-        int degree = 4;
+        int degree = 2;
         int dimension = 3;
 
         CreateDB c = new CreateDB();
-        c.createRandomGraph(graphsize, degree, dimension);
-//        c.createBusLineDataBase(100 , 28);
+//        c.createRandomGraph(graphsize, degree, dimension);
+        c.createBusLineDataBase(10000 , 0.0036);
     }
 
     private void createRandomGraph(int graphsize, int degree, int dimension) {
-//        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level0";
-        String sub_db_name =  "col_USA_Level0";
+        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level0";
+//        String sub_db_name =  "test_USA_Level0";
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);
         neo4j.deleleDB();
         System.out.println("====================================================================");
         neo4j.startDB(false);
         System.out.println(neo4j.DB_PATH);
         System.out.println("====================================================================");
-//        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "_" + dimension + "/data/NodeInfo.txt";
-//        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "_" + dimension + "/data/SegInfo.txt";
-        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/col_USA/NodeInfo.txt";
-        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/col_USA/SegInfo.txt";
+        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "_" + dimension + "/data/NodeInfo.txt";
+        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/testRandomGraph_" + graphsize + "_" + degree + "_" + dimension + "/data/SegInfo.txt";
+//        String nodeFilePath = home_folder + "/mydata/projectData/BackBone/test_USA/NodeInfo.txt";
+//        String EdgeFilePath = home_folder + "/mydata/projectData/BackBone/test_USA/SegInfo.txt";
 
         System.out.println("node file path :" + nodeFilePath);
         System.out.println("edge file path :" + EdgeFilePath);

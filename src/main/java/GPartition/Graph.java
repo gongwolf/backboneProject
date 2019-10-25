@@ -19,7 +19,7 @@ public class Graph {
     public int weight_index;
     public int graphsize;
     public int degree;
-    public int dimension=3;
+    public int dimension = 3;
     public long number_of_nodes;
     public long number_of_edges;
     public GPTree my_tree;
@@ -30,6 +30,8 @@ public class Graph {
 
     int level;
     public long borderNumber;
+    public long matrix_size;
+    public HashSet<PNode> matrix = new HashSet<>();
 
     public Graph() {
         this.number_of_nodes = 0;
@@ -54,9 +56,11 @@ public class Graph {
         this.graph_info_folder = graph_info_folder;
 
         String[] path_infos = graph_info_folder.split("/");
-//        graphsize = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[1]);
-//        degree = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[2]);
-//        dimension = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[3]);
+        if (!graph_info_folder.contains("USA") && !graph_info_folder.contains("busline")) {
+            graphsize = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[1]);
+            degree = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[2]);
+            dimension = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[3]);
+        }
         weight_index = Constants.weight_index;
 
 
@@ -172,6 +176,7 @@ public class Graph {
         ngraph.level = this.level;
         ngraph.graph_info_folder = this.graph_info_folder;
         ngraph.my_tree = this.my_tree;
+        ngraph.matrix.addAll(matrix);
 
         return (Object) ngraph;
     }
@@ -184,9 +189,11 @@ public class Graph {
     public void setGraph_info_folder(String graph_info_folder) {
         this.graph_info_folder = graph_info_folder;
         String[] path_infos = graph_info_folder.split("/");
-//        graphsize = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[1]);
-//        degree = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[2]);
-//        dimension = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[3]);
+        if (!graph_info_folder.contains("USA") && !graph_info_folder.contains("busline")) {
+            graphsize = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[1]);
+            degree = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[2]);
+            dimension = Integer.parseInt(path_infos[path_infos.length - 2].split("_")[3]);
+        }
         weight_index = Constants.weight_index;
     }
 
@@ -215,6 +222,7 @@ public class Graph {
 
         HashMap<Long, HashMap<PNode, HashMap<PNode, double[]>>> sub_graphs_array_list = new HashMap<>();
         ArrayList<HashMap<Long, Long>> node_id_part_mapping = new ArrayList<>();
+        ArrayList<HashSet<PNode>> borderMatrix = new ArrayList<>();
 
 
         for (int p = 0; p < nparts; p++) {
@@ -223,6 +231,9 @@ public class Graph {
 
             HashMap<Long, Long> node_mapping = new HashMap<>();
             node_id_part_mapping.add(node_mapping);
+
+            HashSet<PNode> border_in_sub = new HashSet<>();
+            borderMatrix.add(border_in_sub);
         }
 
 
@@ -240,6 +251,7 @@ public class Graph {
         long cross_edge_numbers = 0;
         long[] border_nodes_number = new long[nparts];
         long[] non_border_nodes_number = new long[nparts];
+
 
         for (Map.Entry<PNode, HashMap<PNode, double[]>> e : sorted.entrySet()) {
             long node_id = e.getKey().current_id;
@@ -271,26 +283,32 @@ public class Graph {
                     }
                 }
 
-                GraphDatabaseService graphdb = this.my_tree.neo4jdb.graphDB;
 
-                try (Transaction tx = graphdb.beginTx()) {
-                    Iterable<Relationship> rels_neigbors_in_graphs = graphdb.getNodeById(e.getKey().neo4j_id).getRelationships(Direction.BOTH);
-                    int neighbors_size = Iterables.size(rels_neigbors_in_graphs);
-                    if (neighbors_size != neighborsInSamePartition.size()) {
+                if (Constants.Border_finding_stratage == 1) {
+                    /**find the border nodes as the definition in G tree paper*/
+                    GraphDatabaseService graphdb = this.my_tree.neo4jdb.graphDB;
+                    try (Transaction tx = graphdb.beginTx()) {
+                        Iterable<Relationship> rels_neigbors_in_graphs = graphdb.getNodeById(e.getKey().neo4j_id).getRelationships(Direction.BOTH);
+                        int neighbors_size = Iterables.size(rels_neigbors_in_graphs);
+                        if (neighbors_size != neighborsInSamePartition.size()) {
+                            border_nodes_number[(int) part_no]++;
+                            borderMatrix.get((int) part_no).add(new_key);
+                            new_key.setBorder(true);
+                        } else {
+                            non_border_nodes_number[(int) part_no]++;
+                        }
+                        tx.success();
+                    }
+                } else if (Constants.Border_finding_stratage == 2) {
+                    /**find the border nodes as the original definition*/
+                    if (e.getValue().size() != neighborsInSamePartition.size()) {
                         border_nodes_number[(int) part_no]++;
-                    }else{
+                        borderMatrix.get((int) part_no).add(new_key);
+                        new_key.setBorder(true);
+                    } else {
                         non_border_nodes_number[(int) part_no]++;
                     }
-
-                    tx.success();
                 }
-
-
-//                if (e.getValue().size() != neighborsInSamePartition.size()) {
-//                    border_nodes_number[(int) part_no]++;
-//                } else {
-//                    non_border_nodes_number[(int) part_no]++;
-//                }
 
                 gp_sub.put(new_key, neighborsInSamePartition);
             }
@@ -300,28 +318,33 @@ public class Graph {
         }
 
         long sum_border = 0;
+        HashSet<PNode> matrix = new HashSet<>();
         for (int p = 0; p < nparts; p++) {
             Graph s_g = new Graph(sub_graphs_array_list.get((long) p), edge_numbers[p] / 2);
-//            System.out.println("::::::" + sub_graphs_array_list.get((long) p).size());
             s_g.setGraph_info_folder(graph_info_folder);
-//            s_g.setBorderNumber(border_nodes_number[p]);
             sum_border += border_nodes_number[p];
             s_g.level = this.level + 1;
             sub_graphs[p] = s_g;
             s_g.my_tree = this.my_tree;
-            if (s_g.number_of_nodes <= Constants.vertex_in_leaf) {
-                s_g.setBorderNumber(border_nodes_number[p]);
+            s_g.setBorderNumber(border_nodes_number[p]);
+
+            for (PNode n_p : borderMatrix.get(p)) {
+                matrix.add(n_p);
             }
         }
 
-//        System.out.println(sum_border);
-        this.setBorderNumber(sum_border);
+        this.setMatrixNumber(sum_border);
+        this.matrix.addAll(matrix);
         return sub_graphs;
+    }
+
+    private void setMatrixNumber(long sum_border) {
+        this.matrix_size = sum_border;
     }
 
 
     private void callGPMetisCommand(int nparts, String gp_graph_file) {
-        String command = "gpmetis -objtype=vol " + gp_graph_file + " " + nparts;
+        String command = "gpmetis -ptype=rb " + gp_graph_file + " " + nparts;
         String ls_command = "ls " + graph_info_folder;
         ProcessBuilder pb = new ProcessBuilder("bash", "-c", command);
         try {
@@ -349,7 +372,8 @@ public class Graph {
 
         try (FileWriter fw = new FileWriter(target_path);
              BufferedWriter bw = new BufferedWriter(fw)) {
-            bw.write(number_of_nodes + " " + number_of_edges + " " + Constants.fmt + " \n");
+//            bw.write(number_of_nodes + " " + number_of_edges + " " + Constants.fmt + " \n");
+            bw.write(number_of_nodes + " " + number_of_edges + " \n");
 
             TreeMap<PNode, HashMap<PNode, double[]>> sorted = new TreeMap<>();
             sorted.putAll(gp_metis_formation);
@@ -362,7 +386,8 @@ public class Graph {
 
                     value = value >= 1 ? value : 1;
 
-                    sb.append(ne.getKey().current_id).append(" ").append(value).append(" ");
+//                    sb.append(ne.getKey().current_id).append(" ").append(value).append(" ");
+                    sb.append(ne.getKey().current_id).append(" ");
                 }
                 String line = sb.toString().trim() + "\n";
 
@@ -408,6 +433,7 @@ public class Graph {
 class PNode implements Comparable {
     long current_id; // the current id that is used by the gpmetis code
     long neo4j_id; // the node in neo4j
+    boolean isBorder;
 
     public PNode(long current_id, long neo4j_id) {
         this.current_id = current_id;
@@ -432,5 +458,9 @@ class PNode implements Comparable {
     public int compareTo(Object o) {
         PNode o_node = (PNode) o;
         return (int) (current_id - o_node.current_id);
+    }
+
+    public void setBorder(boolean isborder) {
+        this.isBorder = isborder;
     }
 }

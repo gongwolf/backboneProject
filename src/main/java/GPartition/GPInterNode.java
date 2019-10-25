@@ -43,16 +43,35 @@ public class GPInterNode extends GPNode implements TreeNode {
     }
 
     @Override
-    public void print(int printlevel) {
+    public void print(int printlevel, boolean showBorderInfo, boolean showMatrixInfo) {
         if (this.level <= printlevel) {
-            String sb = " ";
+            String sb = "  ";
             for (int i = 0; i < this.level; i++) {
-                sb += sb;
+                sb += "  ";
             }
+
             double borderRatio = 1.0 * sub_g.borderNumber / sub_g.number_of_nodes;
-            System.out.printf(sb + "level " + this.level + " " + getClass().getName() + " [nodes]" + this.sub_g.number_of_nodes + " [edges]" + this.sub_g.number_of_edges + " [borderNodes]" + this.sub_g.borderNumber + " %.2f \n", borderRatio);
+            System.out.printf(sb + "level " + this.level + " " + getClass().getName() + " [nodes]" + this.sub_g.number_of_nodes + " [edges]" + this.sub_g.number_of_edges + " [borderNodes]" + this.sub_g.borderNumber
+                    + " [Matrix]" + sub_g.matrix_size + " %.2f \n", borderRatio);
+
+            if (showMatrixInfo) {
+                System.out.print(sb + "   ");
+                for (PNode p : this.sub_g.matrix) {
+                    System.out.print("[" + p.current_id + " " + (p.neo4j_id + 1) + "] ");
+                }
+                System.out.println();
+            }
+
+            if (showBorderInfo) {
+                for (PNode p : this.sub_g.gp_metis_formation.keySet()) {
+                    if (p.isBorder) {
+                        System.out.println(sb + "   [border node ]" + p.current_id + " " + (p.neo4j_id + 1) + " " + (p.isBorder ? "true" : ""));
+                    }
+                }
+            }
+
             for (int i = 0; i < son_ptrs.length; i++) {
-                ((TreeNode) son_ptrs[i]).print(printlevel);
+                ((TreeNode) son_ptrs[i]).print(printlevel, showBorderInfo, showMatrixInfo);
             }
         }
     }

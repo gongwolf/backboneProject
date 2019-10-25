@@ -20,8 +20,8 @@ public class mimicBusLine {
     double movement;
     double same_node_t; // if there is a node within same_node_t distance, then treat them as same node. the movement*1.414 >= same_node_t, if not, there is no node will be generated.
     int maxtry = 200; //max time of tries to generate next bus stop.
-    int min_num_bus_stop = 3;
-    int max_num_bus_stop = 7;
+    int min_num_bus_stop = 5;
+    int max_num_bus_stop = 20;
 
     HashMap<Integer, node> Nodes = new HashMap<>();
     HashMap<Pair<Integer, Integer>, String[]> Edges = new HashMap<>();
@@ -40,13 +40,22 @@ public class mimicBusLine {
     }
 
     public static void main(String args[]) {
-        int graphsize = 100;
-        mimicBusLine m = new mimicBusLine(graphsize, 20, 29, 500);
+        Random r = new Random();
+        int graphsize = 200000;
+        double samenode_t = 360.0 / (graphsize);
+        double movement = 360.0 / graphsize;
+
+        System.out.println(samenode_t+"  "+movement);
+
+        mimicBusLine m = new mimicBusLine(graphsize, movement, samenode_t, 500);
         m.generateGraph(true);
         m.readFromDist();
         while (m.findComponent(m.Nodes).size() != graphsize) {
             m.connectedComponent();
         }
+
+        System.out.println(m.DBBase);
+
     }
 
     public void generateGraph(boolean deleteBefore) {
@@ -90,7 +99,7 @@ public class mimicBusLine {
                 int next_direction = getRandomNumberInRange_int(1, 4);
                 updateLocationsOfNewNode(new_n, p_l, p_g, next_direction);
 
-                System.out.println(Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2))+"  "+same_node_t);
+                System.out.println(Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) + "  " + same_node_t);
 
                 while (Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) < same_node_t || //must generate a new node
                         (new_n.latitude > 360 || new_n.latitude < 0) ||
@@ -152,7 +161,7 @@ public class mimicBusLine {
                 }
             }
 
-            System.out.println(isNewNodeGenerated);
+//            System.out.println(isNewNodeGenerated);
 
             if (isNewNodeGenerated) {
                 int newid;
@@ -169,14 +178,14 @@ public class mimicBusLine {
                 new_n.id = newid;
                 bus_ids[i] = newid;
 
-                System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+//                System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
                 if (i > 0) {
                     double p_l = Nodes.get(bus_ids[i - 1]).latitude;
                     double p_g = Nodes.get(bus_ids[i - 1]).longitude;
                     double dist = Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2));
 
-                    System.out.println(newid + "  " + bus_ids[i - 1] + "  " + new_n.latitude + " " + new_n.longitude + " " + p_l + " " + p_g + " " + dist);
+//                    System.out.println(newid + "  " + bus_ids[i - 1] + "  " + new_n.latitude + " " + new_n.longitude + " " + p_l + " " + p_g + " " + dist);
 
                     String[] costs = new String[3];
                     for (int j = 0; j < 3; j++) {
@@ -184,14 +193,14 @@ public class mimicBusLine {
                         costs[j] = String.valueOf(getGaussian(dist, dist));
                     }
 
-                    System.out.println(bus_ids[i - 1] + "," + new_n.id + " " + costs[0] + " " + costs[1] + " " + costs[2]);
+//                    System.out.println(bus_ids[i - 1] + "," + new_n.id + " " + costs[0] + " " + costs[1] + " " + costs[2]);
                     Edges.put(new Pair<>(bus_ids[i - 1], new_n.id), costs);
                 }
             } else {
                 System.out.println("no new node is generated !!!!!!");
             }
 
-            System.out.println(i+"-------------------"+(i < num_bus_inLine));
+//            System.out.println(i + "-------------------" + (i < num_bus_inLine));
         }
 
 

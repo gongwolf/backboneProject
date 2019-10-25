@@ -19,16 +19,18 @@ import static DataStructure.STATIC.nil;
 
 public class IndexPathBuild {
 
-    private int graphsize = 40000;
+    private int graphsize = 10000;
     private int degree = 4;
     private int dimension = 3;
+    private double samenode_t = 0.0036;
     private Neo4jDB neo4j;
     private GraphDatabaseService graphdb;
     private long cn; //number of graph nodes
     private long numberOfEdges; // number of edges ;
     private DynamicForests dforests;
-    private double percentage = 0.01;
+    private double percentage = 0.001;
     public ProgramProperty prop = new ProgramProperty();
+    public String city_name;
 
 
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
@@ -41,6 +43,7 @@ public class IndexPathBuild {
     public static void main(String args[]) throws CloneNotSupportedException {
         long start = System.currentTimeMillis();
         IndexPathBuild index = new IndexPathBuild();
+        index.city_name = "ny_USA";
         index.build();
         long end = System.currentTimeMillis();
         System.out.println("Total Running time " + (end - start) * 1.0 / 1000 + "s  ~~~~~ ");
@@ -64,7 +67,10 @@ public class IndexPathBuild {
 
     private void initLevel() {
         int currentLevel = 0;
-        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
+//        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
+
+//        String sub_db_name = city_name + "_Level0";
+        String sub_db_name = graphsize + "_" + samenode_t + "_Level" + currentLevel;
         neo4j = new Neo4jDB(sub_db_name);
         System.out.println(neo4j.DB_PATH);
         neo4j.startDB(false);
@@ -107,7 +113,9 @@ public class IndexPathBuild {
 
         Hashtable<Long, ArrayList<Long>> nodesToHighWay = new Hashtable<>();
 
-        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
+//        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
+//        String sub_db_name = city_name + "_Level" + currentLevel;
+        String sub_db_name = graphsize + "_" + samenode_t + "_Level" + currentLevel;
         neo4j = new Neo4jDB(sub_db_name);
         neo4j.startDB(false);
         graphdb = neo4j.graphDB;
@@ -475,8 +483,17 @@ public class IndexPathBuild {
      * @param dest_level
      */
     private void copyToHigherDB(int src_level, int dest_level) {
-        String src_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + src_level;
-        String dest_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + dest_level;
+//        String src_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + src_level;
+//        String dest_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + dest_level;
+
+//        String sub_db_name = graphsize + "_" + samenode_t + "_Level" + currentLevel;
+
+//        String src_db_name = city_name + "_Level" + src_level;
+//        String dest_db_name = city_name + "_Level" + dest_level;
+
+        String src_db_name = graphsize + "_" + samenode_t + "_Level" + src_level;
+        String dest_db_name = graphsize + "_" + samenode_t + "_Level" + dest_level;
+
         File src_db_folder = new File(prop.params.get("neo4jdb") + "/" + src_db_name);
         File dest_db_folder = new File(prop.params.get("neo4jdb") + "/" + dest_db_name);
         System.out.println("copy db from " + src_db_folder + " to " + dest_db_folder);
@@ -491,7 +508,9 @@ public class IndexPathBuild {
     }
 
     private void createIndexFolder() {
-        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "_backup_" + this.percentage;
+//        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "_backup_" + this.percentage;
+        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone" + graphsize + "_" + samenode_t + "_backup_" + this.percentage;
+
         File idx_folder = new File(folder);
         try {
             if (idx_folder.exists()) {
@@ -521,7 +540,10 @@ public class IndexPathBuild {
                 remind_nodes = getNodeListAtLevel(nextlevel);
             }
 
-            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "_backup_" + this.percentage+ "/level" + level;
+//            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + degree + "_" + dimension + "_backup_" + this.percentage+ "/level" + level;
+//            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + city_name + "_backup_" + this.percentage + "/level" + level;
+            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/backbone_" + graphsize + "_" + samenode_t + "_backup_" + this.percentage + "/level" + level;
+
             File sub_folder_f = new File(sub_folder_str);
             if (sub_folder_f.exists()) {
                 sub_folder_f.delete();
@@ -531,6 +553,9 @@ public class IndexPathBuild {
             HashSet<Long> de = deletedEdges_layer.get(level);
 
             String graph_db_folder = graphsize + "_" + degree + "_" + dimension + "_Level" + level;
+            graph_db_folder = city_name + "_Level" + level;
+            graph_db_folder = graphsize + "_" + samenode_t + "_Level" + level;
+
             Neo4jDB neo4j_level = new Neo4jDB(graph_db_folder);
             System.out.println(neo4j_level.DB_PATH + "   deleted edges:" + de.size());
             System.out.println(level + " " + nextlevel + " " + maxlevel + "  size of remind nodes " + remind_nodes.size());
@@ -643,7 +668,10 @@ public class IndexPathBuild {
 
     private HashSet<Long> getNodeListAtLevel(int level) {
         HashSet<Long> nodeList = new HashSet<Long>();
-        String graph_db_folder = graphsize + "_" + degree + "_" + dimension + "_Level" + level;
+//        String graph_db_folder = graphsize + "_" + degree + "_" + dimension + "_Level" + level;
+//        String graph_db_folder = city_name + "_Level" + level;
+        String graph_db_folder =  graphsize + "_" + samenode_t + "_Level" + level;
+
         Neo4jDB neo4j_level = new Neo4jDB(graph_db_folder);
         neo4j_level.startDB(true);
         GraphDatabaseService graphdb_level = neo4j_level.graphDB;
