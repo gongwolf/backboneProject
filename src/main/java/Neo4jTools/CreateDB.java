@@ -26,7 +26,7 @@ public class CreateDB {
 
         CreateDB c = new CreateDB();
 //        c.createRandomGraph(graphsize, degree, dimension);
-        c.createBusLineDataBase(10000 , 0.0036);
+        c.createBusLineDataBase(10000 , 2.268);
     }
 
     private void createRandomGraph(int graphsize, int degree, int dimension) {

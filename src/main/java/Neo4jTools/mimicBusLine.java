@@ -21,7 +21,7 @@ public class mimicBusLine {
     double same_node_t; // if there is a node within same_node_t distance, then treat them as same node. the movement*1.414 >= same_node_t, if not, there is no node will be generated.
     int maxtry = 200; //max time of tries to generate next bus stop.
     int min_num_bus_stop = 5;
-    int max_num_bus_stop = 20;
+    int max_num_bus_stop = 30;
 
     HashMap<Integer, node> Nodes = new HashMap<>();
     HashMap<Pair<Integer, Integer>, String[]> Edges = new HashMap<>();
@@ -41,18 +41,23 @@ public class mimicBusLine {
 
     public static void main(String args[]) {
         Random r = new Random();
-        int graphsize = 200000;
-        double samenode_t = 360.0 / (graphsize);
-        double movement = 360.0 / graphsize;
+        int graphsize = 10000;
+        //movement must greater than samenode_t
 
-        System.out.println(samenode_t+"  "+movement);
+        double samenode_t = 360.0 * (graphsize/600+47) / (graphsize);
+        double movement = 360.0 * (1.5*graphsize/600+47) / graphsize;
 
+        System.out.println(samenode_t + "  " + movement);
+//
         mimicBusLine m = new mimicBusLine(graphsize, movement, samenode_t, 500);
         m.generateGraph(true);
+        System.out.println("Finished the Graph construction");
         m.readFromDist();
         while (m.findComponent(m.Nodes).size() != graphsize) {
             m.connectedComponent();
+
         }
+        System.out.println(m.Nodes.size() + " " + m.Edges.size());
 
         System.out.println(m.DBBase);
 
@@ -89,6 +94,9 @@ public class mimicBusLine {
         for (int i = 0; i < num_bus_inLine; i++) {
             boolean isNewNodeGenerated = true;
             node new_n = new node();
+
+//            System.out.println(i);
+
             if (i == 0) {
                 new_n.latitude = getRandomNumberInRange(0, 360);
                 new_n.longitude = getRandomNumberInRange(0, 360);
@@ -99,7 +107,7 @@ public class mimicBusLine {
                 int next_direction = getRandomNumberInRange_int(1, 4);
                 updateLocationsOfNewNode(new_n, p_l, p_g, next_direction);
 
-                System.out.println(Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) + "  " + same_node_t);
+//                System.out.println(Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) + "  " + same_node_t);
 
                 while (Math.sqrt(Math.pow(new_n.latitude - p_l, 2) + Math.pow(new_n.longitude - p_g, 2)) < same_node_t || //must generate a new node
                         (new_n.latitude > 360 || new_n.latitude < 0) ||
@@ -115,6 +123,7 @@ public class mimicBusLine {
                 double p_g = Nodes.get(bus_ids[i - 1]).longitude;
                 int next_direction = getRandomDirection(not_go_direction);
                 updateLocationsOfNewNode(new_n, p_l, p_g, next_direction);
+
 
                 int tried_times = 0;
                 /*****
@@ -138,7 +147,7 @@ public class mimicBusLine {
                     updateLocationsOfNewNode(new_n, p_l, p_g, next_direction);
 
                     tried_times++;
-                    System.out.println("tried_times   " + tried_times + "   !!!!");
+//                    System.out.println("tried_times   " + tried_times + "   !!!!");
                 }
 
 
@@ -152,7 +161,7 @@ public class mimicBusLine {
                         next_direction = getRandomDirection(not_go_direction);
                         updateLocationsOfNewNode(new_n, p_l, p_g, next_direction);
                         last_tried_time++;
-                        System.out.println("last_tried_time   " + last_tried_time + "   !!!!");
+//                        System.out.println("last_tried_time   " + last_tried_time + "   !!!!");
                     }
 
                     if (last_tried_time == maxtry) {
@@ -272,7 +281,7 @@ public class mimicBusLine {
         try (FileWriter fw = new FileWriter(NodePath, true);
              BufferedWriter bw = new BufferedWriter(fw);
              PrintWriter out = new PrintWriter(bw)) {
-            System.out.println(NodePath);
+//            System.out.println(NodePath);
             TreeMap<Integer, node> tm = new TreeMap<Integer, node>(new IntegerComparator());
             tm.putAll(Nodes);
             for (Map.Entry<Integer, node> node : tm.entrySet()) {
@@ -319,6 +328,7 @@ public class mimicBusLine {
         while (reamming_nodes.size() > 1) {
             HashSet<Integer> nodesets = findComponent(reamming_nodes);
             System.out.println(nodesets.size());
+
             component_list.add(nodesets);
             for (int n : nodesets) {
                 reamming_nodes.remove(n);

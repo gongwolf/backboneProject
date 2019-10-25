@@ -22,7 +22,7 @@ public class IndexPathBuild {
     private int graphsize = 10000;
     private int degree = 4;
     private int dimension = 3;
-    private double samenode_t = 0.0036;
+    private double samenode_t = 2.268;
     private Neo4jDB neo4j;
     private GraphDatabaseService graphdb;
     private long cn; //number of graph nodes

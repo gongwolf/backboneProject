@@ -103,6 +103,9 @@ public class SpanningTree {
 
     public String EulerTourString(int level) {
         KruskalMST();
+        System.out.println(this.N_nodes.size());
+        System.out.println(this.connect_component_number);
+        System.out.println(this.SpTree.size());
         System.out.println("Finished the calling of the KruskalMST() function");
         FindAdjList();
         System.out.println("Finished the calling of the FindAdjList() function");
@@ -202,7 +205,7 @@ public class SpanningTree {
         if (iter_edge != null) {
             current_start_id = iter_edge.start_id;
             current_end_id = iter_edge.end_id;
-            TNode<RelationshipExt> node = new TNode<RelationshipExt>(et_edge_id, iter_edge);
+            TNode<RelationshipExt> node = new TNode<>(et_edge_id, iter_edge);
             updateRelationshipRBPointer(iter_edge, et_edge_id, -1, 0);
             rbtree.insert(node);
             et_edge_id++;
@@ -210,9 +213,9 @@ public class SpanningTree {
 
 
         StringBuilder sb = new StringBuilder();
-        StringBuilder sb1 = new StringBuilder();
+//        StringBuilder sb1 = new StringBuilder();
         sb.append("[").append(current_start_id).append(",").append(current_end_id).append("]-");
-        sb1.append(current_start_id).append(",");
+//        sb1.append(current_start_id).append(",");
 
         //Termination Condition
         //1) All the outgoing edges are visited.
@@ -232,12 +235,12 @@ public class SpanningTree {
             }
 //            System.out.println((adjList[src_id].getFirstUnvisitedOutgoingEdge() == null) + "   " + (current_end_id == src_id));
             sb.append("[").append(current_start_id).append(",").append(current_end_id).append("]-");
-            sb1.append(current_start_id).append(",");
+//            sb1.append(current_start_id).append(",");
 //            System.out.println("--------------------------------------------------------");
         }
 
 //        System.out.println(sb.toString().substring(0, sb.length() - 1));
-        System.out.println(sb1.append(src_id));
+//        System.out.println(sb1.append(src_id));
         this.insertedEdgesTimes = N * 2;
         System.out.println("inserted edges times : " + insertedEdgesTimes);
         return sb.toString().substring(0, sb.length() - 1);
@@ -375,6 +378,7 @@ public class SpanningTree {
 
         if (neo4j == null) {
             DBPath = prop.params.get("neo4jdb");
+//            String sub_db_name = graphsize +"_" +degree +"_"+dimension+ "_Level" + level;
             String sub_db_name = graphsize +"_" +degree +"_"+dimension+ "_Level" + level;
             neo4j = new Neo4jDB(sub_db_name);
             System.out.println("connected to db " + neo4j.DB_PATH);
@@ -406,14 +410,24 @@ public class SpanningTree {
             ResourceIterable<Relationship> allRelsIterable = neo4j.graphDB.getAllRelationships();
             for (Relationship r : allRelsIterable) {
                 r.setProperty("level", 0); //initialize the edge level to be 0
-                rels[i++] = r;
+                long rel_id = r.getId();
+                rels[(int) rel_id] = r;
+                i++;
             }
             tx.success();
         }
         rbtree = new RedBlackTree();
     }
 
-
+    /**
+     *
+     * Update the edge_id, which is used to order in the redblack tree, to the new key(et_edge_id) for the level
+     * @param iter_edge the edge object
+     * @param et_edge_id the new edge id
+     * @param org_key the old id in @level
+     * @param level the level of the edge id
+     *
+     */
     public void updateRelationshipRBPointer(RelationshipExt iter_edge, int et_edge_id, int org_key, int level) {
         boolean needtoCloseDB = false;
         if (neo4j == null) {
@@ -475,7 +489,7 @@ public class SpanningTree {
         int e = 0;
         int i = 0;
         while (e < N - 1) {
-            Relationship rel = rels[i++];
+            Relationship rel = rels[i++]; //scan each edge
             int src_id = (int) rel.getStartNodeId();
             int dest_id = (int) rel.getEndNodeId();
             int src_root = find(src_id);
@@ -528,6 +542,7 @@ public class SpanningTree {
     }
 
     /**
+     * Find the root of the node, only the root node's id is equal to its node id.
      * @param src_id the node id
      * @return the root id of src_id
      */
