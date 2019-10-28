@@ -20,13 +20,14 @@ public class CreateDB {
 
     public static void main(String args[]) {
 
-        int graphsize = 10000;
+        int graphsize = 40000;
+        double samenode_t = 1.017;
         int degree = 2;
         int dimension = 3;
 
         CreateDB c = new CreateDB();
 //        c.createRandomGraph(graphsize, degree, dimension);
-        c.createBusLineDataBase(10000 , 2.268);
+        c.createBusLineDataBase(graphsize , samenode_t);
     }
 
     private void createRandomGraph(int graphsize, int degree, int dimension) {

@@ -20,8 +20,8 @@ public class degreeDistribution {
 //        String node_file = d.home_folder + "/mydata/projectData/BackBone/col_USA/NodeInfo.txt";
 
 
-        String edges_file = d.home_folder + "/mydata/projectData/BackBone/busline_10000_0.0036/data/SegInfo.txt";
-        String node_file = d.home_folder + "/mydata/projectData/BackBone/busline_10000_0.0036/data/NodeInfo.txt";
+        String edges_file = d.home_folder + "/mydata/projectData/BackBone/busline_40000_1.017/data/SegInfo.txt";
+        String node_file = d.home_folder + "/mydata/projectData/BackBone/busline_40000_1.017/data/NodeInfo.txt";
 
 
         d.calculation(node_file, edges_file);

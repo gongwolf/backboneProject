@@ -41,11 +41,12 @@ public class mimicBusLine {
 
     public static void main(String args[]) {
         Random r = new Random();
-        int graphsize = 10000;
+        int factor = 600;
+        int graphsize = 40000;
         //movement must greater than samenode_t
 
-        double samenode_t = 360.0 * (graphsize/600+47) / (graphsize);
-        double movement = 360.0 * (1.5*graphsize/600+47) / graphsize;
+        double samenode_t = 360.0 * (graphsize/factor+47) / (graphsize);
+        double movement = 360.0 * (1.5*graphsize/factor+47) / graphsize;
 
         System.out.println(samenode_t + "  " + movement);
 //

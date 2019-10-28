@@ -213,7 +213,6 @@ public class Graph {
         String target_path = graph_info_folder + "/metis_formation.graph";
         writeToDisk(gp_metis_formation, number_of_edges, target_path);
         callGPMetisCommand(nparts, target_path);
-
         String partitioned_file = graph_info_folder + "/metis_formation.graph.part." + nparts;
         HashMap<Long, Long> part_map = readPartitionResult(partitioned_file);
 

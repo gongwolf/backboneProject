@@ -19,6 +19,8 @@ public class GPTree {
     public void builtTree(Graph g) throws CloneNotSupportedException {
         if (g.graph_info_folder.contains("USA")) {
             String[] path_infos = g.graph_info_folder.split("/");
+            this.neo4jdb = new Neo4jDB(path_infos[path_infos.length-1] + "_Level0");
+
         } else if (g.graph_info_folder.contains("busline")) {
             String[] path_infos = g.graph_info_folder.split("/");
             String[] file_infos = path_infos[path_infos.length-2].split("_");
@@ -46,9 +48,7 @@ public class GPTree {
             root_ptr.level = 0;
             node.insert(g);
         }
-
         neo4jdb.closeDB();
-
     }
 
     public void printTree(int printlevel, boolean showBorderInfo, boolean showMatrixInfo) {
