@@ -103,16 +103,16 @@ public class SpanningTree {
 
     public String EulerTourString(int level) {
         KruskalMST();
-        System.out.println(this.N_nodes.size());
-        System.out.println(this.connect_component_number);
-        System.out.println(this.SpTree.size());
+        System.out.println("number of nodes in the sp tree :" + this.N_nodes.size());
+        System.out.println("number of component :" + this.connect_component_number);
+        System.out.println("number of rels in sp :" + this.SpTree.size());
         System.out.println("Finished the calling of the KruskalMST() function");
         FindAdjList();
         System.out.println("Finished the calling of the FindAdjList() function");
         long start_euler_finding = System.currentTimeMillis();
         String elurtourString = FindEulerTourString(0, level);
         long end_euler_finding = System.currentTimeMillis();
-        System.out.println("Finished the calling of the elurtourString() function in "+(end_euler_finding-start_euler_finding)/1000);
+        System.out.println("Finished the calling of the elurtourString() function in " + (end_euler_finding - start_euler_finding) / 1000+" s");
         return elurtourString;
     }
 
@@ -379,7 +379,7 @@ public class SpanningTree {
         if (neo4j == null) {
             DBPath = prop.params.get("neo4jdb");
 //            String sub_db_name = graphsize +"_" +degree +"_"+dimension+ "_Level" + level;
-            String sub_db_name = graphsize +"_" +degree +"_"+dimension+ "_Level" + level;
+            String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + level;
             neo4j = new Neo4jDB(sub_db_name);
             System.out.println("connected to db " + neo4j.DB_PATH);
             neo4j.startDB(false);
@@ -420,19 +420,18 @@ public class SpanningTree {
     }
 
     /**
-     *
      * Update the edge_id, which is used to order in the redblack tree, to the new key(et_edge_id) for the level
-     * @param iter_edge the edge object
-     * @param et_edge_id the new edge id
-     * @param org_key the old id in @level
-     * @param level the level of the edge id
      *
+     * @param iter_edge  the edge object
+     * @param et_edge_id the new edge id
+     * @param org_key    the old id in @level
+     * @param level      the level of the edge id
      */
     public void updateRelationshipRBPointer(RelationshipExt iter_edge, int et_edge_id, int org_key, int level) {
         boolean needtoCloseDB = false;
         if (neo4j == null) {
             DBPath = prop.params.get("neo4jdb");
-            String sub_db_name = graphsize +"_" +degree +"_"+dimension+ "_Level" + level;
+            String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + level;
             neo4j = new Neo4jDB(sub_db_name);
             neo4j.startDB(false);
             needtoCloseDB = true;
@@ -543,6 +542,7 @@ public class SpanningTree {
 
     /**
      * Find the root of the node, only the root node's id is equal to its node id.
+     *
      * @param src_id the node id
      * @return the root id of src_id
      */

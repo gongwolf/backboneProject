@@ -20,10 +20,10 @@ public class CreateDB {
 
     public static void main(String args[]) {
 
-        int graphsize = 40000;
-        double samenode_t = 1.017;
-        int degree = 2;
-        int dimension = 3;
+        int graphsize = 2000;
+        double samenode_t =6.48;
+//        int degree = 2;
+//        int dimension = 3;
 
         CreateDB c = new CreateDB();
 //        c.createRandomGraph(graphsize, degree, dimension);

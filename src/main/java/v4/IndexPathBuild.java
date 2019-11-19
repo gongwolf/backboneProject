@@ -19,16 +19,16 @@ import static DataStructure.STATIC.nil;
 
 public class IndexPathBuild {
 
-    private int graphsize = 10000;
+    private int graphsize = 2000;
     private int degree = 4;
     private int dimension = 3;
-    private double samenode_t = 2.268;
+    private double samenode_t = 6.48;
     private Neo4jDB neo4j;
     private GraphDatabaseService graphdb;
     private long cn; //number of graph nodes
     private long numberOfEdges; // number of edges ;
     private DynamicForests dforests;
-    private double percentage = 0.001;
+    private double percentage = 0.1;
     public ProgramProperty prop = new ProgramProperty();
     public String city_name;
 
@@ -112,7 +112,6 @@ public class IndexPathBuild {
     private long handleUpperLevelGraph(int currentLevel, Pair<Integer, Integer> threshold_p, int threshold_t) {
 
         Hashtable<Long, ArrayList<Long>> nodesToHighWay = new Hashtable<>();
-
 //        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
 //        String sub_db_name = city_name + "_Level" + currentLevel;
         String sub_db_name = graphsize + "_" + samenode_t + "_Level" + currentLevel;
@@ -143,6 +142,7 @@ public class IndexPathBuild {
 
 
         boolean deleted = removeLowerDegreePairEdgesByThreshold(threshold_p, threshold_t, deletedNodes, deletedEdges);
+        System.out.println("Removing the edges in level " + currentLevel + "  with degree threshold  : " + threshold_p);
 
         getDegreePairs();
         deletedEdges.addAll(removeSingletonEdgesInForests(deletedNodes));
@@ -670,7 +670,7 @@ public class IndexPathBuild {
         HashSet<Long> nodeList = new HashSet<Long>();
 //        String graph_db_folder = graphsize + "_" + degree + "_" + dimension + "_Level" + level;
 //        String graph_db_folder = city_name + "_Level" + level;
-        String graph_db_folder =  graphsize + "_" + samenode_t + "_Level" + level;
+        String graph_db_folder = graphsize + "_" + samenode_t + "_Level" + level;
 
         Neo4jDB neo4j_level = new Neo4jDB(graph_db_folder);
         neo4j_level.startDB(true);

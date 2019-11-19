@@ -41,24 +41,50 @@ public class mimicBusLine {
 
     public static void main(String args[]) {
         Random r = new Random();
-        int factor = 600;
-        int graphsize = 40000;
+        // 600 for nodes number greater than 5000
+        int graphsize = 2000;
         //movement must greater than samenode_t
 
-        double samenode_t = 360.0 * (graphsize/factor+47) / (graphsize);
-        double movement = 360.0 * (1.5*graphsize/factor+47) / graphsize;
+        double samenode_t, movement;
+        int factor = 600;
+//        double divider = 67;
+
+        double divider = 33; //greater value, higher degree
+//        divider += 1 * 19.42796677;
+//        divider += Math.pow(graphsize, 1) * (5.44489815) * Math.pow(10, -3);
+//        divider += Math.pow(graphsize, 2) * (-1.75904033) * Math.pow(10, -7);
+//        divider += Math.pow(graphsize, 3) * (1.83347088) * Math.pow(10, -12);
+
+//        if (graphsize >= 5000) {
+//            divider = 58;
+//            factor = 600;
+//        } else if (graphsize > 1000) {
+//            divider = 40.5;
+//            factor = 600;
+//        } else if (graphsize > 500) {
+//            divider = 23;
+//            factor = 600;
+//        } else {
+//            divider = 17;
+//            factor = 600;
+//        }
+        samenode_t = 360.0 * (graphsize / factor + divider) / (graphsize);
+        movement = 360.0 * (1.5 * graphsize / factor + divider) / graphsize;
+
 
         System.out.println(samenode_t + "  " + movement);
 //
         mimicBusLine m = new mimicBusLine(graphsize, movement, samenode_t, 500);
         m.generateGraph(true);
-        System.out.println("Finished the Graph construction");
+        System.out.println("Finished the Graph construction " + divider);
         m.readFromDist();
         while (m.findComponent(m.Nodes).size() != graphsize) {
             m.connectedComponent();
 
         }
         System.out.println(m.Nodes.size() + " " + m.Edges.size());
+
+        System.out.println(divider);
 
         System.out.println(m.DBBase);
 
@@ -90,7 +116,7 @@ public class mimicBusLine {
             num_bus_inLine = getRandomNumberInRange_int(min_num_bus_stop, max_num_bus_stop);
         }
 
-        System.out.println("length of new bus line:" + num_bus_inLine);
+        System.out.println("length of new bus line:" + num_bus_inLine + "  " + Nodes.size() + " " + same_node_t + " " + movement);
         int[] bus_ids = new int[num_bus_inLine];
         for (int i = 0; i < num_bus_inLine; i++) {
             boolean isNewNodeGenerated = true;
@@ -209,8 +235,6 @@ public class mimicBusLine {
             } else {
                 System.out.println("no new node is generated !!!!!!");
             }
-
-//            System.out.println(i + "-------------------" + (i < num_bus_inLine));
         }
 
 
