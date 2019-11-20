@@ -19,10 +19,10 @@ import static DataStructure.STATIC.nil;
 
 public class IndexPathBuild {
 
-    private int graphsize = 2000;
+    private int graphsize = 10000;
     private int degree = 4;
     private int dimension = 3;
-    private double samenode_t = 6.48;
+    private double samenode_t = 2.844;
     private Neo4jDB neo4j;
     private GraphDatabaseService graphdb;
     private long cn; //number of graph nodes
@@ -130,7 +130,9 @@ public class IndexPathBuild {
             dforests = new DynamicForests();
             SpanningTree sptree_base = new SpanningTree(neo4j, true);
             System.out.println("=======================================");
-            sptree_base.EulerTourString(0);
+//            sptree_base.EulerTourString(0);
+            sptree_base.EulerTourStringWiki(0);
+//            System.exit(0);
             deletedEdges.addAll(removeSingletonEdgesAtLevelZero(sptree_base, deletedNodes));
             getDegreePairs();
             threshold_p = updateThreshold(percentage);
@@ -600,12 +602,11 @@ public class IndexPathBuild {
                                         mqueue.add(next_n);
                                         next_n.inqueue = true;
                                     }
-
                                 }
                             }
                         }
-
                     }
+
                     int sum = 0;
                     for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
                         ArrayList<path> sk = e.getValue().skyPaths;
@@ -625,7 +626,6 @@ public class IndexPathBuild {
 
                     if (sum != 0) {
                         numIndex++;
-
                         /**clean the built index file*/
                         File idx_file = new File(sub_folder_str + "/" + nodeID + ".idx");
                         if (idx_file.exists()) {

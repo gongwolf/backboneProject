@@ -24,10 +24,10 @@ public class BBSBaselineBusline {
     ArrayList<path> results = new ArrayList<>();
     Monitor monitor;
     private GraphDatabaseService graphdb;
-    private Neo4jDB neo4j;
+    public Neo4jDB neo4j;
 
-    private double same_t = 28;
-    private int graphsize = 100;
+    private double same_t = 2.844;
+    private int graphsize = 10000;
     private int dimension = 3;
 
     public BBSBaselineBusline() {
@@ -50,6 +50,19 @@ public class BBSBaselineBusline {
         neo4j.startDB(true);
         graphdb = neo4j.graphDB;
         this.monitor = new Monitor();
+    }
+
+
+    public BBSBaselineBusline(int graphsize, double same_t, int level) {
+        this.graphsize = graphsize;
+        this.same_t = same_t;
+        String sub_db_name = graphsize + "_" + same_t + "_Level" + level;
+        neo4j = new Neo4jDB(sub_db_name);
+        neo4j.startDB(true);
+        graphdb = neo4j.graphDB;
+        this.monitor = new Monitor();
+        System.out.println(neo4j.graphDB);
+
     }
 
     public static void main(String args[]) {
@@ -219,7 +232,13 @@ public class BBSBaselineBusline {
             this.monitor.node_call_addtoskyline += e.getValue().callAddToSkylineFunction;
         }
 
-        return tmpStoreNodes.get(dest).skyPaths;
+        if (tmpStoreNodes.containsKey(dest)) {
+            System.out.println("~~~~~~~~~   "+tmpStoreNodes.get(dest).skyPaths);
+            return tmpStoreNodes.get(dest).skyPaths;
+
+        } else {
+            return new ArrayList<>();
+        }
 
     }
 

@@ -19,8 +19,8 @@ public class path {
     public boolean expaned;
     public long startNode, endNode;
 
-    public ArrayList<Long> nodes;
-    public ArrayList<Long> rels;
+    //    public ArrayList<Long> nodes;
+//    public ArrayList<Long> rels;
     public ArrayList<String> propertiesName;
 
 
@@ -33,9 +33,9 @@ public class path {
         this.propertiesName = new ArrayList<>();
         this.setPropertiesName(current.neo4j);
 
-        this.nodes = new ArrayList<>();
-        this.rels = new ArrayList<>();
-        this.nodes.add(current.id);
+//        this.nodes = new ArrayList<>();
+//        this.rels = new ArrayList<>();
+//        this.nodes.add(current.id);
     }
 
     public path(path old_path, Relationship rel) {
@@ -48,12 +48,12 @@ public class path {
         calculateCosts(rel);
 
 
-        this.nodes = new ArrayList<>();
-        this.rels = new ArrayList<>();
-        this.nodes.addAll(old_path.nodes);
-        this.nodes.add(rel.getOtherNodeId(nodes.get(nodes.size() - 1)));
-        this.rels.addAll(old_path.rels);
-        this.rels.add(rel.getId());
+//        this.nodes = new ArrayList<>();
+//        this.rels = new ArrayList<>();
+//        this.nodes.addAll(old_path.nodes);
+//        this.nodes.add(rel.getOtherNodeId(nodes.get(nodes.size() - 1)));
+//        this.rels.addAll(old_path.rels);
+//        this.rels.add(rel.getId());
 
 
     }
@@ -67,15 +67,15 @@ public class path {
 
         this.costs = new double[3];
 
-        this.nodes = new ArrayList<>();
-        this.rels = new ArrayList<>();
-        this.nodes.add(startNode);
+//        this.nodes = new ArrayList<>();
+//        this.rels = new ArrayList<>();
+//        this.nodes.add(startNode);
         for (Relationship r : paths.relationships()) {
             costs[0] += (double) r.getProperty(this.propertiesName.get(0));
             costs[1] += (double) r.getProperty(this.propertiesName.get(1));
             costs[2] += (double) r.getProperty(this.propertiesName.get(2));
-            this.rels.add(r.getId());
-            this.nodes.add(r.getOtherNodeId(nodes.get(nodes.size() - 1)));
+//            this.rels.add(r.getId());
+//            this.nodes.add(r.getOtherNodeId(nodes.get(nodes.size() - 1)));
 
         }
         this.expaned = false;
@@ -124,9 +124,10 @@ public class path {
     }
 
     private boolean hasCycle() {
-        Long nextNodeId = nodes.get(nodes.size() - 1);
-        int occurrences = Collections.frequency(this.nodes, nextNodeId);
-        return  occurrences>=2;
+//        Long nextNodeId = nodes.get(nodes.size() - 1);
+//        int occurrences = Collections.frequency(this.nodes, nextNodeId);
+//        return  occurrences>=2;
+        return false;
     }
 
 
@@ -153,12 +154,12 @@ public class path {
         }
         sb.append("]  ");
 
-        for (int i = 0; i < this.nodes.size() - 1; i++) {
-            sb.append("(" + this.nodes.get(i) + ")");
-            sb.append("--[" + this.rels.get(i) + "]-->");
-        }
-
-        sb.append("(" + this.nodes.get(nodes.size() - 1) + ")");
+//        for (int i = 0; i < this.nodes.size() - 1; i++) {
+//            sb.append("(" + this.nodes.get(i) + ")");
+//            sb.append("--[" + this.rels.get(i) + "]-->");
+//        }
+//
+//        sb.append("(" + this.nodes.get(nodes.size() - 1) + ")");
 
         return sb.toString();
     }

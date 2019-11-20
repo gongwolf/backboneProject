@@ -42,14 +42,14 @@ public class mimicBusLine {
     public static void main(String args[]) {
         Random r = new Random();
         // 600 for nodes number greater than 5000
-        int graphsize = 2000;
+        int graphsize = 10000;
         //movement must greater than samenode_t
 
         double samenode_t, movement;
         int factor = 600;
 //        double divider = 67;
 
-        double divider = 33; //greater value, higher degree
+        double divider = 63; //greater value, higher degree
 //        divider += 1 * 19.42796677;
 //        divider += Math.pow(graphsize, 1) * (5.44489815) * Math.pow(10, -3);
 //        divider += Math.pow(graphsize, 2) * (-1.75904033) * Math.pow(10, -7);

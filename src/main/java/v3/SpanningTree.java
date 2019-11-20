@@ -4,6 +4,7 @@ import DataStructure.RedBlackTree;
 import DataStructure.TNode;
 import Neo4jTools.Neo4jDB;
 import configurations.ProgramProperty;
+import javafx.util.Pair;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
@@ -79,8 +80,8 @@ public class SpanningTree {
 
 
     public static void main(String args[]) {
-        SpanningTree spt = new SpanningTree(1000, 4, 3);
-        spt.EulerTourString();
+        SpanningTree spt = new SpanningTree(14, 4, 3);
+        spt.EulerTourStringWiki(0);
     }
 
     public String EulerTourString(TreeMap<Long, GraphNode> graph_node_spanning_rb_map, int level) {
@@ -112,8 +113,107 @@ public class SpanningTree {
         long start_euler_finding = System.currentTimeMillis();
         String elurtourString = FindEulerTourString(0, level);
         long end_euler_finding = System.currentTimeMillis();
-        System.out.println("Finished the calling of the elurtourString() function in " + (end_euler_finding - start_euler_finding) / 1000+" s");
+        System.out.println("Finished the calling of the elurtourString() function in " + (end_euler_finding - start_euler_finding) / 1000 + " s");
         return elurtourString;
+    }
+
+    public String EulerTourStringWiki(int level) {
+        KruskalMST();
+        System.out.println("number of nodes in the sp tree :" + this.N_nodes.size());
+        System.out.println("number of component :" + this.connect_component_number);
+        System.out.println("number of rels in sp :" + this.SpTree.size());
+        System.out.println("Finished the calling of the KruskalMST() function");
+        long start_euler_finding = System.currentTimeMillis();
+        FindEulerTourStringWiki(level);
+        long end_euler_finding = System.currentTimeMillis();
+        System.out.println("Finished the calling of the elurtourString() function in " + (end_euler_finding - start_euler_finding)  + " ms");
+
+        return null;
+    }
+
+    private void FindEulerTourStringWiki(int level) {
+        HashMap<Pair<Long, Long>, Long> edge_id_mapping_List = new HashMap<>();
+        List<Pair<Long, Long>> edgeList;
+        Comparator<Pair<Long, Long>> valueComparator = (o1, o2) -> {
+            if (o1.getKey() == o2.getKey()) {
+                return (int) (o1.getValue() - o2.getValue());
+            } else {
+                return (int) (o1.getKey() - o2.getKey());
+            }
+        };
+
+        HashMap<Long, Pair<Long, Long>> first = new HashMap<>();
+        HashMap<Pair<Long, Long>, Pair<Long, Long>> next = new HashMap<>();
+
+
+        try (Transaction tx = this.neo4j.graphDB.beginTx()) {
+            System.out.println("number of node: get from neo4j object " + this.neo4j.getNumberofNodes());
+            System.out.println("number of edgs:  " + this.SpTree.size());
+
+            for (long rel_id : this.SpTree) {
+                Relationship rel = neo4j.graphDB.getRelationshipById(rel_id);
+                long sid = rel.getStartNodeId();
+                long did = rel.getEndNodeId();
+
+                Pair<Long, Long> key = new Pair<>(sid, did);
+                Pair<Long, Long> reverse_key = new Pair<>(did, sid);
+
+                edge_id_mapping_List.put(key, rel.getId());
+                edge_id_mapping_List.put(reverse_key, rel.getId());
+            }
+
+            edgeList = new ArrayList<>(edge_id_mapping_List.keySet());
+            Collections.sort(edgeList, valueComparator);
+
+            int nextc = 0;
+            for (Pair<Long, Long> edge_pair : edgeList) {
+                long sid = edge_pair.getKey();
+                if (first.containsKey(sid)) {
+                    Pair key_p = first.get(sid);
+                    /** find the right previous key for current edge**/
+                    while (next.containsKey(key_p)) {
+                        key_p = next.get(key_p);
+                    }
+                    next.put(key_p, edge_pair);
+//                    System.out.println("next: " + key_p + "  " + edge_pair);
+                    nextc++;
+                } else {
+                    first.put(sid, edge_pair);
+//                    System.out.println("first: " + sid + "  " + edge_pair);
+                }
+            }
+
+            System.out.println(first.size() + " + " + next.size() + " = " + this.SpTree.size() * 2 + "  " + (first.size() + next.size() == this.SpTree.size() * 2 ? "Yes" : "No"));
+
+            Pair<Long, Long> firstEdge = edgeList.get(0);
+            Pair<Long, Long> currentEdge = edgeList.get(0);
+            int et_edge_id = 0;
+            do {
+//                System.out.print(currentEdge + "-->");
+                Relationship rel = neo4j.graphDB.getRelationshipById(edge_id_mapping_List.get(currentEdge));
+                RelationshipExt iter_edge = new RelationshipExt(rel, currentEdge.getKey().intValue(), currentEdge.getValue().intValue());
+                TNode<RelationshipExt> node = new TNode<>(et_edge_id, iter_edge);
+                rbtree.insert(node);
+                updateRelationshipRBPointer(iter_edge, et_edge_id, -1, level);
+                et_edge_id++;
+
+                Pair<Long, Long> reverse = new Pair<>(currentEdge.getValue(), currentEdge.getKey());
+//                System.out.println("find next:"+reverse);
+                if (next.containsKey(reverse)) {
+                    currentEdge = next.get(reverse);
+//                    System.out.println("11111111");
+                } else {
+                    currentEdge = first.get(reverse.getKey());
+//                    System.out.println("Get from first by id "+reverse.getKey());
+                }
+//                System.out.println(currentEdge+"-->");
+
+
+            } while (firstEdge != currentEdge);
+//            edgeList.stream().forEach(p->System.out.println(p));
+
+            tx.success();
+        }
     }
 
 
@@ -378,8 +478,8 @@ public class SpanningTree {
 
         if (neo4j == null) {
             DBPath = prop.params.get("neo4jdb");
-//            String sub_db_name = graphsize +"_" +degree +"_"+dimension+ "_Level" + level;
-            String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + level;
+//            String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + level;
+            String sub_db_name = "testRandomGraph_14_4";
             neo4j = new Neo4jDB(sub_db_name);
             System.out.println("connected to db " + neo4j.DB_PATH);
             neo4j.startDB(false);
