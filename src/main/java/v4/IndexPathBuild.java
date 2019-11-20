@@ -59,8 +59,8 @@ public class IndexPathBuild {
 //            numberofedges+= de.size();
 //        }
 //        System.out.println(numberofedges);
-        createIndexFolder();
-        indexBuild();
+//        createIndexFolder();
+//        indexBuild();
 //        printSummurizationInformation();
 //        test();
     }
@@ -110,7 +110,6 @@ public class IndexPathBuild {
     }
 
     private long handleUpperLevelGraph(int currentLevel, Pair<Integer, Integer> threshold_p, int threshold_t) {
-
         Hashtable<Long, ArrayList<Long>> nodesToHighWay = new Hashtable<>();
 //        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
 //        String sub_db_name = city_name + "_Level" + currentLevel;

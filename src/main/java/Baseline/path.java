@@ -9,6 +9,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 
 
@@ -129,6 +130,14 @@ public class path {
 
         return sb.toString();
     }
+
+
+//    public boolean hasCycle() {
+//        Long nextNodeId = nodes.get(nodes.size() - 1);
+//        int occurrences = Collections.frequency(this.nodes, nextNodeId);
+//        return  occurrences>=2;
+////        return false;
+//    }
 
     @Override
     public boolean equals(Object obj) {

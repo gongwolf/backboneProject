@@ -27,13 +27,18 @@ public class BFS {
     public static void main(String args[]) {
         int graphsize = 10000;
         double samenode_t = 2.844;
-        int currentLevel = 0;
-        for (; currentLevel <= 8; currentLevel++) {
-            String sub_db_name = graphsize + "_" + samenode_t + "_Level" + currentLevel;
-            BFS bfs = new BFS(sub_db_name);
-            bfs.traversal();
-            bfs.closeDB();
-        }
+        int currentLevel = 7;
+//        for (; currentLevel <= 8; currentLevel++) {
+//            String sub_db_name = graphsize + "_" + samenode_t + "_Level" + currentLevel;
+//            BFS bfs = new BFS(sub_db_name);
+//            bfs.traversal();
+//            bfs.closeDB();
+//        }
+
+        String sub_db_name = graphsize + "_" + samenode_t + "_Level" + currentLevel;
+        BFS bfs = new BFS(sub_db_name);
+        bfs.traversal();
+        bfs.closeDB();
     }
 
     private void closeDB() {

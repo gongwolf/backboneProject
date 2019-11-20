@@ -226,7 +226,16 @@ public class mimicBusLine {
                     String[] costs = new String[3];
                     for (int j = 0; j < 3; j++) {
 //                    costs[j] = String.valueOf(getRandomNumberInRange(0, 5));
-                        costs[j] = String.valueOf(getGaussian(dist, dist));
+                        if (j == 0) {
+                            costs[j] = String.valueOf(dist);
+                        } else {
+                            costs[j] = String.valueOf(getRandomNumberInRange(0.1 * dist, dist));
+                        }
+
+                        if ( Double.parseDouble(costs[j]) < 0) {
+                            System.out.println("Error");
+                        }
+
                     }
 
 //                    System.out.println(bus_ids[i - 1] + "," + new_n.id + " " + costs[0] + " " + costs[1] + " " + costs[2]);

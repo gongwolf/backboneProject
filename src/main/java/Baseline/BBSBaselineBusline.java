@@ -3,6 +3,7 @@ package Baseline;
 import DataStructure.Monitor;
 import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
+import org.apache.commons.cli.*;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
@@ -19,130 +20,37 @@ import java.util.Map;
 public class BBSBaselineBusline {
 
     public double[] iniLowerBound;
-
-    HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>();
+    int graphsize = 2000;
+    double samet = 4;
+    int level = 3;
+    //    HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>(); //source node id ==> HashMap < destination node id, myNode objects that stores skyline paths>
     ArrayList<path> results = new ArrayList<>();
     Monitor monitor;
     private GraphDatabaseService graphdb;
     public Neo4jDB neo4j;
 
-    private double same_t = 2.844;
-    private int graphsize = 10000;
-    private int dimension = 3;
 
-    public BBSBaselineBusline() {
-        String sub_db_name = graphsize + "_" + same_t + "_Level" + 0;
-        neo4j = new Neo4jDB(sub_db_name);
-//        System.out.println(neo4j.DB_PATH);
-        neo4j.startDB(true);
-        graphdb = neo4j.graphDB;
-        this.monitor = new Monitor();
-
-    }
-
-    public BBSBaselineBusline(int graphsize, double same_t) {
-
+    public BBSBaselineBusline(int graphsize, double samet, int level) {
         this.graphsize = graphsize;
-        this.same_t = same_t;
-
-        String sub_db_name = graphsize + "_" + same_t + "_Level" + 0;
+        this.samet = samet;
+        this.level = level;
+        String sub_db_name = graphsize + "_" + samet + "_Level" + level;
         neo4j = new Neo4jDB(sub_db_name);
+        System.out.println(neo4j.DB_PATH);
         neo4j.startDB(true);
         graphdb = neo4j.graphDB;
         this.monitor = new Monitor();
     }
 
-
-    public BBSBaselineBusline(int graphsize, double same_t, int level) {
-        this.graphsize = graphsize;
-        this.same_t = same_t;
-        String sub_db_name = graphsize + "_" + same_t + "_Level" + level;
-        neo4j = new Neo4jDB(sub_db_name);
-        neo4j.startDB(true);
-        graphdb = neo4j.graphDB;
-        this.monitor = new Monitor();
-        System.out.println(neo4j.graphDB);
-
-    }
-
-    public static void main(String args[]) {
-        BBSBaselineBusline baseline = new BBSBaselineBusline();
-        for (int i = 0; i < baseline.graphsize; i++) {
-            baseline.bbs(i);
-            System.out.println("Finished the finding of the index of the node " + i);
-        }
-        baseline.printSummurizationInformation();
-        baseline.closeDB();
-    }
-
-    private void printSummurizationInformation() {
-        createIndexFolder();
-
-        long overall_summation = 0;
-        for (int nodeID = 0; nodeID < graphsize; nodeID++) {
-            long summation = 0;
-            HashMap<Long, myNode> destination_index = this.index.get((long) nodeID);
-            writeToDisk(destination_index, nodeID);
-
-            for (long i = 0; i < this.graphsize; i++) {
-                ArrayList<path> skys = destination_index.get(i).skyPaths;
-                long size = skys.size();
-//                for (path p : skys) {
-//                    System.out.println(nodeID + " " + i + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2]);
-//                }
-                summation += size;
-//                System.out.println(nodeID + " to " + i + "  " + size);
-            }
-            System.out.println("the number of the skyline paths from  " + nodeID + " to others is " + summation);
-            overall_summation += summation;
-        }
-        System.out.println("the total index size is " + overall_summation + "/2=" + (overall_summation / 2));
-    }
-
-    private void createIndexFolder() {
-        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/baseline_" + graphsize + "_" + same_t;
-        File idx_folder = new File(folder);
-        if (idx_folder.exists()) {
-            idx_folder.delete();
-        }
-
-        idx_folder.mkdirs();
-
-    }
-
-    private void writeToDisk(HashMap<Long, myNode> destination_index, long nodeID) {
-        BufferedWriter writer = null;
-        try {
-
-            String file_path = "/home/gqxwolf/mydata/projectData/BackBone/indexes/baseline_" + graphsize + "_" + same_t + "/" + nodeID + ".idx";
-
-            File idx_file = new File(file_path);
-            if (idx_file.exists()) {
-                idx_file.delete();
-            }
-
-            writer = new BufferedWriter(new FileWriter(file_path));
-
-            for (long i = 0; i < this.graphsize; i++) {
-                ArrayList<path> skys = destination_index.get(i).skyPaths;
-                for (path p : skys) {
-                    writer.write(i + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
-                }
-            }
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     public void closeDB() {
         if (neo4j != null) {
-            System.out.println(neo4j.DB_PATH + " is closed successfully");
+//            System.out.println(neo4j.DB_PATH + " is closed successfully");
             this.neo4j.closeDB();
         }
     }
 
-    public void bbs(long nodeID) {
+    public int bbs(long nodeID) {
         HashMap<Long, myNode> tmpStoreNodes = new HashMap();
 
         try (Transaction tx = this.graphdb.beginTx()) {
@@ -167,7 +75,6 @@ public class BBSBaselineBusline {
                                 tmpStoreNodes.put(next_n.id, next_n);
                             }
 
-                            //if new path from sid to next_n is a skyline path and the next_n is not in the queue
                             if (next_n.addToSkyline(np) && !next_n.inqueue) {
                                 mqueue.add(next_n);
                                 next_n.inqueue = true;
@@ -178,15 +85,21 @@ public class BBSBaselineBusline {
                 }
 
             }
-
             tx.success();
         }
 
-        this.index.put(nodeID, tmpStoreNodes);
+        int sum = 0;
+        for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
+            int size = e.getValue().skyPaths.size();
+            sum += size;
+        }
+        return sum;
     }
 
     public ArrayList<path> queryOnline(long src, long dest) {
         HashMap<Long, myNode> tmpStoreNodes = new HashMap();
+        boolean haveResult = false;
+
         try (Transaction tx = this.graphdb.beginTx()) {
             myNode snode = new myNode(src, this.neo4j);
             myNodePriorityQueue mqueue = new myNodePriorityQueue();
@@ -197,7 +110,6 @@ public class BBSBaselineBusline {
                 myNode v = mqueue.pop();
                 for (int i = 0; i < v.skyPaths.size(); i++) {
                     path p = v.skyPaths.get(i);
-
                     if (!p.expaned) {
                         p.expaned = true;
                         ArrayList<path> new_paths = p.expand(neo4j);
@@ -210,9 +122,26 @@ public class BBSBaselineBusline {
                                 tmpStoreNodes.put(next_n.id, next_n);
                             }
 
-                            //TODO: add the function to calculate the lower bound from the next_n to the dest
+//                            if(np.hasCycle()){
+//                                continue;
+//                            }
+
                             if (np.endNode == dest) {
                                 addToSkyline(np);
+                                if(!haveResult){
+                                    haveResult=true;
+                                    //number of skyline of each node are added before the first final result are insert
+                                    long nodes_add_skyline_when_have_one_result = 0;
+                                    //number of nodes are visited before the first final result are insert
+                                    long nodes_covered_when_have_result = 0 ;
+                                    for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
+                                        nodes_add_skyline_when_have_one_result += e.getValue().callAddToSkylineFunction;
+                                        if (!e.getValue().skyPaths.isEmpty()) {
+                                            nodes_covered_when_have_result++;
+                                        }
+                                    }
+                                    System.out.println("    "+monitor.callcheckdominatedbyresult+" "+nodes_add_skyline_when_have_one_result+" "+nodes_covered_when_have_result);
+                                }
                             } else if (!dominatedByResult(np)) {
                                 if (next_n.addToSkyline(np) && !next_n.inqueue) {
                                     mqueue.add(next_n);
@@ -222,28 +151,22 @@ public class BBSBaselineBusline {
                         }
                     }
                 }
-
             }
-
             tx.success();
         }
 
         for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
             this.monitor.node_call_addtoskyline += e.getValue().callAddToSkylineFunction;
+            if (!e.getValue().skyPaths.isEmpty()) {
+                this.monitor.coveredNodes++;
+            }
         }
 
-        if (tmpStoreNodes.containsKey(dest)) {
-            System.out.println("~~~~~~~~~   "+tmpStoreNodes.get(dest).skyPaths);
-            return tmpStoreNodes.get(dest).skyPaths;
-
-        } else {
-            return new ArrayList<>();
-        }
+        return tmpStoreNodes.get(dest).skyPaths;
 
     }
 
     private boolean dominatedByResult(path np) {
-
         monitor.callcheckdominatedbyresult++;
         monitor.allsizeofthecheckdominatedbyresult += this.results.size();
         long rt_check_dominatedByresult = System.nanoTime();
@@ -263,7 +186,7 @@ public class BBSBaselineBusline {
     public void initilizeSkylinePath(long srcNode, long destNode) {
         int i = 0;
 
-        this.iniLowerBound = new double[this.dimension];
+        this.iniLowerBound = new double[3];
 
         try (Transaction tx = this.neo4j.graphDB.beginTx()) {
             Node destination = this.neo4j.graphDB.getNodeById(destNode);
