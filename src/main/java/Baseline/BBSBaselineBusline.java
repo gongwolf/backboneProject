@@ -20,7 +20,6 @@ import java.util.Random;
 
 public class BBSBaselineBusline {
 
-    public double[] iniLowerBound;
     int graphsize = 2000;
     double samet = 4;
     int level = 3;
@@ -78,8 +77,8 @@ public class BBSBaselineBusline {
                 int index = 0;
 
                 for (Node destination : nodelist) {
-                    if((++index)%500==0){
-                        System.out.println(lnode + "    " + index+" ..............................");
+                    if ((++index) % 500 == 0) {
+                        System.out.println(lnode + "    " + index + " ..............................");
                     }
 
 
@@ -166,8 +165,11 @@ public class BBSBaselineBusline {
 
     public ArrayList<path> queryOnline(long src, long dest) {
         HashMap<Long, myNode> tmpStoreNodes = new HashMap();
-        boolean haveResult = false;
+        this.results.clear();
+        this.monitor = new Monitor();
 
+
+        boolean haveResult = false;
         try (Transaction tx = this.graphdb.beginTx()) {
             myNode snode = new myNode(src, this.neo4j);
             myNodePriorityQueue mqueue = new myNodePriorityQueue();
@@ -178,6 +180,14 @@ public class BBSBaselineBusline {
                 myNode v = mqueue.pop();
                 for (int i = 0; i < v.skyPaths.size(); i++) {
                     path p = v.skyPaths.get(i);
+
+                    if (landmark_index.size() != 0) {
+                        double[] p_l_costs = getLowerBound(p.costs, src, dest);
+                        if (dominatedByResult(p_l_costs)) {
+                            continue;
+                        }
+                    }
+
                     if (!p.expaned) {
                         p.expaned = true;
                         ArrayList<path> new_paths = p.expand(neo4j);
@@ -234,6 +244,31 @@ public class BBSBaselineBusline {
 
     }
 
+    private double[] getLowerBound(double[] costs, long src, long dest) {
+        double[] estimated_costs = new double[3];
+
+        for (int i = 0; i < estimated_costs.length; i++) {
+            estimated_costs[i] = Double.NEGATIVE_INFINITY;
+        }
+
+        for (Long landmark : this.landmark_index.keySet()) {
+            double[] src_cost = this.landmark_index.get(landmark).get(src);
+            double[] dest_cost = this.landmark_index.get(landmark).get(dest);
+            for (int i = 0; i < estimated_costs.length; i++) {
+                double value = Math.abs(src_cost[i] - dest_cost[i]);
+                if (value > estimated_costs[i]) {
+                    estimated_costs[i] = value;
+                }
+            }
+        }
+
+        for (int i = 0; i < estimated_costs.length; i++) {
+            estimated_costs[i] += costs[i];
+        }
+
+        return estimated_costs;
+    }
+
     private boolean dominatedByResult(path np) {
         monitor.callcheckdominatedbyresult++;
         monitor.allsizeofthecheckdominatedbyresult += this.results.size();
@@ -251,10 +286,27 @@ public class BBSBaselineBusline {
         return false;
     }
 
+    private boolean dominatedByResult(double estimated_costs[]) {
+        monitor.callcheckdominatedbyresult++;
+        monitor.allsizeofthecheckdominatedbyresult += this.results.size();
+        long rt_check_dominatedByresult = System.nanoTime();
+        for (path rp : results) {
+            if (checkDominated(rp.costs, estimated_costs)) {
+                long rt_check_dominatedByresult_endwithTrue = System.nanoTime();
+                monitor.runningtime_check_domination_result += (rt_check_dominatedByresult_endwithTrue - rt_check_dominatedByresult);
+                return true;
+            }
+        }
+
+        long rt_check_dominatedByresult_endwithFalse = System.nanoTime();
+        monitor.runningtime_check_domination_result += (rt_check_dominatedByresult_endwithFalse - rt_check_dominatedByresult);
+        return false;
+    }
+
     public void initilizeSkylinePath(long srcNode, long destNode) {
         int i = 0;
 
-        this.iniLowerBound = new double[3];
+//        this.iniLowerBound = new double[3];
 
         try (Transaction tx = this.neo4j.graphDB.beginTx()) {
             Node destination = this.neo4j.graphDB.getNodeById(destNode);
@@ -267,7 +319,7 @@ public class BBSBaselineBusline {
                 WeightedPath paths = finder.findSinglePath(startNode, destination);
                 if (paths != null) {
                     path np = new path(paths);
-                    this.iniLowerBound[i++] = paths.weight();
+//                    this.iniLowerBound[i++] = paths.weight();
                     addToSkyline(np);
                 }
             }
@@ -306,7 +358,7 @@ public class BBSBaselineBusline {
     }
 
     /**
-     * if all the costs of the target path is less than the costs of the wanted path, means target path dominate the wanted path
+     * if all the costs of the target path is less than the estimated costs of the wanted path, means target path dominate the wanted path
      *
      * @param costs          the target path
      * @param estimatedCosts the wanted path

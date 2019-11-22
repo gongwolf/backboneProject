@@ -135,7 +135,7 @@ public class path {
 //    public boolean hasCycle() {
 //        Long nextNodeId = nodes.get(nodes.size() - 1);
 //        int occurrences = Collections.frequency(this.nodes, nextNodeId);
-//        return  occurrences>=2;
+//        return occurrences >= 2;
 ////        return false;
 //    }
 

@@ -114,6 +114,9 @@ public class IndexPathBuild {
 //        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
 //        String sub_db_name = city_name + "_Level" + currentLevel;
         String sub_db_name = graphsize + "_" + samenode_t + "_Level" + currentLevel;
+
+        String prefix = "/home/gqxwolf/mydata/projectData/BackBone/";
+
         neo4j = new Neo4jDB(sub_db_name);
         neo4j.startDB(false);
         graphdb = neo4j.graphDB;
@@ -145,11 +148,17 @@ public class IndexPathBuild {
         boolean deleted = removeLowerDegreePairEdgesByThreshold(threshold_p, threshold_t, deletedNodes, deletedEdges);
         System.out.println("Removing the edges in level " + currentLevel + "  with degree threshold  : " + threshold_p);
 
+
+
+
         getDegreePairs();
         deletedEdges.addAll(removeSingletonEdgesInForests(deletedNodes));
         long numberOfNodes = neo4j.getNumberofNodes();
         long post_n = neo4j.getNumberofNodes();
         long post_e = neo4j.getNumberofEdges();
+
+        String textFilePath = prefix + "busline_" + this.graphsize + "_" + this.samenode_t + "/level" + currentLevel + "/";
+        neo4j.saveGraphToTextFormation(textFilePath);
 
         System.out.println("pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
         this.deletedEdges_layer.add(deletedEdges);
