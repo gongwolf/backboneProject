@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class BBSBaselineBusline {
 
@@ -29,6 +30,11 @@ public class BBSBaselineBusline {
     private GraphDatabaseService graphdb;
     public Neo4jDB neo4j;
 
+    /**
+     * landmark nodes --> <dest nodes, <the value of shortest path from landmark nodes to dest nodes in each dimension>>
+     **/
+    public HashMap<Long, HashMap<Long, double[]>> landmark_index = new HashMap<>();
+
 
     public BBSBaselineBusline(int graphsize, double samet, int level) {
         this.graphsize = graphsize;
@@ -40,6 +46,68 @@ public class BBSBaselineBusline {
         neo4j.startDB(true);
         graphdb = neo4j.graphDB;
         this.monitor = new Monitor();
+    }
+
+    public void buildLandmarkIndex(int num_landmarks) {
+        this.landmark_index.clear();
+
+        try (Transaction tx = this.neo4j.graphDB.beginTx()) {
+
+            ArrayList<Node> nodelist = new ArrayList<>();
+
+            ResourceIterable<Node> nodes_iterable = this.neo4j.graphDB.getAllNodes();
+            ResourceIterator<Node> nodes_iter = nodes_iterable.iterator();
+            while (nodes_iter.hasNext()) {
+                Node node_id = nodes_iter.next();
+                nodelist.add(node_id);
+            }
+
+
+            ArrayList<Node> landmarks = new ArrayList<>();
+            while (landmarks.size() < num_landmarks) {
+                Node landmarks_node = getRandomNodes(nodelist);
+                if (!landmarks.contains(landmarks_node)) {
+                    landmarks.add(landmarks_node);
+                }
+            }
+
+            for (Node lnode : landmarks) {
+                HashMap<Long, double[]> index_from_landmark_to_dest = new HashMap<>();
+                System.out.println(lnode);
+
+                int index = 0;
+
+                for (Node destination : nodelist) {
+                    if((++index)%500==0){
+                        System.out.println(lnode + "    " + index+" ..............................");
+                    }
+
+
+                    if (destination.getId() == lnode.getId()) {
+                        index_from_landmark_to_dest.put(destination.getId(), new double[3]);
+                        continue;
+                    }
+
+                    int i = 0;
+                    double[] min_costs = new double[3];
+                    for (String property_name : Neo4jDB.propertiesName) {
+                        PathFinder<WeightedPath> finder = GraphAlgoFactory
+                                .dijkstra(PathExpanders.forTypeAndDirection(Line.Linked, Direction.BOTH), property_name);
+                        WeightedPath paths = finder.findSinglePath(lnode, destination);
+                        if (paths != null) {
+                            path np = new path(paths);
+                            min_costs[i++] = paths.weight();
+                        }
+                    }
+                    index_from_landmark_to_dest.put(destination.getId(), min_costs);
+                }
+
+                this.landmark_index.put(lnode.getId(), index_from_landmark_to_dest);
+            }
+
+            tx.success();
+        }
+
     }
 
 
@@ -128,19 +196,19 @@ public class BBSBaselineBusline {
 
                             if (np.endNode == dest) {
                                 addToSkyline(np);
-                                if(!haveResult){
-                                    haveResult=true;
+                                if (!haveResult) {
+                                    haveResult = true;
                                     //number of skyline of each node are added before the first final result are insert
                                     long nodes_add_skyline_when_have_one_result = 0;
                                     //number of nodes are visited before the first final result are insert
-                                    long nodes_covered_when_have_result = 0 ;
+                                    long nodes_covered_when_have_result = 0;
                                     for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
                                         nodes_add_skyline_when_have_one_result += e.getValue().callAddToSkylineFunction;
                                         if (!e.getValue().skyPaths.isEmpty()) {
                                             nodes_covered_when_have_result++;
                                         }
                                     }
-                                    System.out.println("    "+monitor.callcheckdominatedbyresult+" "+nodes_add_skyline_when_have_one_result+" "+nodes_covered_when_have_result);
+                                    System.out.println("    " + monitor.callcheckdominatedbyresult + " " + nodes_add_skyline_when_have_one_result + " " + nodes_covered_when_have_result);
                                 }
                             } else if (!dominatedByResult(np)) {
                                 if (next_n.addToSkyline(np) && !next_n.inqueue) {
@@ -251,5 +319,12 @@ public class BBSBaselineBusline {
             }
         }
         return true;
+    }
+
+
+    private <T> T getRandomNodes(ArrayList<T> nodelist) {
+        Random r = new Random();
+        int idx = r.nextInt(nodelist.size());
+        return nodelist.get(idx);
     }
 }
