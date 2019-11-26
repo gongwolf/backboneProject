@@ -1,5 +1,7 @@
 package Neo4jTools;
 
+import org.neo4j.graphdb.Node;
+
 import java.util.Comparator;
 
 public class StringComparator implements Comparator<String> {
@@ -15,7 +17,24 @@ class IntegerComparator implements Comparator<Integer> {
 
     @Override
     public int compare(Integer o1, Integer o2) {
-        return o1-o2;
+        return o1 - o2;
+    }
+}
+
+class LongComparator implements Comparator<Long> {
+
+    @Override
+    public int compare(Long o1, Long o2) {
+        return Math.toIntExact(o1 - o2);
+    }
+}
+
+
+class NodeComparator implements Comparator<Node> {
+
+    @Override
+    public int compare(Node o1, Node o2) {
+        return Math.toIntExact(o1.getId() - o2.getId());
     }
 }
 

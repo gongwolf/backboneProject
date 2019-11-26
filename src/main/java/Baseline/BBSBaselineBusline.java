@@ -3,16 +3,12 @@ package Baseline;
 import DataStructure.Monitor;
 import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
-import org.apache.commons.cli.*;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.*;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +35,8 @@ public class BBSBaselineBusline {
         this.graphsize = graphsize;
         this.samet = samet;
         this.level = level;
-        String sub_db_name = graphsize + "_" + samet + "_Level" + level;
+//        String sub_db_name = graphsize + "_" + samet + "_Level" + level;
+        String sub_db_name = "ny_USA_level0";
         neo4j = new Neo4jDB(sub_db_name);
         System.out.println(neo4j.DB_PATH);
         neo4j.startDB(true);
@@ -57,18 +54,25 @@ public class BBSBaselineBusline {
             ResourceIterable<Node> nodes_iterable = this.neo4j.graphDB.getAllNodes();
             ResourceIterator<Node> nodes_iter = nodes_iterable.iterator();
             while (nodes_iter.hasNext()) {
-                Node node_id = nodes_iter.next();
-                nodelist.add(node_id);
+                Node node = nodes_iter.next();
+                nodelist.add(node);
             }
 
 
             ArrayList<Node> landmarks = new ArrayList<>();
-            while (landmarks.size() < num_landmarks) {
-                Node landmarks_node = getRandomNodes(nodelist);
-                if (!landmarks.contains(landmarks_node)) {
-                    landmarks.add(landmarks_node);
-                }
-            }
+            Node n = nodelist.stream().filter(node -> 9861L==node.getId()).findAny().orElse(null);
+            landmarks.add(n);
+            n = nodelist.stream().filter(node -> 6905L==node.getId()).findAny().orElse(null);
+            landmarks.add(n);
+            n = nodelist.stream().filter(node -> 2887==node.getId()).findAny().orElse(null);
+            landmarks.add(n);
+
+//            while (landmarks.size() < num_landmarks) {
+//                Node landmarks_node = getRandomNodes(nodelist);
+//                if (!landmarks.contains(landmarks_node)) {
+//                    landmarks.add(landmarks_node);
+//                }
+//            }
 
             for (Node lnode : landmarks) {
                 HashMap<Long, double[]> index_from_landmark_to_dest = new HashMap<>();

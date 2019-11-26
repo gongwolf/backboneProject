@@ -27,7 +27,100 @@ public class CreateDB {
 
         CreateDB c = new CreateDB();
 //        c.createRandomGraph(graphsize, 4, 3);
-        c.createBusLineDataBase(graphsize , samenode_t);
+//        c.createBusLineDataBase(graphsize , samenode_t);
+        c.createChangeGraphDB();
+    }
+
+    private void createChangeGraphDB() {
+        String sub_db_name ="ny_USA_level0";
+        Neo4jDB neo4j = new Neo4jDB(sub_db_name);
+        neo4j.deleleDB();
+        System.out.println("====================================================================");
+        neo4j.startDB(false);
+        System.out.println(neo4j.DB_PATH);
+        System.out.println("====================================================================");
+        String nodeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/ny_NodeInfo.txt";
+        String EdgeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/ny_SegInfo.txt";
+        System.out.println("node file path :" + nodeFilePath);
+        System.out.println("edge file path :" + EdgeFilePath);
+        GraphDatabaseService graphdb = neo4j.graphDB;
+        int num_node = 0, num_edge = 0;
+
+        try (Transaction tx = graphdb.beginTx()) {
+            BufferedReader br = new BufferedReader(new FileReader(nodeFilePath));
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                String[] attrs = line.split(" ");
+
+                String id = attrs[0];
+                double lat = Double.parseDouble(attrs[1]);
+                double log = Double.parseDouble(attrs[2]);
+                Node n = createNode(id, lat, log, graphdb);
+                num_node++;
+                if (num_node % 10000 == 0) {
+                    System.out.println(num_node + " nodes was created");
+                }
+            }
+            tx.success();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        HashMap<Pair<Integer, Integer>, double[]> edges = new HashMap<>();
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(EdgeFilePath));
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                num_edge++;
+                int sid = Integer.parseInt(line.split(" ")[0]);
+                int did = Integer.parseInt(line.split(" ")[1]);
+                double c1 = Double.parseDouble(line.split(" ")[2]);
+                double c2 = Double.parseDouble(line.split(" ")[3]);
+                double c3 = Double.parseDouble(line.split(" ")[4]);
+                double[] costs = new double[]{c1, c2, c3};
+                Pair<Integer, Integer> relations = new Pair<>(sid, did);
+
+                //Treat the graph as an in-directional graph
+                if (!existedEdges(relations, edges)) {
+                    edges.put(relations, costs);
+                }
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("number of total edges:" + num_edge + ", number of undirected edges:" + edges.size());
+
+        int idx_i = 0;
+        ArrayList<String> ss = new ArrayList<>();
+        for (Map.Entry<Pair<Integer, Integer>, double[]> e : edges.entrySet()) {
+            idx_i++;
+            StringBuilder str = new StringBuilder();
+            str.append(e.getKey().getKey()).append(" "); //sid
+            str.append(e.getKey().getValue()).append(" "); //did
+            str.append(e.getValue()[0]).append(" "); //c1
+            str.append(e.getValue()[1]).append(" "); //c2
+            str.append(e.getValue()[2]); //c3
+            ss.add(str.toString());
+            if (idx_i % 10000 == 0) {
+                process_batch_edges(ss, graphdb);
+                ss.clear();
+                System.out.println(idx_i + " edges were created");
+            }
+        }
+        process_batch_edges(ss, graphdb);
+        ss.clear();
+        System.out.println(idx_i + " edges were created");
+
+        System.out.println("there are total " + num_node + " nodes and " + num_edge + " edges" + " and undirected edges " + idx_i);
+        System.out.println("====================================================================");
+        neo4j.closeDB();
     }
 
     private void createRandomGraph(int graphsize, int degree, int dimension) {

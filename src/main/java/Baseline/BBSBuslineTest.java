@@ -14,17 +14,16 @@ public class BBSBuslineTest {
     public static void main(String args[]) {
         BBSBuslineTest bbstest = new BBSBuslineTest();
 
-        bbstest.queries.add(new Pair<>(6469L, 4544L));
-        bbstest.queries.add(new Pair<>(6811L, 8742L));
-        bbstest.queries.add(new Pair<>(1133L, 428L));
-        bbstest.queries.add(new Pair<>(8L, 6960L));
-        bbstest.queries.add(new Pair<>(5068L, 7156L));
-        bbstest.queries.add(new Pair<>(8415L, 6745L));
+//        bbstest.queries.add(new Pair<>(6469L, 4544L));
+//        bbstest.queries.add(new Pair<>(6811L, 8742L));
+//        bbstest.queries.add(new Pair<>(1133L, 428L));
+//        bbstest.queries.add(new Pair<>(8L, 6960L));
+//        bbstest.queries.add(new Pair<>(5068L, 7156L));
+//        bbstest.queries.add(new Pair<>(8415L, 6745L));
 
-        bbstest.test(true, true);
-        System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         bbstest.test(true, false);
-
+        System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        bbstest.test(false, false);
     }
 
     private void test(boolean init, boolean uselandmark) {
@@ -38,7 +37,7 @@ public class BBSBuslineTest {
         }
         long start_ms = System.currentTimeMillis();
 
-        for (int i = 0; i < queries.size(); i++) {
+        for (int i = 0; i < 1; i++) {
 
             ArrayList<Long> nodelist = new ArrayList<>();
 
@@ -54,11 +53,11 @@ public class BBSBuslineTest {
 
             int sizeofinit = 0;
 
-//            long src = getRondomNodes(nodelist);
-//            long dest = getRondomNodes(nodelist);
-
-            long src = this.queries.get(i).getKey();
-            long dest = this.queries.get(i).getKey();
+            long src = getRondomNodes(nodelist);
+            long dest = getRondomNodes(nodelist);
+//
+//            long src = this.queries.get(i).getKey();
+//            long dest = this.queries.get(i).getValue();
 
             System.out.println(src + " =============> " + dest);
 
@@ -90,8 +89,6 @@ public class BBSBuslineTest {
             System.out.println("=======================================================================");
             System.out.println("=======================================================================");
         }
-
-
         baseline.closeDB();
 
     }
