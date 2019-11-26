@@ -99,30 +99,8 @@ public class subGraphCity {
         if (n_file.exists()) {
             n_file.delete();
         }
-        try (FileWriter fw = new FileWriter(EdgesPath, true);
-             BufferedWriter bw = new BufferedWriter(fw);
-             PrintWriter out = new PrintWriter(bw);
-             Transaction tx = neo4j.graphDB.beginTx()) {
-            System.out.println(EdgesPath);
 
-            for (Relationship e : edges) {
-                StringBuffer sb = new StringBuffer();
-                long snodeId = e.getStartNodeId();
-                long enodeId = e.getEndNodeId();
-                sb.append(snodeId).append(" ");
-                sb.append(enodeId).append(" ");
-                for (String p : neo4j.propertiesName) {
-                    double cost = (double) e.getProperty(p);
-                    sb.append(cost).append(" ");
-                }
-                out.println(sb.toString().trim());
-            }
-
-            tx.success();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        HashMap<Long, Long> node_id_mapping = new HashMap<>();
 
         try (FileWriter fw = new FileWriter(NodePath, true);
              BufferedWriter bw = new BufferedWriter(fw);
@@ -132,14 +110,43 @@ public class subGraphCity {
             System.out.println(NodePath);
             TreeSet<Long> tm = new TreeSet<>(new LongComparator());
             tm.addAll(nodes);
+            long mapped_id = 0;
             for (long node_id : tm) {
+
+                node_id_mapping.put(node_id,mapped_id++);
+
                 StringBuffer sb = new StringBuffer();
                 Node node = neo4j.graphDB.getNodeById(node_id);
-                sb.append(node.getId()).append(" ");
+                sb.append(node_id_mapping.get(node_id)).append(" ");
                 sb.append(node.getProperty("lat")).append(" ");
                 sb.append(node.getProperty("log")).append(" ");
                 out.println(sb.toString().trim());
             }
+            tx.success();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        try (FileWriter fw = new FileWriter(EdgesPath, true);
+             BufferedWriter bw = new BufferedWriter(fw);
+             PrintWriter out = new PrintWriter(bw);
+             Transaction tx = neo4j.graphDB.beginTx()) {
+            System.out.println(EdgesPath);
+
+            for (Relationship e : edges) {
+                StringBuffer sb = new StringBuffer();
+                long snodeId = node_id_mapping.get(e.getStartNodeId());
+                long enodeId = node_id_mapping.get(e.getEndNodeId());
+                sb.append(snodeId).append(" ");
+                sb.append(enodeId).append(" ");
+                for (String p : neo4j.propertiesName) {
+                    double cost = (double) e.getProperty(p);
+                    sb.append(cost).append(" ");
+                }
+                out.println(sb.toString().trim());
+            }
+
             tx.success();
         } catch (IOException e) {
             e.printStackTrace();

@@ -35,8 +35,17 @@ public class BBSBaselineBusline {
         this.graphsize = graphsize;
         this.samet = samet;
         this.level = level;
-//        String sub_db_name = graphsize + "_" + samet + "_Level" + level;
-        String sub_db_name = "ny_USA_level0";
+        String sub_db_name = graphsize + "_" + samet + "_Level" + level;
+//        String sub_db_name = "sub_ny_USA_level0";
+        neo4j = new Neo4jDB(sub_db_name);
+        System.out.println(neo4j.DB_PATH);
+        neo4j.startDB(true);
+        graphdb = neo4j.graphDB;
+        this.monitor = new Monitor();
+    }
+
+    public BBSBaselineBusline() {
+        String sub_db_name = "sub_ny_USA_level0";
         neo4j = new Neo4jDB(sub_db_name);
         System.out.println(neo4j.DB_PATH);
         neo4j.startDB(true);
@@ -60,12 +69,12 @@ public class BBSBaselineBusline {
 
 
             ArrayList<Node> landmarks = new ArrayList<>();
-            Node n = nodelist.stream().filter(node -> 9861L==node.getId()).findAny().orElse(null);
+            Node n = nodelist.stream().filter(node -> 455L == node.getId()).findAny().orElse(null);
             landmarks.add(n);
-            n = nodelist.stream().filter(node -> 6905L==node.getId()).findAny().orElse(null);
-            landmarks.add(n);
-            n = nodelist.stream().filter(node -> 2887==node.getId()).findAny().orElse(null);
-            landmarks.add(n);
+//            n = nodelist.stream().filter(node -> 6905L==node.getId()).findAny().orElse(null);
+//            landmarks.add(n);
+//            n = nodelist.stream().filter(node -> 2887==node.getId()).findAny().orElse(null);
+//            landmarks.add(n);
 
 //            while (landmarks.size() < num_landmarks) {
 //                Node landmarks_node = getRandomNodes(nodelist);
@@ -77,18 +86,11 @@ public class BBSBaselineBusline {
             for (Node lnode : landmarks) {
                 HashMap<Long, double[]> index_from_landmark_to_dest = new HashMap<>();
                 System.out.println(lnode);
-
                 int index = 0;
 
                 for (Node destination : nodelist) {
                     if ((++index) % 500 == 0) {
                         System.out.println(lnode + "    " + index + " ..............................");
-                    }
-
-
-                    if (destination.getId() == lnode.getId()) {
-                        index_from_landmark_to_dest.put(destination.getId(), new double[3]);
-                        continue;
                     }
 
                     int i = 0;
@@ -98,14 +100,19 @@ public class BBSBaselineBusline {
                                 .dijkstra(PathExpanders.forTypeAndDirection(Line.Linked, Direction.BOTH), property_name);
                         WeightedPath paths = finder.findSinglePath(lnode, destination);
                         if (paths != null) {
-                            path np = new path(paths);
-                            min_costs[i++] = paths.weight();
+                            min_costs[i] = paths.weight();
+                            i++;
                         }
                     }
+
                     index_from_landmark_to_dest.put(destination.getId(), min_costs);
                 }
 
                 this.landmark_index.put(lnode.getId(), index_from_landmark_to_dest);
+            }
+
+            for (String property_name : Neo4jDB.propertiesName) {
+                System.out.println(property_name);
             }
 
             tx.success();
@@ -169,17 +176,23 @@ public class BBSBaselineBusline {
 
     public ArrayList<path> queryOnline(long src, long dest) {
         HashMap<Long, myNode> tmpStoreNodes = new HashMap();
-        this.results.clear();
         this.monitor = new Monitor();
 
+        int print_lb = 0;
 
         boolean haveResult = false;
         try (Transaction tx = this.graphdb.beginTx()) {
-            myNode snode = new myNode(src, this.neo4j);
+            myNode snode = new myNode(src, neo4j);
             myNodePriorityQueue mqueue = new myNodePriorityQueue();
             tmpStoreNodes.put(snode.id, snode);
-
             mqueue.add(snode);
+
+//            System.out.println("-----------------------------------");
+//            for(String p :snode.skyPaths.get(0).propertiesName){
+//                System.out.println(p);
+//            }
+//            System.out.println("-----------------------------------");
+
             while (!mqueue.isEmpty()) {
                 myNode v = mqueue.pop();
                 for (int i = 0; i < v.skyPaths.size(); i++) {
@@ -187,6 +200,15 @@ public class BBSBaselineBusline {
 
                     if (landmark_index.size() != 0) {
                         double[] p_l_costs = getLowerBound(p.costs, src, dest);
+
+                        if (p_l_costs[0] != p.costs[0] && p_l_costs[1] != p.costs[1] && p_l_costs[2] != p.costs[2]) {
+                            System.err.println("Error !!!!!!!!!!");
+                            System.err.println(p);
+                            System.err.println(p_l_costs[0] + "  != " + p.costs[0]);
+                            System.err.println(p_l_costs[1] + "  != " + p.costs[1]);
+                            System.err.println(p_l_costs[2] + "  != " + p.costs[2]);
+                        }
+
                         if (dominatedByResult(p_l_costs)) {
                             continue;
                         }
@@ -204,9 +226,9 @@ public class BBSBaselineBusline {
                                 tmpStoreNodes.put(next_n.id, next_n);
                             }
 
-//                            if(np.hasCycle()){
-//                                continue;
-//                            }
+                            if (np.hasCycle()) {
+                                continue;
+                            }
 
                             if (np.endNode == dest) {
                                 addToSkyline(np);
@@ -237,14 +259,16 @@ public class BBSBaselineBusline {
             tx.success();
         }
 
-        for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
+        for (
+                Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
             this.monitor.node_call_addtoskyline += e.getValue().callAddToSkylineFunction;
             if (!e.getValue().skyPaths.isEmpty()) {
                 this.monitor.coveredNodes++;
             }
         }
 
-        return tmpStoreNodes.get(dest).skyPaths;
+//        return tmpStoreNodes.get(dest).skyPaths;
+        return results;
 
     }
 
@@ -255,7 +279,7 @@ public class BBSBaselineBusline {
             estimated_costs[i] = Double.NEGATIVE_INFINITY;
         }
 
-        for (Long landmark : this.landmark_index.keySet()) {
+        for (long landmark : this.landmark_index.keySet()) {
             double[] src_cost = this.landmark_index.get(landmark).get(src);
             double[] dest_cost = this.landmark_index.get(landmark).get(dest);
             for (int i = 0; i < estimated_costs.length; i++) {
@@ -267,7 +291,8 @@ public class BBSBaselineBusline {
         }
 
         for (int i = 0; i < estimated_costs.length; i++) {
-            estimated_costs[i] += costs[i];
+            estimated_costs[i] = estimated_costs[i]+costs[i];
+//            estimated_costs[i] += costs[i];
         }
 
         return estimated_costs;
@@ -382,5 +407,10 @@ public class BBSBaselineBusline {
         Random r = new Random();
         int idx = r.nextInt(nodelist.size());
         return nodelist.get(idx);
+    }
+
+    public void clear() {
+        this.results.clear();
+        this.monitor.clear();
     }
 }

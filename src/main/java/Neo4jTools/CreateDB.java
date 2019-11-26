@@ -21,7 +21,7 @@ public class CreateDB {
     public static void main(String args[]) {
 
         int graphsize = 10000;
-        double samenode_t =2.844;
+        double samenode_t = 2.844;
 //        int degree = 2;
 //        int dimension = 3;
 
@@ -32,15 +32,21 @@ public class CreateDB {
     }
 
     private void createChangeGraphDB() {
-        String sub_db_name ="ny_USA_level0";
+//        String sub_db_name ="ny_USA_level0";
+//        String nodeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/ny_NodeInfo.txt";
+//        String EdgeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/ny_SegInfo.txt";
+
+        String sub_db_name = "sub_ny_USA_level0";
+        String nodeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/sub_level0_ny_NodeInfo.txt";
+        String EdgeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/sub_level0_ny_SegInfo.txt";
+
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);
         neo4j.deleleDB();
         System.out.println("====================================================================");
         neo4j.startDB(false);
         System.out.println(neo4j.DB_PATH);
         System.out.println("====================================================================");
-        String nodeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/ny_NodeInfo.txt";
-        String EdgeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/ny_SegInfo.txt";
+
         System.out.println("node file path :" + nodeFilePath);
         System.out.println("edge file path :" + EdgeFilePath);
         GraphDatabaseService graphdb = neo4j.graphDB;
@@ -81,8 +87,18 @@ public class CreateDB {
                 double c1 = Double.parseDouble(line.split(" ")[2]);
                 double c2 = Double.parseDouble(line.split(" ")[3]);
                 double c3 = Double.parseDouble(line.split(" ")[4]);
+
+                c1 = c1<=0?1:c1;
+                c2 = c2<=0?1:c2;
+                c3 = c3<=0?1:c3;
+
                 double[] costs = new double[]{c1, c2, c3};
                 Pair<Integer, Integer> relations = new Pair<>(sid, did);
+
+
+                if(c1<=0 || c2<=0 || c3 <=0){
+                    System.out.println("============================+++++++++++++++++++++++");
+                }
 
                 //Treat the graph as an in-directional graph
                 if (!existedEdges(relations, edges)) {
@@ -125,7 +141,7 @@ public class CreateDB {
 
     private void createRandomGraph(int graphsize, int degree, int dimension) {
 //        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level0";
-        String sub_db_name ="testRandomGraph_14_4";
+        String sub_db_name = "testRandomGraph_14_4";
 //        String sub_db_name =  "test_USA_Level0";
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);
         neo4j.deleleDB();
@@ -322,7 +338,7 @@ public class CreateDB {
 
         int sid = relations.getKey();
         int did = relations.getValue();
-        Pair<Integer,Integer> reverse_rel = new Pair<>(did,sid);
+        Pair<Integer, Integer> reverse_rel = new Pair<>(did, sid);
         return edges.containsKey(reverse_rel) || edges.containsKey(relations);
 
     }

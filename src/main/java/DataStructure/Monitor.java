@@ -112,4 +112,30 @@ public class Monitor {
     public double getOverallRuningtime_in_Sec() {
         return overallRuningtime / 1000.0;
     }
+
+    public void clear() {
+        callAddToSkyline = 0;
+        finnalCallAddToSkyline = 0;
+
+        runningtime_supplement_addtoskyline = 0;
+        runningtime_supplement_construction = 0;
+        runningtime_combination_construction = 0;
+        runningtime_combination_addtoskyline = 0;
+        runningtime_dest_addtoskyline = 0;
+        runningtime_src_addtoskyline = 0;
+        runningtime_src_create_newpath = 0;
+        runningtime_dest_create_newpath = 0;
+        runningtime_check_domination_result = 0;
+        node_call_addtoskyline = 0;
+
+        callcheckdominatedbyresult = 0;
+        allsizeofthecheckdominatedbyresult = 0;
+
+
+        overallRuningtime = 0;
+        indexQueryTime = 0;
+        spInitTimeInBaseline = 0;
+
+        this.sizeOfResult = 0;
+    }
 }
