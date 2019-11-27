@@ -30,7 +30,7 @@ public class subGraphCity {
         HashSet<Relationship> edges = new HashSet<>();
         HashSet<Long> nodes = new HashSet<>();
 
-        int target_graph_size = 3000;
+        int target_graph_size = 10000;
 
         try (Transaction tx = neo4j.graphDB.beginTx()) {
 
@@ -69,9 +69,9 @@ public class subGraphCity {
                         edges.add(rel);
                     }
 
-                    if (nodes.size() % 10000 == 0) {
-                        System.out.println(nodes.size());
-                    }
+//                    if (nodes.size() % 10000 == 0) {
+//                        System.out.println(nodes.size());
+//                    }
                 }
             }
 

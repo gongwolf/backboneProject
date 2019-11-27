@@ -3,16 +3,15 @@ package Baseline;
 import DataStructure.Monitor;
 import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
+import javafx.util.Pair;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.*;
+import org.w3c.dom.NodeList;
 
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 public class BBSBaselineBusline {
 
@@ -69,23 +68,23 @@ public class BBSBaselineBusline {
 
 
             ArrayList<Node> landmarks = new ArrayList<>();
-            Node n = nodelist.stream().filter(node -> 455L == node.getId()).findAny().orElse(null);
-            landmarks.add(n);
+//            Node n = nodelist.stream().filter(node -> 19L == node.getId()).findAny().orElse(null);
+//            landmarks.add(n);
 //            n = nodelist.stream().filter(node -> 6905L==node.getId()).findAny().orElse(null);
 //            landmarks.add(n);
 //            n = nodelist.stream().filter(node -> 2887==node.getId()).findAny().orElse(null);
 //            landmarks.add(n);
 
-//            while (landmarks.size() < num_landmarks) {
-//                Node landmarks_node = getRandomNodes(nodelist);
-//                if (!landmarks.contains(landmarks_node)) {
-//                    landmarks.add(landmarks_node);
-//                }
-//            }
+            while (landmarks.size() < num_landmarks) {
+                Node landmarks_node = getRandomNodes(nodelist);
+                if (!landmarks.contains(landmarks_node)) {
+                    landmarks.add(landmarks_node);
+                }
+            }
 
             for (Node lnode : landmarks) {
                 HashMap<Long, double[]> index_from_landmark_to_dest = new HashMap<>();
-                System.out.println(lnode);
+//                System.out.println(lnode);
                 int index = 0;
 
                 for (Node destination : nodelist) {
@@ -111,9 +110,9 @@ public class BBSBaselineBusline {
                 this.landmark_index.put(lnode.getId(), index_from_landmark_to_dest);
             }
 
-            for (String property_name : Neo4jDB.propertiesName) {
-                System.out.println(property_name);
-            }
+//            for (String property_name : Neo4jDB.propertiesName) {
+//                System.out.println(property_name);
+//            }
 
             tx.success();
         }
@@ -186,6 +185,7 @@ public class BBSBaselineBusline {
             myNodePriorityQueue mqueue = new myNodePriorityQueue();
             tmpStoreNodes.put(snode.id, snode);
             mqueue.add(snode);
+            snode.inqueue = false;
 
 //            System.out.println("-----------------------------------");
 //            for(String p :snode.skyPaths.get(0).propertiesName){
@@ -195,29 +195,30 @@ public class BBSBaselineBusline {
 
             while (!mqueue.isEmpty()) {
                 myNode v = mqueue.pop();
+                v.inqueue = false;
                 for (int i = 0; i < v.skyPaths.size(); i++) {
+//                    System.out.println("################################################################");
                     path p = v.skyPaths.get(i);
 
+                    boolean isDominatedByResult = false;
                     if (landmark_index.size() != 0) {
-                        double[] p_l_costs = getLowerBound(p.costs, src, dest);
-
-                        if (p_l_costs[0] != p.costs[0] && p_l_costs[1] != p.costs[1] && p_l_costs[2] != p.costs[2]) {
-                            System.err.println("Error !!!!!!!!!!");
-                            System.err.println(p);
-                            System.err.println(p_l_costs[0] + "  != " + p.costs[0]);
-                            System.err.println(p_l_costs[1] + "  != " + p.costs[1]);
-                            System.err.println(p_l_costs[2] + "  != " + p.costs[2]);
-                        }
+                        double[] p_l_costs = getLowerBound(p.costs, p.endNode, dest);
 
                         if (dominatedByResult(p_l_costs)) {
-                            continue;
+                            isDominatedByResult = true;
                         }
+                    }
+
+//                    System.out.println("+++++   " + p + "   " + isDominatedByResult);
+                    if (isDominatedByResult) {
+                        continue;
                     }
 
                     if (!p.expaned) {
                         p.expaned = true;
                         ArrayList<path> new_paths = p.expand(neo4j);
                         for (path np : new_paths) {
+//                            System.out.println("    -----  " + np);
                             myNode next_n;
                             if (tmpStoreNodes.containsKey(np.endNode)) {
                                 next_n = tmpStoreNodes.get(np.endNode);
@@ -244,7 +245,7 @@ public class BBSBaselineBusline {
                                             nodes_covered_when_have_result++;
                                         }
                                     }
-                                    System.out.println("    " + monitor.callcheckdominatedbyresult + " " + nodes_add_skyline_when_have_one_result + " " + nodes_covered_when_have_result);
+//                                    System.out.println("    " + monitor.callcheckdominatedbyresult + " " + nodes_add_skyline_when_have_one_result + " " + nodes_covered_when_have_result);
                                 }
                             } else if (!dominatedByResult(np)) {
                                 if (next_n.addToSkyline(np) && !next_n.inqueue) {
@@ -282,6 +283,8 @@ public class BBSBaselineBusline {
         for (long landmark : this.landmark_index.keySet()) {
             double[] src_cost = this.landmark_index.get(landmark).get(src);
             double[] dest_cost = this.landmark_index.get(landmark).get(dest);
+//            System.out.println(src+" ---> "+landmark+":"+ src_cost[0] + " " + src_cost[1] + " " + src_cost[2]);
+//            System.out.println(dest+" ---> "+landmark+":"+ dest_cost[0] + " " + dest_cost[1] + " " + dest_cost[2]);
             for (int i = 0; i < estimated_costs.length; i++) {
                 double value = Math.abs(src_cost[i] - dest_cost[i]);
                 if (value > estimated_costs[i]) {
@@ -289,9 +292,10 @@ public class BBSBaselineBusline {
                 }
             }
         }
+//        System.out.println(src+" ---> "+dest+":"+ estimated_costs[0] + " " + estimated_costs[1] + " " + estimated_costs[2]);
 
         for (int i = 0; i < estimated_costs.length; i++) {
-            estimated_costs[i] = estimated_costs[i]+costs[i];
+            estimated_costs[i] = estimated_costs[i] + costs[i];
 //            estimated_costs[i] += costs[i];
         }
 
@@ -403,6 +407,60 @@ public class BBSBaselineBusline {
     }
 
 
+    public double myDijkstra(long sid, long did, String property_type) {
+
+        HashMap<Long, myDijNode> nodelist = new HashMap<>(); //
+
+        myNodeDijkstraPriorityQueue dijkstraqueue = new myNodeDijkstraPriorityQueue(property_type);
+        myDijNode snode = new myDijNode(sid, 0, null);
+        dijkstraqueue.add(snode);
+        nodelist.put(snode.node_id, snode);
+        snode.inqueue = true;
+
+        try (Transaction tx = this.neo4j.graphDB.beginTx()) {
+
+            // int i =0;
+            while (!dijkstraqueue.isEmpty()) {
+                myDijNode n = dijkstraqueue.pop();
+//                System.out.println(n.node_id + " " + n.dist + " " + n.prev);
+                ArrayList<Relationship> rels = n.getNeighbor(property_type, this.neo4j);
+
+                if (n.node_id == did) {
+                    break;
+                }
+
+                for (Relationship rel : rels) {
+                    myDijNode next_node = nodelist.get(rel.getOtherNodeId(n.node_id));
+
+                    double old_cost = nodelist.get(n.node_id).dist;
+                    double rel_cost = (double) rel.getProperty(property_type);
+                    double new_cost = old_cost + rel_cost;
+
+                    if (next_node == null) {
+                        next_node = new myDijNode(rel.getOtherNodeId(n.node_id), new_cost, n);
+                        nodelist.put(next_node.node_id, next_node);
+                        if (next_node.inqueue == false) {
+                            dijkstraqueue.add(next_node);
+                        }
+                    } else if (next_node.dist > new_cost) {
+                        next_node.dist = new_cost;
+                        next_node.prev = n;
+                        nodelist.put(next_node.node_id, next_node);
+                        if (next_node.inqueue == false) {
+                            dijkstraqueue.add(next_node);
+                        }
+                    }
+
+
+                }
+            }
+
+            tx.success();
+        }
+        return nodelist.get(did).dist;
+    }
+
+
     private <T> T getRandomNodes(ArrayList<T> nodelist) {
         Random r = new Random();
         int idx = r.nextInt(nodelist.size());
@@ -412,5 +470,80 @@ public class BBSBaselineBusline {
     public void clear() {
         this.results.clear();
         this.monitor.clear();
+    }
+
+
+}
+
+class myDijNode {
+    long node_id;
+    double dist;
+    myDijNode prev;
+    boolean inqueue = false;
+
+    public myDijNode(long node_id, double dist, myDijNode prev) {
+        this.node_id = node_id;
+        this.dist = dist;
+        this.prev = prev;
+    }
+
+    public ArrayList<Relationship> getNeighbor(String property_type, Neo4jDB neo4j) {
+        ArrayList<Relationship> rels = new ArrayList<>();
+        try (Transaction tx = neo4j.graphDB.beginTx()) {
+            Iterator<Relationship> rels_iter = neo4j.graphDB.getNodeById(node_id).getRelationships(Direction.BOTH).iterator();
+            while (rels_iter.hasNext()) {
+                rels.add(rels_iter.next());
+            }
+            tx.success();
+        }
+        return rels;
+    }
+}
+
+class myNodeDijkstraPriorityQueue {
+    PriorityQueue<myDijNode> queue;
+    String propertiy_type;
+
+    public myNodeDijkstraPriorityQueue(String propertiy_type) {
+        myDijComparator mc = new myDijComparator(propertiy_type);
+        this.queue = new PriorityQueue<myDijNode>(1000000, mc);
+        this.propertiy_type = propertiy_type;
+    }
+
+    public boolean add(myDijNode p) {
+        return this.queue.add(p);
+    }
+
+    public int size() {
+        return this.queue.size();
+    }
+
+    public boolean isEmpty() {
+        return this.queue.isEmpty();
+    }
+
+    public myDijNode pop() {
+        return this.queue.poll();
+    }
+
+}
+
+class myDijComparator implements Comparator<myDijNode> {
+    String propertiy_type;
+
+    public myDijComparator(String propertiy_type) {
+        super();
+        this.propertiy_type = propertiy_type;
+
+    }
+
+    public int compare(myDijNode x, myDijNode y) {
+        if (x.dist - y.dist == 0) {
+            return 0;
+        } else if (x.dist - y.dist < 0) {
+            return -1;
+        } else {
+            return 1;
+        }
     }
 }
