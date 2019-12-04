@@ -16,15 +16,13 @@ public class BBSBuslineTest {
     public static void main(String args[]) {
         BBSBuslineTest bbstest = new BBSBuslineTest();
 
-//        bbstest.queries.add(new Pair<>(2198L, 686L));
-//        bbstest.queries.add(new Pair<>(15L, 2870L));
-//        bbstest.queries.add(new Pair<>(1919L, 1871L));
-//        bbstest.queries.add(new Pair<>(1445L, 2205L));
-//        bbstest.queries.add(new Pair<>(2703L, 26L));
-////        bbstest.queries.add(new Pair<>(5068L, 7156L));
-//        bbstest.queries.add(new Pair<>(8415L, 6745L));
+        bbstest.queries.add(new Pair<>(9700L, 3669L));
+        bbstest.queries.add(new Pair<>(9519L, 4502L));
+        bbstest.queries.add(new Pair<>(688L, 4280L));
+        bbstest.queries.add(new Pair<>(4348L, 4087L));
+        bbstest.queries.add(new Pair<>(4816L, 3131L));
 
-        bbstest.generateQueries(5);
+//        bbstest.generateQueries(5);
 
         bbstest.test(true, true);
         System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");

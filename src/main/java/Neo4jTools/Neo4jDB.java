@@ -30,6 +30,7 @@ public class Neo4jDB {
 
     public Neo4jDB(String subDBName) {
         this.DB_PATH = prop.params.get("neo4jdb") + "/" + subDBName + "/databases/graph.db";
+//        this.DB_PATH =  "/home/gqxwolf/neo4j3513/dbfiles/" + subDBName + "/databases/graph.db";
 //        System.out.println(this.DB_PATH);
 
     }

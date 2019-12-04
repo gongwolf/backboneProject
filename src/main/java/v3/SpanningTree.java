@@ -1,5 +1,6 @@
 package v3;
 
+import DataStructure.LinkedList;
 import DataStructure.RedBlackTree;
 import DataStructure.TNode;
 import Neo4jTools.Neo4jDB;
@@ -39,6 +40,7 @@ public class SpanningTree {
     Bag adjList[];
     boolean isSingle = false;
     int insertedEdgesTimes = 0;
+    LinkedList ETtree;
 
 
     public SpanningTree() {
@@ -124,10 +126,10 @@ public class SpanningTree {
         System.out.println("number of rels in sp :" + this.SpTree.size());
         System.out.println("Finished the calling of the KruskalMST() function");
         long start_euler_finding = System.currentTimeMillis();
+        this.ETtree = new LinkedList<RelationshipExt>();
         FindEulerTourStringWiki(level);
         long end_euler_finding = System.currentTimeMillis();
         System.out.println("Finished the calling of the elurtourString() function in " + (end_euler_finding - start_euler_finding)  + " ms");
-
         return null;
     }
 
@@ -194,6 +196,7 @@ public class SpanningTree {
                 RelationshipExt iter_edge = new RelationshipExt(rel, currentEdge.getKey().intValue(), currentEdge.getValue().intValue());
                 TNode<RelationshipExt> node = new TNode<>(et_edge_id, iter_edge);
                 rbtree.insert(node);
+                ETtree.append(iter_edge);
                 updateRelationshipRBPointer(iter_edge, et_edge_id, -1, level);
                 et_edge_id++;
 
