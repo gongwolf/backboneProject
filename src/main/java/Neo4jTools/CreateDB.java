@@ -36,7 +36,7 @@ public class CreateDB {
 //        String nodeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/ny_NodeInfo.txt";
 //        String EdgeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/ny_SegInfo.txt";
 
-        String sub_db_name = "sub_ny_USA_level0";
+        String sub_db_name = "sub_ny_USA_Level0";
         String nodeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/sub_level0_ny_NodeInfo.txt";
         String EdgeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/sub_level0_ny_SegInfo.txt";
 

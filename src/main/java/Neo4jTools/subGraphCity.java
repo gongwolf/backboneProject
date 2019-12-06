@@ -7,7 +7,7 @@ import java.io.*;
 import java.util.*;
 
 public class subGraphCity {
-    String sub_db_name = "ny_USA_level0";
+    String sub_db_name = "ny_USA_Level0";
     String EdgesPath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/sub_level0_ny_SegInfo.txt";
     String NodePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/sub_level0_ny_NodeInfo.txt";
 
@@ -33,10 +33,7 @@ public class subGraphCity {
         int target_graph_size = 10000;
 
         try (Transaction tx = neo4j.graphDB.beginTx()) {
-
-
             ArrayList<Node> nodelist = new ArrayList<>();
-
             ResourceIterable<Node> nodes_iterable = neo4j.graphDB.getAllNodes();
             ResourceIterator<Node> nodes_iter = nodes_iterable.iterator();
             while (nodes_iter.hasNext()) {
@@ -45,15 +42,12 @@ public class subGraphCity {
             }
             tx.success();
 
-            int sizeofinit = 0;
-
             Node first_node = getRondomNodes(nodelist);
-//            Node first_node = neo4j.graphDB.getAllNodes().iterator().next();
 
             Queue<Node> q = new LinkedList<>();
             q.add(first_node);
 
-            System.out.println("Start node ------> " + first_node);
+            System.out.println("Start node ------> [" + first_node + "]  to Run BFS graph traverse");
             nodes.add(first_node.getId());
             while (!q.isEmpty()) {
                 Node n = q.poll();
@@ -68,10 +62,6 @@ public class subGraphCity {
                     if (nodes.contains(rel.getStartNodeId()) && nodes.contains(rel.getEndNodeId())) {
                         edges.add(rel);
                     }
-
-//                    if (nodes.size() % 10000 == 0) {
-//                        System.out.println(nodes.size());
-//                    }
                 }
             }
 

@@ -5,6 +5,7 @@ import DataStructure.ListNode;
 import Neo4jTools.Neo4jDB;
 import configurations.ProgramProperty;
 import javafx.util.Pair;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
@@ -21,8 +22,9 @@ public class SpanningTree {
     String DBPath;
     public ProgramProperty prop = new ProgramProperty();
     int connect_component_number = 0; // number of the connect component found in the graph
-    Relationship[] rels;
-    UFnode unionfind[];
+    //    Relationship[] rels;
+    //    UFnode unionfind[];
+    HashMap<Long, UFnode> unionfind = new HashMap<>();
     //the adjacent list of the spanning tree
     Bag adjList[];
     boolean isSingle = false;
@@ -33,6 +35,8 @@ public class SpanningTree {
     HashMap<Long, ListNode<RelationshipExt>> firstOccurrences = new HashMap();
     HashMap<Long, ListNode<RelationshipExt>> lastOccurrences = new HashMap();
 
+    HashSet<Relationship> hash_rel = new HashSet<>();
+
 
     /**
      * @param neo4j
@@ -42,7 +46,7 @@ public class SpanningTree {
         this.neo4j = neo4j;
         SpTree = new HashSet<>();
         N_nodes = new HashSet<>();
-        ettree=new LinkedList<>();
+        ettree = new LinkedList<>();
 
         if (init) {
             initialization();
@@ -59,7 +63,6 @@ public class SpanningTree {
      */
     private void initialization() {
         this.N_nodes = new HashSet<>();
-        boolean needToCloseDB = false;
 
         if (neo4j == null) {
             DBPath = prop.params.get("neo4jdb");
@@ -68,8 +71,6 @@ public class SpanningTree {
             neo4j = new Neo4jDB(sub_db_name);
             System.out.println("connected to db " + neo4j.DB_PATH);
             neo4j.startDB(false);
-
-            needToCloseDB = true;
         }
 
         System.out.println(neo4j.DB_PATH);
@@ -85,26 +86,21 @@ public class SpanningTree {
         this.connect_component_number = N;
 
 
-        rels = new Relationship[E];
-        unionfind = new UFnode[N];
-        int i = 0;
-        for (; i < N; i++) {
-            UFnode unode = new UFnode(i);
-            unionfind[i] = unode;
-        }
-
-        i = 0;
         try (Transaction tx = neo4j.graphDB.beginTx()) {
+            ResourceIterable<Node> allNodesIterable = neo4j.graphDB.getAllNodes();
+            for (Node n : allNodesIterable) {
+                long node_id = n.getId();
+                UFnode unode = new UFnode(node_id);
+                unionfind.put(node_id, unode);
+            }
+
             ResourceIterable<Relationship> allRelsIterable = neo4j.graphDB.getAllRelationships();
             for (Relationship r : allRelsIterable) {
                 r.setProperty("level", 0); //initialize the edge level to be 0
-                long rel_id = r.getId();
-                rels[(int) rel_id] = r;
-                i++;
+                hash_rel.add(r);
             }
             tx.success();
         }
-//        this.ettree = new LinkedList<>();
     }
 
     public String EulerTourStringWiki(int level) {
@@ -118,6 +114,7 @@ public class SpanningTree {
         long end_euler_finding = System.currentTimeMillis();
         System.out.println("There are " + this.ettree.n + " extended Relationship in the linked list et tree");
         System.out.println("Finished the calling of the elurtourString() function in " + (end_euler_finding - start_euler_finding) + " ms");
+        System.out.println("======================================================================================");
         return null;
     }
 
@@ -129,13 +126,16 @@ public class SpanningTree {
     public void KruskalMST() {
         SpTree = new HashSet<>();
         int e = 0;
-        int i = 0;
-        while (e < N - 1) {
-            Relationship rel = rels[i++]; //scan each edge
-            int src_id = (int) rel.getStartNodeId();
-            int dest_id = (int) rel.getEndNodeId();
-            int src_root = find(src_id);
-            int dest_root = find(dest_id);
+//        int i = 0;
+        Iterator<Relationship> rel_iterator = hash_rel.iterator();
+
+        while (e < N - 1 && rel_iterator.hasNext()) {
+//            Relationship rel = rels[i++]; //scan each edge
+            Relationship rel = rel_iterator.next();
+            long src_id = rel.getStartNodeId();
+            long dest_id = rel.getEndNodeId();
+            long src_root = find(src_id);
+            long dest_root = find(dest_id);
             if (src_root != dest_root) {
                 SpTree.add(rel.getId());
                 updateNodesIDInformation(rel);
@@ -169,17 +169,17 @@ public class SpanningTree {
      * @param src_root  the root of src node in UF structure
      * @param dest_root the root of dest node in UF structure
      */
-    private void union(int src_root, int dest_root) {
-        if (unionfind[src_root].rank < unionfind[dest_root].rank) {
-            unionfind[src_root].parentID = dest_root;
-            unionfind[dest_root].size += unionfind[src_root].size;
-        } else if (unionfind[src_root].rank > unionfind[dest_root].rank) {
-            unionfind[dest_root].parentID = src_root;
-            unionfind[src_root].size += unionfind[dest_root].size;
+    private void union(long src_root, long dest_root) {
+        if (unionfind.get(src_root).rank < unionfind.get(dest_root).rank) {
+            unionfind.get(src_root).parentID = dest_root;
+            unionfind.get(dest_root).size += unionfind.get(src_root).size;
+        } else if (unionfind.get(src_root).rank > unionfind.get(dest_root).rank) {
+            unionfind.get(dest_root).parentID = src_root;
+            unionfind.get(src_root).size += unionfind.get(dest_root).size;
         } else {
-            unionfind[dest_root].parentID = src_root;
-            unionfind[src_root].rank++;
-            unionfind[src_root].size += unionfind[dest_root].size;
+            unionfind.get(dest_root).parentID = src_root;
+            unionfind.get(src_root).rank++;
+            unionfind.get(src_root).size += unionfind.get(dest_root).size;
         }
     }
 
@@ -189,9 +189,9 @@ public class SpanningTree {
      * @param src_id the node id
      * @return the root id of src_id
      */
-    private int find(int src_id) {
-        while (unionfind[src_id].parentID != src_id) {
-            src_id = unionfind[src_id].parentID;
+    private long find(long src_id) {
+        while (unionfind.get(src_id).parentID != src_id) {
+            src_id = unionfind.get(src_id).parentID;
         }
         return src_id;
     }
@@ -276,10 +276,6 @@ public class SpanningTree {
     }
 
 
-    public boolean hasEdge(Relationship r) {
-        return this.SpTree.contains(r.getId());
-    }
-
     public void split(Relationship r, SpanningTree[] splittedTrees) {
         SpanningTree left_sub_tree = splittedTrees[0];
         SpanningTree right_sub_tree = splittedTrees[1];
@@ -291,13 +287,20 @@ public class SpanningTree {
         boolean middle_tree_empty = (f_p.next == l_p && l_p.prev == f_p);
         boolean right_tree_empty = (this.ettree.tail == l_p);
 
-        if (left_tree_empty && middle_tree_empty && right_tree_empty) {
-            left_sub_tree.initializedAsSingleTree(r.getStartNodeId());
-            right_sub_tree.initializedAsSingleTree(r.getEndNodeId());
-        } else if (!left_tree_empty && middle_tree_empty && !right_tree_empty) {
-            right_sub_tree.initializedAsSingleTree(f_p.data.end_id);
-        }
+        System.out.println(left_tree_empty + "  " + middle_tree_empty + "  " + right_tree_empty);
 
+//        if (left_tree_empty && middle_tree_empty && right_tree_empty) {
+//            left_sub_tree.initializedAsSingleTree(r.getStartNodeId());
+//            right_sub_tree.initializedAsSingleTree(r.getEndNodeId());
+//        } else if (!left_tree_empty && middle_tree_empty && !right_tree_empty) {
+//            right_sub_tree.initializedAsSingleTree(f_p.data.end_id);
+//        }
+
+    }
+
+
+    public boolean hasEdge(Relationship r) {
+        return this.SpTree.contains(r.getId());
     }
 
     public void initializedAsSingleTree(long nodeid) {
@@ -312,12 +315,12 @@ public class SpanningTree {
 }
 
 class UFnode {
-    int parentID;
-    int nodeID;
+    long parentID;
+    long nodeID;
     int rank;
     int size; //size of the subtree, include current node;
 
-    public UFnode(int nodeID) {
+    public UFnode(long nodeID) {
         this.nodeID = nodeID;
         this.parentID = nodeID;
         this.rank = 0;
