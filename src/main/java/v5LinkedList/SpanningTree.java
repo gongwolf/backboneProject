@@ -2,6 +2,7 @@ package v5LinkedList;
 
 import DataStructure.LinkedList;
 import DataStructure.ListNode;
+import DataStructure.RelationshipExt;
 import Neo4jTools.Neo4jDB;
 import configurations.ProgramProperty;
 import javafx.util.Pair;
@@ -11,7 +12,6 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 
 import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class SpanningTree {
     public Neo4jDB neo4j = null;
@@ -276,6 +276,7 @@ public class SpanningTree {
     }
 
 
+    //Todo: Do merge the left and the right sub-tree, return trees of the tree, find the replacement edge in (left and right) together vs middle tree. So, it will not change the structure of the tree before finding a replacement edge.
     public void split(Relationship r, SpanningTree[] splittedTrees) {
         SpanningTree left_sub_tree = splittedTrees[0];
         SpanningTree right_sub_tree = splittedTrees[1];
@@ -289,13 +290,83 @@ public class SpanningTree {
 
         System.out.println(left_tree_empty + "  " + middle_tree_empty + "  " + right_tree_empty);
 
-//        if (left_tree_empty && middle_tree_empty && right_tree_empty) {
-//            left_sub_tree.initializedAsSingleTree(r.getStartNodeId());
-//            right_sub_tree.initializedAsSingleTree(r.getEndNodeId());
-//        } else if (!left_tree_empty && middle_tree_empty && !right_tree_empty) {
-//            right_sub_tree.initializedAsSingleTree(f_p.data.end_id);
-//        }
+        if (left_tree_empty && middle_tree_empty && right_tree_empty) {
+            left_sub_tree.initializedAsSingleTree(r.getStartNodeId());
+            right_sub_tree.initializedAsSingleTree(r.getEndNodeId());
+        } else if (!left_tree_empty && middle_tree_empty && !right_tree_empty) {
+            //Todo: Create a spanning tree for the middle sub_tree
+            right_sub_tree.initializedAsSingleTree(f_p.data.end_id);
+        } else if(left_tree_empty && !middle_tree_empty && left_tree_empty){
+            //Todo: Create a spanning tree for the middle sub_tree
+            right_sub_tree.initializedAsSingleTree(f_p.data.start_id);
+        } else if(middle_tree_empty){
+            if(!left_tree_empty && right_tree_empty){
 
+            }else if(left_tree_empty && !right_tree_empty){
+
+            }
+        } else if (!middle_tree_empty){
+            if(!left_tree_empty && right_tree_empty){
+
+            }else if(left_tree_empty && !right_tree_empty){
+
+            }else if(!left_tree_empty && !right_tree_empty){
+                /**
+                 *  current ET tree structure will be changed after those two sub-tree are created.
+                 */
+                left_sub_tree.ettree.head = this.ettree.head;
+                left_sub_tree.ettree.tail = this.ettree.tail;
+                f_p.prev.next = l_p.next;
+                l_p.next.prev = f_p.prev;
+                left_sub_tree.etTreeUpdateInformation();
+
+                right_sub_tree.ettree.head = f_p.next;
+                right_sub_tree.ettree.tail = l_p.prev;
+                right_sub_tree.etTreeUpdateInformation();
+
+                System.out.println("@@@@@ "+this.ettree.n+" = "+left_sub_tree.ettree.n+" + "+right_sub_tree.ettree.n+" + 2 ? "+((left_sub_tree.ettree.n+right_sub_tree.ettree.n+2)==this.ettree.n));
+            }
+        }
+
+    }
+
+    private void etTreeUpdateInformation() {
+        int counter = 0;
+        if (!ettree.isEmpty()) {
+            ListNode<RelationshipExt> current = ettree.head;
+            while (current != ettree.tail) {
+
+                long edge_id = current.data.relationship.getId();
+
+                this.SpTree.add(edge_id);
+                this.N_nodes.add(current.data.relationship.getStartNodeId());
+                this.N_nodes.add(current.data.relationship.getEndNodeId());
+
+                if (this.firstOccurrences.containsKey(current.data.relationship.getId())) {
+                    this.lastOccurrences.put(edge_id, current);
+                } else {
+                    this.firstOccurrences.put(edge_id, current);
+                }
+
+                current = current.next;
+                counter++;
+            }
+            counter++;
+
+            long edge_id = current.data.relationship.getId();
+            this.SpTree.add(edge_id);
+            this.N_nodes.add(current.data.relationship.getStartNodeId());
+            this.N_nodes.add(current.data.relationship.getEndNodeId());
+            this.E = SpTree.size();
+            this.N = N_nodes.size();
+            if (this.firstOccurrences.containsKey(current.data.relationship.getId())) {
+                this.lastOccurrences.put(edge_id, current);
+            } else {
+                this.firstOccurrences.put(edge_id, current);
+            }
+        }
+
+        ettree.n = counter;
     }
 
 

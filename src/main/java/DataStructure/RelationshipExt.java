@@ -1,14 +1,14 @@
-package v5LinkedList;
+package DataStructure;
 
 import org.neo4j.graphdb.Relationship;
 
 public class RelationshipExt {
     public long rel_id;
-    boolean visited;
-    Relationship relationship;
-    int level;
-    int start_id;
-    int end_id;
+    public boolean visited;
+    public Relationship relationship;
+    public int level;
+    public int start_id;
+    public int end_id;
 
     public RelationshipExt(){
 

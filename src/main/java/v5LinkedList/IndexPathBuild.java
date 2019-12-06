@@ -242,7 +242,7 @@ public class IndexPathBuild {
         System.out.println("#####");
 
 
-//        boolean deleted = removeLowerDegreePairEdgesByThreshold(threshold_p, threshold_t, deletedNodes, deletedEdges);
+        boolean deleted = removeLowerDegreePairEdgesByThreshold(threshold_p, threshold_t, deletedNodes, deletedEdges);
 //        System.out.println("Removing the edges in level " + currentLevel + "  with degree threshold  : " + threshold_p);
 
 //        getDegreePairs();

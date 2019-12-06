@@ -43,18 +43,19 @@ public class LinkedList<T> {
         return head == null && tail == null;
     }
 
-    public void updateNumber() {
-        int counter = 0;
+    public void createNewCopy() {
+        this.head = this.tail = null;
         if (!isEmpty()) {
             ListNode<T> current = head;
             while (current != tail) {
+                ListNode<T> node = new ListNode<T>(current.data);
+                this.append(node);
                 current = current.next;
-                counter++;
             }
-            counter++;
-        }
 
-        this.n = counter;
+            ListNode<T> node = new ListNode<T>(current.data);
+            this.append(node);
+        }
     }
 }
 
