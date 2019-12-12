@@ -3,32 +3,26 @@ package v5LinkedList;
 import DataStructure.LinkedList;
 import DataStructure.ListNode;
 import DataStructure.RelationshipExt;
+import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
 import configurations.ProgramProperty;
 import javafx.util.Pair;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
 
 import java.util.*;
 
 public class SpanningTree {
     public Neo4jDB neo4j = null;
-    public HashSet<Long> SpTree; // the id of edges that belongs to the Spanning tree
+    public HashSet<Long> SpTree; // the id of the edges that belongs to the Spanning tree
     public HashSet<Long> N_nodes; // the id of the nodes in the spanning tree, its same as the nodes of the graph
     int E = 0; // number of edges
     int N = 0; // number of nodes
     String DBPath;
     public ProgramProperty prop = new ProgramProperty();
     int connect_component_number = 0; // number of the connect component found in the graph
-    //    Relationship[] rels;
-    //    UFnode unionfind[];
     HashMap<Long, UFnode> unionfind = new HashMap<>();
-    //the adjacent list of the spanning tree
-    Bag adjList[];
     boolean isSingle = false;
-    int insertedEdgesTimes = 0;
+    boolean isEmpty = false;
 
     LinkedList<RelationshipExt> ettree;
 
@@ -277,9 +271,13 @@ public class SpanningTree {
 
 
     //Todo: Do merge the left and the right sub-tree, return trees of the tree, find the replacement edge in (left and right) together vs middle tree. So, it will not change the structure of the tree before finding a replacement edge.
-    public void split(Relationship r, SpanningTree[] splittedTrees) {
+    public int split(Relationship r, SpanningTree[] splittedTrees) {
+
+        int case_number = -1;
+
         SpanningTree left_sub_tree = splittedTrees[0];
-        SpanningTree right_sub_tree = splittedTrees[1];
+        SpanningTree middle_sub_tree = splittedTrees[1];
+        SpanningTree right_sub_tree = splittedTrees[2];
 
         ListNode<RelationshipExt> f_p = firstOccurrences.get(r.getId());
         ListNode<RelationshipExt> l_p = lastOccurrences.get(r.getId());
@@ -288,49 +286,112 @@ public class SpanningTree {
         boolean middle_tree_empty = (f_p.next == l_p && l_p.prev == f_p);
         boolean right_tree_empty = (this.ettree.tail == l_p);
 
-        System.out.println(left_tree_empty + "  " + middle_tree_empty + "  " + right_tree_empty);
+        System.out.println("left tree empty ? " + left_tree_empty + ", middle tree empty ? " + middle_tree_empty + ", right tree empty ? " + right_tree_empty);
 
         if (left_tree_empty && middle_tree_empty && right_tree_empty) {
+
             left_sub_tree.initializedAsSingleTree(r.getStartNodeId());
-            right_sub_tree.initializedAsSingleTree(r.getEndNodeId());
+            middle_sub_tree.initializedAsSingleTree(r.getEndNodeId());
+            right_sub_tree.initializedAsEmptyTree();
+
+            case_number = 1;
+
         } else if (!left_tree_empty && middle_tree_empty && !right_tree_empty) {
-            //Todo: Create a spanning tree for the middle sub_tree
-            right_sub_tree.initializedAsSingleTree(f_p.data.end_id);
-        } else if(left_tree_empty && !middle_tree_empty && left_tree_empty){
-            //Todo: Create a spanning tree for the middle sub_tree
-            right_sub_tree.initializedAsSingleTree(f_p.data.start_id);
-        } else if(middle_tree_empty){
-            if(!left_tree_empty && right_tree_empty){
+            left_sub_tree.ettree.head = this.ettree.head;
+            left_sub_tree.ettree.tail = f_p.prev;
+            left_sub_tree.etTreeUpdateInformation();
 
-            }else if(left_tree_empty && !right_tree_empty){
+            middle_sub_tree.initializedAsSingleTree(f_p.data.end_id);
 
-            }
-        } else if (!middle_tree_empty){
-            if(!left_tree_empty && right_tree_empty){
+            right_sub_tree.ettree.head = l_p.next;
+            right_sub_tree.ettree.tail = this.ettree.tail;
+            right_sub_tree.etTreeUpdateInformation();
 
-            }else if(left_tree_empty && !right_tree_empty){
+            case_number = 2;
+        } else if (left_tree_empty && !middle_tree_empty && left_tree_empty) {
+            left_sub_tree.initializedAsSingleTree(f_p.data.start_id);
 
-            }else if(!left_tree_empty && !right_tree_empty){
-                /**
-                 *  current ET tree structure will be changed after those two sub-tree are created.
-                 */
+            middle_sub_tree.ettree.head = f_p.next;
+            middle_sub_tree.ettree.tail = l_p.prev;
+            middle_sub_tree.etTreeUpdateInformation();
+
+            right_sub_tree.initializedAsEmptyTree();
+
+            case_number = 3;
+
+        } else if (middle_tree_empty) {
+            if (!left_tree_empty && right_tree_empty) {
                 left_sub_tree.ettree.head = this.ettree.head;
-                left_sub_tree.ettree.tail = this.ettree.tail;
-                f_p.prev.next = l_p.next;
-                l_p.next.prev = f_p.prev;
+                left_sub_tree.ettree.tail = f_p.prev;
                 left_sub_tree.etTreeUpdateInformation();
 
-                right_sub_tree.ettree.head = f_p.next;
-                right_sub_tree.ettree.tail = l_p.prev;
+                middle_sub_tree.initializedAsSingleTree(f_p.data.end_id);
+
+                right_sub_tree.initializedAsEmptyTree();
+
+                case_number = 4;
+
+            } else if (left_tree_empty && !right_tree_empty) {
+                left_sub_tree.initializedAsEmptyTree();
+
+                middle_sub_tree.initializedAsSingleTree(f_p.data.start_id);
+
+                right_sub_tree.ettree.head = l_p.next;
+                right_sub_tree.ettree.tail = this.ettree.tail;
                 right_sub_tree.etTreeUpdateInformation();
 
-                System.out.println("@@@@@ "+this.ettree.n+" = "+left_sub_tree.ettree.n+" + "+right_sub_tree.ettree.n+" + 2 ? "+((left_sub_tree.ettree.n+right_sub_tree.ettree.n+2)==this.ettree.n));
+                case_number = 5;
+            }
+        } else if (!middle_tree_empty) {
+
+            middle_sub_tree.ettree.head = f_p.next;
+            middle_sub_tree.ettree.tail = l_p.prev;
+            middle_sub_tree.etTreeUpdateInformation();
+
+            if (!left_tree_empty && right_tree_empty) {
+                left_sub_tree.ettree.head = this.ettree.head;
+                left_sub_tree.ettree.tail = f_p.prev;
+                left_sub_tree.etTreeUpdateInformation();
+
+                right_sub_tree.initializedAsEmptyTree();
+
+                case_number = 6;
+
+            } else if (left_tree_empty && !right_tree_empty) {
+                left_sub_tree.initializedAsEmptyTree();
+
+                right_sub_tree.ettree.head = l_p.next;
+                right_sub_tree.ettree.tail = this.ettree.tail;
+                right_sub_tree.etTreeUpdateInformation();
+
+                case_number = 7;
+
+            } else if (!left_tree_empty && !right_tree_empty) {
+                left_sub_tree.ettree.head = this.ettree.head;
+                left_sub_tree.ettree.tail = f_p.prev;
+                left_sub_tree.etTreeUpdateInformation();
+
+                right_sub_tree.ettree.head = l_p.next;
+                right_sub_tree.ettree.tail = this.ettree.tail;
+                right_sub_tree.etTreeUpdateInformation();
+
+                case_number = 8;
             }
         }
-
+        return case_number;
     }
 
-    private void etTreeUpdateInformation() {
+    private void initializedAsEmptyTree() {
+        this.N_nodes.clear();
+        this.SpTree.clear();
+        this.N = 0;
+        this.E = 0;
+        this.isSingle = false;
+        this.isEmpty = true;
+    }
+
+    //Todo: the performance can be improved, for example, used the original spanning tree information to update the splitted trees.
+    public void etTreeUpdateInformation() {
         int counter = 0;
         if (!ettree.isEmpty()) {
             ListNode<RelationshipExt> current = ettree.head;
@@ -359,6 +420,7 @@ public class SpanningTree {
             this.N_nodes.add(current.data.relationship.getEndNodeId());
             this.E = SpTree.size();
             this.N = N_nodes.size();
+
             if (this.firstOccurrences.containsKey(current.data.relationship.getId())) {
                 this.lastOccurrences.put(edge_id, current);
             } else {
@@ -381,7 +443,81 @@ public class SpanningTree {
         this.N = 1;
         this.E = 0;
         this.isSingle = true;
+        this.ettree = new LinkedList<>();
 
+    }
+
+    public void increaseEdgeLevel() {
+        try (Transaction tx = this.neo4j.graphDB.beginTx()) {
+            for (long rel_id : SpTree) {
+                Relationship rel = this.neo4j.graphDB.getRelationshipById(rel_id);
+                int c_level = (int) rel.getProperty("level");
+                rel.setProperty("level", c_level + 1);
+            }
+            tx.success();
+        }
+    }
+
+    /**
+     * Find one relationship with given level to connect current spanning tree with another spanning tree.
+     *
+     * @param other_tree another spanning tree
+     * @param level      given level
+     * @return the replacement edge, if can not find, return null.
+     */
+    public Relationship findReplacementEdge(SpanningTree other_tree, int level, Relationship del) {
+        if (other_tree.isEmpty) {
+            return null;
+        }
+
+        //Todo: Maybe can remove this condition
+        Relationship rel = null;
+        if (other_tree.isSingle) {
+            try (Transaction tx = this.neo4j.graphDB.beginTx()) {
+                long single_node_id = other_tree.N_nodes.iterator().next();
+                Iterator<Relationship> rels_iter = this.neo4j.graphDB.getNodeById(single_node_id).getRelationships(Line.Linked, Direction.BOTH).iterator();
+                while (rels_iter.hasNext()) {
+                    Relationship next_rel = rels_iter.next();
+                    int edge_level = (int) next_rel.getProperty("level");
+                    if (edge_level == level && next_rel.getId() != del.getId()) {
+                        if (this.N_nodes.contains(next_rel.getOtherNodeId(single_node_id))) {
+                            rel = next_rel;
+                            return rel;
+                        } else {
+                            next_rel.setProperty("level", edge_level + 1); //Increase the edge level by 1
+                        }
+                    }
+                }
+                tx.success();
+            }
+        } else {
+            try (Transaction tx = this.neo4j.graphDB.beginTx()) {
+                for (long node_id : N_nodes) {
+                    Node n = this.neo4j.graphDB.getNodeById(node_id);
+                    Iterator<Relationship> rels_iter = n.getRelationships(Line.Linked, Direction.BOTH).iterator();
+                    while (rels_iter.hasNext()) {
+                        Relationship next_rel = rels_iter.next();
+                        int edge_level = (int) next_rel.getProperty("level");
+                        if (edge_level == level && next_rel.getId() != del.getId()) {
+                            if (other_tree.N_nodes.contains(next_rel.getOtherNodeId(node_id))) {
+                                rel = next_rel;
+                                return rel;
+                            } else {
+                                next_rel.setProperty("level", edge_level + 1); //Increase the edge level by 1
+                            }
+                        }
+                    }
+                }
+                tx.success();
+            }
+        }
+        return rel;
+    }
+
+    public void reroot(long startNodeId) {
+    }
+
+    public void removeEdge(long id) {
     }
 }
 

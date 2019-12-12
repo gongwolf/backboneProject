@@ -22,4 +22,16 @@ public class SpanningForests {
         return null;
     }
 
+    public int findTreeIndex(Relationship r) {
+        for (int index = 0; index < trees.size(); index++) {
+            if (trees.get(index).hasEdge(r)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+
+    public void putNewSpanningTree(SpanningTree middle_sub_tree) {
+    }
 }
