@@ -1,5 +1,7 @@
 package v5LinkedList;
 
+import DataStructure.ListNode;
+import DataStructure.RelationshipExt;
 import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
 import org.neo4j.graphdb.Direction;
@@ -10,6 +12,7 @@ import org.neo4j.graphdb.Transaction;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 
 public class DynamicForests {
 
@@ -71,7 +74,7 @@ public class DynamicForests {
             System.out.println("##### " + sp_tree.ettree.n + " = " + splittedTrees[0].ettree.n + " + " + splittedTrees[1].ettree.n + " + " + splittedTrees[2].ettree.n + " + 2 ? "
                     + ((splittedTrees[0].ettree.n + splittedTrees[1].ettree.n + splittedTrees[2].ettree.n + 2) == sp_tree.ettree.n));
 
-            int case_number = sp_tree.split(r, splittedTrees);
+            sp_tree.split(r, splittedTrees);
             SpanningTree left_sub_tree = splittedTrees[0];
             SpanningTree middle_sub_tree = splittedTrees[1];
             SpanningTree right_sub_tree = splittedTrees[2];
@@ -88,6 +91,7 @@ public class DynamicForests {
 
             /** If a replacement edge is found, jump out the loop **/
             if (rel != null) {
+                System.out.println("Find the replacement edge at level " +l);
                 break;
             }
         }
@@ -131,21 +135,43 @@ public class DynamicForests {
             SpanningTree left_tree = splittedTrees[0];
             SpanningTree middle_tree = splittedTrees[1];
             SpanningTree right_tree = splittedTrees[2];
+            System.out.println("##### " + left_tree.N + "  " + middle_tree.N + "   " + right_tree.N);
+            for(Map.Entry<Long, ListNode<RelationshipExt>> id:middle_tree.firstOccurrences.entrySet()){
+                System.out.println(id.getKey()+"   "+id.getValue().data);
+            }
+            middle_tree.printETTree();
 
-            sp_tree.removeEdge(deleted_rel.getId()); //Todo: Implement it
+            sp_tree.removeEdge(deleted_rel.getId(), case_number); //Todo: implement it
             right_tree = combineSpanningTree(left_tree, right_tree, case_number);
 
+            /** when l >= level_replacement, only needs to delete the del_rel (because replace_edge in lower forests)
+             *  else, delete and replace with the replacement edge.
+             */
             if (l <= level_replacement) {
-                middle_tree.reroot(replacement_rel.getStartNodeId());//Todo: implement it
-                right_tree.reroot(replacement_rel.getEndNodeId());
+                long mid_new_root_id = (middle_tree.N_nodes.contains(replacement_rel.getStartNodeId()))?replacement_rel.getStartNodeId():replacement_rel.getEndNodeId();
+                long right_new_root_id = (right_tree.N_nodes.contains(replacement_rel.getStartNodeId()))?replacement_rel.getStartNodeId():replacement_rel.getEndNodeId();
 
-                connectTwoTreeByRel(middle_tree, right_tree, replacement_rel); //Todo: implement it
+                System.out.println("new root: "+mid_new_root_id+"  "+right_new_root_id);
+                middle_tree.reroot(mid_new_root_id);
+                right_tree.reroot(right_new_root_id);
+                connectTwoTreeByRel(middle_tree, right_tree, replacement_rel);
+                this.dforests.get(l).trees.add(middle_tree);
+            }else {
+                this.dforests.get(l).trees.add(middle_tree);
+                this.dforests.get(l).trees.add(right_tree);
             }
-
         }
     }
 
     private void connectTwoTreeByRel(SpanningTree middle_tree, SpanningTree right_tree, Relationship replacement_rel) {
+        int middle_tree_root_id = middle_tree.ettree.head.data.start_id;
+        int right_tree_root_id = middle_tree.ettree.head.data.start_id;
+        middle_tree.ettree.tail.next = right_tree.ettree.head;
+        right_tree.ettree.head.prev = middle_tree.ettree.tail;
+        RelationshipExt iter_edge = new RelationshipExt(replacement_rel, right_tree_root_id, middle_tree_root_id); // new edge back from the root of the right_tree to middle_tree
+        ListNode<RelationshipExt> node = new ListNode<>(iter_edge);
+        middle_tree.ettree.append(node);
+        middle_tree.etTreeUpdateInformation();
     }
 
     private Relationship findReplacementEdge(SpanningTree middle_sub_tree, int l, Relationship r, HashSet<Long> combine_nodes_list) {
@@ -159,6 +185,8 @@ public class DynamicForests {
                 upper_forests = new SpanningForests(l + 1);
             }
 
+            //Todo: Combine the left and right tree and push to higher level
+
         } else { // find the replacement induce to the middle tree
             SpanningForests upper_forests = this.dforests.get(l + 1);
             if (upper_forests == null) {
@@ -167,9 +195,10 @@ public class DynamicForests {
             }
 
             middle_sub_tree.ettree.createNewCopy();
+            middle_sub_tree.etTreeUpdateInformation();
             middle_sub_tree.increaseEdgeLevel();
 
-            upper_forests.putNewSpanningTree(middle_sub_tree); //Todo: Merge with existed tree in l+1 level
+            upper_forests.putNewSpanningTree(middle_sub_tree);
 
             rel = findReplacementEdgeByNodes(middle_sub_tree.N_nodes, combine_nodes_list, l, r, middle_sub_tree.neo4j);
 
@@ -180,7 +209,6 @@ public class DynamicForests {
             int upper_level = l + 1;
             this.dforests.put(upper_level, upper_forests);
         }
-
         return rel;
     }
 

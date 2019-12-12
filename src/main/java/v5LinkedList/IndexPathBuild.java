@@ -375,6 +375,7 @@ public class IndexPathBuild {
     }
 
     private boolean deleteEdge(Relationship r, Neo4jDB neo4j, HashSet<Long> deletedNodes) {
+        System.out.println("~~~~~ deleted the edge "+r);
         this.dforests.deleteEdge(r, neo4j);
         return false;
     }

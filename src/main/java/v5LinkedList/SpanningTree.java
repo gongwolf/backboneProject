@@ -104,7 +104,7 @@ public class SpanningTree {
         System.out.println("number of rels in sp :" + this.SpTree.size());
         System.out.println("Finished the calling of the KruskalMST() function");
         long start_euler_finding = System.currentTimeMillis();
-        FindEulerTourStringWiki(level);
+        FindEulerTourStringWiki();
         long end_euler_finding = System.currentTimeMillis();
         System.out.println("There are " + this.ettree.n + " extended Relationship in the linked list et tree");
         System.out.println("Finished the calling of the elurtourString() function in " + (end_euler_finding - start_euler_finding) + " ms");
@@ -191,7 +191,7 @@ public class SpanningTree {
     }
 
 
-    private void FindEulerTourStringWiki(int level) {
+    public void FindEulerTourStringWiki() {
         HashMap<Pair<Long, Long>, Long> edge_id_mapping_List = new HashMap<>();
         List<Pair<Long, Long>> edgeList;
         Comparator<Pair<Long, Long>> valueComparator = (o1, o2) -> {
@@ -514,11 +514,34 @@ public class SpanningTree {
         return rel;
     }
 
-    public void reroot(long startNodeId) {
+    public void reroot(long new_root_id) {
+        //Todo: Find the first occrurrence of the edge start with the node
+        ListNode<RelationshipExt> f_p = firstOccurrences.get(new_root_id);
+        System.out.println(f_p.data);
+        this.ettree.tail.next = this.ettree.head;
+        this.ettree.head.prev = this.ettree.tail;
+        this.ettree.tail = f_p.prev;
+        this.ettree.head = f_p;
+        //Todo: head.prev = null and tail.next = null
     }
 
-    public void removeEdge(long id) {
+    public void removeEdge(long deleted_id, int case_number) {
+        this.SpTree.remove(deleted_id);
     }
+
+
+    public void printETTree() {
+        if (!ettree.isEmpty()) {
+            ListNode<RelationshipExt> current = ettree.head;
+            while (current != ettree.tail) {
+                System.out.println(current.data);
+                current = current.next;
+            }
+            System.out.println(current.data);
+        }
+
+    }
+
 }
 
 class UFnode {
