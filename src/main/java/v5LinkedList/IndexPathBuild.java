@@ -352,9 +352,7 @@ public class IndexPathBuild {
                     for (long rel : dp.getValue()) {
                         Relationship r = graphdb.getRelationshipById(rel);
 
-                        boolean flag = deleteEdge(r, neo4j, deletedNodes);
-
-                        System.exit(0);
+                        boolean flag = deleteEdge(r, deletedNodes);
 
                         if (flag) {
                             deletedEdges.add(r.getId());
@@ -374,10 +372,18 @@ public class IndexPathBuild {
         return deleted;
     }
 
-    private boolean deleteEdge(Relationship r, Neo4jDB neo4j, HashSet<Long> deletedNodes) {
-        System.out.println("~~~~~ deleted the edge "+r);
-        this.dforests.deleteEdge(r, neo4j);
-        return false;
+    private boolean deleteEdge(Relationship r, HashSet<Long> deletedNodes) {
+        System.out.println("~~~~~ deleted the edge " + r);
+        boolean canBeDeleted = false;
+        if (dforests.isTreeEdge(r.getId())) {
+            canBeDeleted = this.dforests.deleteEdge(r);
+        } else {
+            deleteRelationshipFromDB(r, deletedNodes);
+            canBeDeleted = true;
+        }
+
+        System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+        return canBeDeleted;
     }
 
     private void updateNeb4jConnectorInDynamicForests() {

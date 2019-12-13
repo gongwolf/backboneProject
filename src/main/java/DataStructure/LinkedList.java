@@ -47,10 +47,11 @@ public class LinkedList<T> {
      * Create a new copy of the et representation of et-tree
      */
     public void createNewCopy() {
-        this.head = this.tail = null;
         if (!isEmpty()) {
             ListNode<T> current = head;
-            while (current != tail) {
+            ListNode<T> dummy_tail = tail;
+            head = tail = null;
+            while (current != dummy_tail) {
                 ListNode<T> node = new ListNode<T>(current.data);
                 this.append(node);
                 current = current.next;

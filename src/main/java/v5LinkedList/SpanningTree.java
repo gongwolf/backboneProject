@@ -29,6 +29,9 @@ public class SpanningTree {
     HashMap<Long, ListNode<RelationshipExt>> firstOccurrences = new HashMap();
     HashMap<Long, ListNode<RelationshipExt>> lastOccurrences = new HashMap();
 
+    HashMap<Long, ListNode<RelationshipExt>> nodeFirstOccurrences = new HashMap<>();
+    HashMap<Long, ListNode<RelationshipExt>> nodeLastOccurrences = new HashMap<>();
+
     HashSet<Relationship> hash_rel = new HashSet<>();
 
 
@@ -72,8 +75,8 @@ public class SpanningTree {
         long en = neo4j.getNumberofEdges();
         System.out.println("number of nodes :" + nn + "   number of edges :" + en);
 
-        this.E = (int) en;
         this.N = (int) nn;
+        this.E = (int) (nn-1);
 
         // At the beginning, the number of connected components is the number of nodes.
         // Each node is a connected component.
@@ -193,7 +196,7 @@ public class SpanningTree {
 
     public void FindEulerTourStringWiki() {
         HashMap<Pair<Long, Long>, Long> edge_id_mapping_List = new HashMap<>();
-        List<Pair<Long, Long>> edgeList;
+        List<Pair<Long, Long>> edgeList; //sorted <start_node_id, end_node_id> mapping to the relation id
         Comparator<Pair<Long, Long>> valueComparator = (o1, o2) -> {
             if (o1.getKey() == o2.getKey()) {
                 return (int) (o1.getValue() - o2.getValue());
@@ -256,6 +259,11 @@ public class SpanningTree {
                     this.firstOccurrences.put(rel.getId(), node);
                 }
 
+                if (this.nodeFirstOccurrences.containsKey(currentEdge.getKey())) {
+                    this.nodeLastOccurrences.put(currentEdge.getKey(), node);
+                } else {
+                    this.nodeFirstOccurrences.put(currentEdge.getKey(), node);
+                }
 
                 Pair<Long, Long> reverse = new Pair<>(currentEdge.getValue(), currentEdge.getKey());
                 if (next.containsKey(reverse)) {
@@ -270,7 +278,6 @@ public class SpanningTree {
     }
 
 
-    //Todo: Do merge the left and the right sub-tree, return trees of the tree, find the replacement edge in (left and right) together vs middle tree. So, it will not change the structure of the tree before finding a replacement edge.
     public int split(Relationship r, SpanningTree[] splittedTrees) {
 
         int case_number = -1;
@@ -392,12 +399,18 @@ public class SpanningTree {
 
     //Todo: the performance can be improved, for example, used the original spanning tree information to update the splitted trees.
     public void etTreeUpdateInformation() {
+        this.nodeFirstOccurrences.clear();
+        this.nodeLastOccurrences.clear();
+        this.firstOccurrences.clear();
+        this.lastOccurrences.clear();
+
         int counter = 0;
         if (!ettree.isEmpty()) {
             ListNode<RelationshipExt> current = ettree.head;
             while (current != ettree.tail) {
 
                 long edge_id = current.data.relationship.getId();
+                long start_node_id = current.data.start_id;
 
                 this.SpTree.add(edge_id);
                 this.N_nodes.add(current.data.relationship.getStartNodeId());
@@ -409,6 +422,12 @@ public class SpanningTree {
                     this.firstOccurrences.put(edge_id, current);
                 }
 
+                if (this.nodeFirstOccurrences.containsKey(start_node_id)) {
+                    this.nodeLastOccurrences.put(start_node_id, current);
+                } else {
+                    this.nodeFirstOccurrences.put(start_node_id, current);
+                }
+
                 current = current.next;
                 counter++;
             }
@@ -418,6 +437,8 @@ public class SpanningTree {
             this.SpTree.add(edge_id);
             this.N_nodes.add(current.data.relationship.getStartNodeId());
             this.N_nodes.add(current.data.relationship.getEndNodeId());
+            long start_node_id = current.data.start_id;
+
             this.E = SpTree.size();
             this.N = N_nodes.size();
 
@@ -425,6 +446,12 @@ public class SpanningTree {
                 this.lastOccurrences.put(edge_id, current);
             } else {
                 this.firstOccurrences.put(edge_id, current);
+            }
+
+            if (this.nodeFirstOccurrences.containsKey(start_node_id)) {
+                this.nodeLastOccurrences.put(start_node_id, current);
+            } else {
+                this.nodeFirstOccurrences.put(start_node_id, current);
             }
         }
 
@@ -458,66 +485,8 @@ public class SpanningTree {
         }
     }
 
-    /**
-     * Find one relationship with given level to connect current spanning tree with another spanning tree.
-     *
-     * @param other_tree another spanning tree
-     * @param level      given level
-     * @return the replacement edge, if can not find, return null.
-     */
-    public Relationship findReplacementEdge(SpanningTree other_tree, int level, Relationship del) {
-        if (other_tree.isEmpty) {
-            return null;
-        }
-
-        //Todo: Maybe can remove this condition
-        Relationship rel = null;
-        if (other_tree.isSingle) {
-            try (Transaction tx = this.neo4j.graphDB.beginTx()) {
-                long single_node_id = other_tree.N_nodes.iterator().next();
-                Iterator<Relationship> rels_iter = this.neo4j.graphDB.getNodeById(single_node_id).getRelationships(Line.Linked, Direction.BOTH).iterator();
-                while (rels_iter.hasNext()) {
-                    Relationship next_rel = rels_iter.next();
-                    int edge_level = (int) next_rel.getProperty("level");
-                    if (edge_level == level && next_rel.getId() != del.getId()) {
-                        if (this.N_nodes.contains(next_rel.getOtherNodeId(single_node_id))) {
-                            rel = next_rel;
-                            return rel;
-                        } else {
-                            next_rel.setProperty("level", edge_level + 1); //Increase the edge level by 1
-                        }
-                    }
-                }
-                tx.success();
-            }
-        } else {
-            try (Transaction tx = this.neo4j.graphDB.beginTx()) {
-                for (long node_id : N_nodes) {
-                    Node n = this.neo4j.graphDB.getNodeById(node_id);
-                    Iterator<Relationship> rels_iter = n.getRelationships(Line.Linked, Direction.BOTH).iterator();
-                    while (rels_iter.hasNext()) {
-                        Relationship next_rel = rels_iter.next();
-                        int edge_level = (int) next_rel.getProperty("level");
-                        if (edge_level == level && next_rel.getId() != del.getId()) {
-                            if (other_tree.N_nodes.contains(next_rel.getOtherNodeId(node_id))) {
-                                rel = next_rel;
-                                return rel;
-                            } else {
-                                next_rel.setProperty("level", edge_level + 1); //Increase the edge level by 1
-                            }
-                        }
-                    }
-                }
-                tx.success();
-            }
-        }
-        return rel;
-    }
-
     public void reroot(long new_root_id) {
-        //Todo: Find the first occrurrence of the edge start with the node
-        ListNode<RelationshipExt> f_p = firstOccurrences.get(new_root_id);
-        System.out.println(f_p.data);
+        ListNode<RelationshipExt> f_p = nodeFirstOccurrences.get(new_root_id);
         this.ettree.tail.next = this.ettree.head;
         this.ettree.head.prev = this.ettree.tail;
         this.ettree.tail = f_p.prev;
@@ -525,6 +494,7 @@ public class SpanningTree {
         //Todo: head.prev = null and tail.next = null
     }
 
+    //Todo: fix and implement it
     public void removeEdge(long deleted_id, int case_number) {
         this.SpTree.remove(deleted_id);
     }
@@ -540,6 +510,24 @@ public class SpanningTree {
             System.out.println(current.data);
         }
 
+    }
+
+    public void printETTree(int limit) {
+        if (!ettree.isEmpty()) {
+            int counter = 1;
+            ListNode<RelationshipExt> current = ettree.head;
+            while (current != ettree.tail) {
+                if (counter <= limit) {
+                    System.out.println(current.data);
+                }
+                current = current.next;
+                counter++;
+            }
+
+            if (counter <= limit) {
+                System.out.println(current.data);
+            }
+        }
     }
 
 }
