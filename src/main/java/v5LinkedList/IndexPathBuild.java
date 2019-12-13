@@ -373,11 +373,13 @@ public class IndexPathBuild {
     }
 
     private boolean deleteEdge(Relationship r, HashSet<Long> deletedNodes) {
-        System.out.println("~~~~~ deleted the edge " + r);
-        boolean canBeDeleted = false;
+        System.out.print("~~~~~ deleted the edge " + r);
+        boolean canBeDeleted;
         if (dforests.isTreeEdge(r.getId())) {
+            System.out.println("   is a tree edge");
             canBeDeleted = this.dforests.deleteEdge(r);
         } else {
+            System.out.println("   is not a tree edge");
             deleteRelationshipFromDB(r, deletedNodes);
             canBeDeleted = true;
         }

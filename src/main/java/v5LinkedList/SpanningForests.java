@@ -33,11 +33,17 @@ public class SpanningForests {
         return -1;
     }
 
+    public int findTreeIndex(long rel_id) {
+        for (int index = 0; index < trees.size(); index++) {
+            if (trees.get(index).hasEdge(rel_id)) {
+                return index;
+            }
+        }
+        return -1;
+    }
 
     public boolean putNewSpanningTree(SpanningTree sub_tree) {
-
         this.trees.add(sub_tree);
-
         if (trees.size() == 1) {
             System.out.println("There is only one tree in level " + level + ", do not need to merge");
             return true;
@@ -58,13 +64,13 @@ public class SpanningForests {
             trees.remove(j - 1);
 
             trees.add(new_tree);
-
         }
-        return false;
+        return true;
     }
 
     private SpanningTree mergeTree(SpanningTree onetree, SpanningTree anothertree) {
         SpanningTree new_tree = new SpanningTree(onetree.neo4j, false);
+
         new_tree.N_nodes.addAll(onetree.N_nodes);
         new_tree.N_nodes.addAll(anothertree.N_nodes);
 
@@ -101,4 +107,6 @@ public class SpanningForests {
         }
         return false;
     }
+
+
 }

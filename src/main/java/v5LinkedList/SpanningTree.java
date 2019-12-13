@@ -76,7 +76,7 @@ public class SpanningTree {
         System.out.println("number of nodes :" + nn + "   number of edges :" + en);
 
         this.N = (int) nn;
-        this.E = (int) (nn-1);
+        this.E = (int) (nn - 1);
 
         // At the beginning, the number of connected components is the number of nodes.
         // Each node is a connected component.
@@ -210,8 +210,8 @@ public class SpanningTree {
 
 
         try (Transaction tx = this.neo4j.graphDB.beginTx()) {
-            System.out.println("number of node: get from neo4j object " + this.neo4j.getNumberofNodes());
-            System.out.println("number of edgs:  " + this.SpTree.size());
+//            System.out.println("number of node: get from neo4j object " + this.neo4j.getNumberofNodes());
+//            System.out.println("number of edgs:  " + this.SpTree.size());
 
             for (long rel_id : this.SpTree) {
                 Relationship rel = neo4j.graphDB.getRelationshipById(rel_id);
@@ -243,7 +243,7 @@ public class SpanningTree {
                 }
             }
 
-            System.out.println(first.size() + " + " + next.size() + " = " + this.SpTree.size() * 2 + "  " + (first.size() + next.size() == this.SpTree.size() * 2 ? "Yes" : "No"));
+//            System.out.println(first.size() + " + " + next.size() + " = " + this.SpTree.size() * 2 + "  " + (first.size() + next.size() == this.SpTree.size() * 2 ? "Yes" : "No"));
 
             Pair<Long, Long> firstEdge = edgeList.get(0);
             Pair<Long, Long> currentEdge = edgeList.get(0);
@@ -294,6 +294,14 @@ public class SpanningTree {
         boolean right_tree_empty = (this.ettree.tail == l_p);
 
         System.out.println("left tree empty ? " + left_tree_empty + ", middle tree empty ? " + middle_tree_empty + ", right tree empty ? " + right_tree_empty);
+        if (r.getId() == 617) {
+            System.out.println(f_p.prev.data);
+            System.out.println(f_p.data);
+            System.out.println(f_p.next.data);
+            System.out.println(l_p.prev.data);
+            System.out.println(l_p.data);
+            System.out.println(l_p.next.data);
+        }
 
         if (left_tree_empty && middle_tree_empty && right_tree_empty) {
 
@@ -306,6 +314,9 @@ public class SpanningTree {
         } else if (!left_tree_empty && middle_tree_empty && !right_tree_empty) {
             left_sub_tree.ettree.head = this.ettree.head;
             left_sub_tree.ettree.tail = f_p.prev;
+            if (r.getId() == 617) {
+                this.printETTree();
+            }
             left_sub_tree.etTreeUpdateInformation();
 
             middle_sub_tree.initializedAsSingleTree(f_p.data.end_id);
@@ -315,7 +326,7 @@ public class SpanningTree {
             right_sub_tree.etTreeUpdateInformation();
 
             case_number = 2;
-        } else if (left_tree_empty && !middle_tree_empty && left_tree_empty) {
+        } else if (left_tree_empty && !middle_tree_empty && right_tree_empty) {
             left_sub_tree.initializedAsSingleTree(f_p.data.start_id);
 
             middle_sub_tree.ettree.head = f_p.next;
@@ -385,6 +396,7 @@ public class SpanningTree {
                 case_number = 8;
             }
         }
+
         return case_number;
     }
 
@@ -434,6 +446,7 @@ public class SpanningTree {
             counter++;
 
             long edge_id = current.data.relationship.getId();
+
             this.SpTree.add(edge_id);
             this.N_nodes.add(current.data.relationship.getStartNodeId());
             this.N_nodes.add(current.data.relationship.getEndNodeId());
@@ -474,23 +487,30 @@ public class SpanningTree {
 
     }
 
-    public void increaseEdgeLevel() {
+    public void increaseEdgeLevel(int current_level) {
         try (Transaction tx = this.neo4j.graphDB.beginTx()) {
             for (long rel_id : SpTree) {
                 Relationship rel = this.neo4j.graphDB.getRelationshipById(rel_id);
                 int c_level = (int) rel.getProperty("level");
-                rel.setProperty("level", c_level + 1);
+                if (c_level == current_level) {
+                    rel.setProperty("level", current_level + 1);
+                    if (rel.getId() == 596) {
+                        System.out.println("update ................................................... " + c_level);
+                    }
+                }
             }
             tx.success();
         }
     }
 
     public void reroot(long new_root_id) {
-        ListNode<RelationshipExt> f_p = nodeFirstOccurrences.get(new_root_id);
-        this.ettree.tail.next = this.ettree.head;
-        this.ettree.head.prev = this.ettree.tail;
-        this.ettree.tail = f_p.prev;
-        this.ettree.head = f_p;
+        if (!this.isSingle && !this.isEmpty) {
+            ListNode<RelationshipExt> f_p = nodeFirstOccurrences.get(new_root_id);
+            this.ettree.tail.next = this.ettree.head;
+            this.ettree.head.prev = this.ettree.tail;
+            this.ettree.tail = f_p.prev;
+            this.ettree.head = f_p;
+        }
         //Todo: head.prev = null and tail.next = null
     }
 
@@ -530,6 +550,9 @@ public class SpanningTree {
         }
     }
 
+    public boolean hasEdge(long rel_id) {
+        return SpTree.contains(rel_id);
+    }
 }
 
 class UFnode {
