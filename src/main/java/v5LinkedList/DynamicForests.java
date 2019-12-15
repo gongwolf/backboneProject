@@ -100,9 +100,6 @@ public class DynamicForests {
         }
 
         int level_replacement = l; // if level_replacement == -1, means can not delete it.
-        if (r.getId() == 197) {
-            System.out.println("qqqqq:"+this.dforests.get(1).findTreeIndex(596L));
-        }
 
 
         if (level_replacement != -1) {
@@ -146,16 +143,17 @@ public class DynamicForests {
             SpanningTree middle_tree = splittedTrees[1];
             SpanningTree right_tree = splittedTrees[2];
 
-            if (deleted_rel.getId() == 197 && l ==1) {
-                System.out.println("qqqqq:"+this.dforests.get(1).findTreeIndex(596L));
-            }
+            left_tree.etTreeUpdateInformation();
+            middle_tree.etTreeUpdateInformation();
+            right_tree.etTreeUpdateInformation();
 
             System.out.println("deleting edge at level " + l + "  ##### " + left_tree.N + "  " + middle_tree.N + "   " + right_tree.N + "  (replacement edge level: " + level_replacement + " ) "+ case_number);
 
 //            sp_tree.removeEdge(deleted_rel.getId(), case_number);
             right_tree = combineSpanningTree(left_tree, right_tree, case_number);
+            right_tree.etTreeUpdateInformation();
 
-            /** when l >= level_replacement, only needs to delete the del_rel (because replace_edge in lower forests)
+            /** when l > level_replacement, only needs to delete the del_rel (because replace_edge in lower forests)
              *  else, delete and replace with the replacement edge.
              */
             if (l <= level_replacement) {
@@ -167,16 +165,17 @@ public class DynamicForests {
                 connectTwoTreeByRel(middle_tree, right_tree, replacement_rel);
                 middle_tree.etTreeUpdateInformation();
                 this.dforests.get(l).trees.add(middle_tree);
-
             } else {
                 if (!middle_tree.isSingle && !middle_tree.isEmpty) {
                     this.dforests.get(l).trees.add(middle_tree);
+                    middle_tree.etTreeUpdateInformation();
                     System.out.println("add back the splitted middle tree to the level " + l + "  forest ");
 
                 }
 
                 if (!right_tree.isSingle && !right_tree.isEmpty) {
                     this.dforests.get(l).trees.add(right_tree);
+                    right_tree.etTreeUpdateInformation();
                     System.out.println("add back the splitted right tree to the level " + l + "  forest ");
 
                 }
@@ -221,6 +220,8 @@ public class DynamicForests {
             System.out.println("push the right tree to level " + upper_level + "======>   Is a single tree ?   " + right_sub_tree.isSingle + "   " + right_sub_tree.isEmpty);
             System.out.println("(before) number of trees at level " + upper_level + " is " + upper_forests.trees.size());
 
+            right_sub_tree.etTreeUpdateInformation();
+
             if (!right_sub_tree.isSingle && !right_sub_tree.isEmpty) {
                 right_sub_tree.ettree.createNewCopy();
                 right_sub_tree.etTreeUpdateInformation();
@@ -253,6 +254,8 @@ public class DynamicForests {
 
             System.out.println("push the middle tree to level " + upper_level + "   Is a single tree ?   " + middle_sub_tree.isSingle + "   " + middle_sub_tree.isEmpty);
             System.out.println("(before) number of trees at level " + upper_level + " is " + upper_forests.trees.size());
+
+            middle_sub_tree.etTreeUpdateInformation();
 
             if (!middle_sub_tree.isSingle && !middle_sub_tree.isEmpty) {
                 middle_sub_tree.ettree.createNewCopy();
@@ -323,9 +326,6 @@ public class DynamicForests {
                             return rel;
                         } else {
                             next_rel.setProperty("level", edge_level + 1); //Increase the edge level by 1
-                            if (next_rel.getId() == 596) {
-                                System.out.println("update ................................................... to " + (edge_level + 1));
-                            }
                         }
                     }
                 }

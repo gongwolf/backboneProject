@@ -294,14 +294,6 @@ public class SpanningTree {
         boolean right_tree_empty = (this.ettree.tail == l_p);
 
         System.out.println("left tree empty ? " + left_tree_empty + ", middle tree empty ? " + middle_tree_empty + ", right tree empty ? " + right_tree_empty);
-        if (r.getId() == 617) {
-            System.out.println(f_p.prev.data);
-            System.out.println(f_p.data);
-            System.out.println(f_p.next.data);
-            System.out.println(l_p.prev.data);
-            System.out.println(l_p.data);
-            System.out.println(l_p.next.data);
-        }
 
         if (left_tree_empty && middle_tree_empty && right_tree_empty) {
 
@@ -312,11 +304,19 @@ public class SpanningTree {
             case_number = 1;
 
         } else if (!left_tree_empty && middle_tree_empty && !right_tree_empty) {
+
+
             left_sub_tree.ettree.head = this.ettree.head;
             left_sub_tree.ettree.tail = f_p.prev;
+
             if (r.getId() == 617) {
-                this.printETTree();
+                System.out.println("@@@@@@@@@@@@@@@@@@@@@" + left_sub_tree.ettree.head.data);
+                System.out.println("@@@@@@@@@@@@@@@@@@@@@" + left_sub_tree.ettree.tail.data);
+                System.out.println("@@@@@@@@@@@@@@@@@@@@@" + f_p.prev.data);
+//                left_sub_tree.printETTree();
             }
+
+
             left_sub_tree.etTreeUpdateInformation();
 
             middle_sub_tree.initializedAsSingleTree(f_p.data.end_id);
@@ -328,6 +328,7 @@ public class SpanningTree {
             case_number = 2;
         } else if (left_tree_empty && !middle_tree_empty && right_tree_empty) {
             left_sub_tree.initializedAsSingleTree(f_p.data.start_id);
+
 
             middle_sub_tree.ettree.head = f_p.next;
             middle_sub_tree.ettree.tail = l_p.prev;
@@ -455,7 +456,7 @@ public class SpanningTree {
             this.E = SpTree.size();
             this.N = N_nodes.size();
 
-            if (this.firstOccurrences.containsKey(current.data.relationship.getId())) {
+            if (this.firstOccurrences.containsKey(edge_id)) {
                 this.lastOccurrences.put(edge_id, current);
             } else {
                 this.firstOccurrences.put(edge_id, current);
@@ -510,8 +511,9 @@ public class SpanningTree {
             this.ettree.head.prev = this.ettree.tail;
             this.ettree.tail = f_p.prev;
             this.ettree.head = f_p;
+            this.ettree.head.prev = null;
+            this.ettree.tail.next = null;
         }
-        //Todo: head.prev = null and tail.next = null
     }
 
     //Todo: fix and implement it

@@ -43,6 +43,11 @@ public class LinkedList<T> {
         return head == null && tail == null;
     }
 
+    public void clean() {
+        this.head = null;
+        this.tail = null;
+    }
+
     /**
      * Create a new copy of the et representation of et-tree
      */
