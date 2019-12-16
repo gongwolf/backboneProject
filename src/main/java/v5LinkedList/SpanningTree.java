@@ -50,6 +50,83 @@ public class SpanningTree {
         }
     }
 
+    public SpanningTree(SpanningTree left_sub_tree, SpanningTree right_sub_tree) {
+        this.neo4j = left_sub_tree.neo4j;
+
+        SpTree = new HashSet<>();
+        this.SpTree.addAll(left_sub_tree.SpTree);
+        this.SpTree.addAll(right_sub_tree.SpTree);
+
+        N_nodes = new HashSet<>();
+        this.N_nodes.addAll(left_sub_tree.N_nodes);
+        this.N_nodes.addAll(right_sub_tree.N_nodes);
+
+        this.ettree = new LinkedList<>();
+        this.appendTree(left_sub_tree);
+        this.appendTree(right_sub_tree);
+
+        this.N = N_nodes.size();
+        this.E = SpTree.size();
+    }
+
+    public SpanningTree(SpanningTree other_tree) {
+        this.neo4j = other_tree.neo4j;
+
+        SpTree = new HashSet<>(other_tree.SpTree);
+
+        N_nodes = new HashSet<>(other_tree.N_nodes);
+
+        this.ettree = new LinkedList<>();
+        this.appendTree(other_tree);
+        this.N = N_nodes.size();
+        this.E = SpTree.size();
+    }
+
+    private void appendTree(SpanningTree other_tree) {
+        if (!other_tree.isSingle && !other_tree.isEmpty) {
+            ListNode<RelationshipExt> current = other_tree.ettree.head;
+            while (current != other_tree.ettree.tail) {
+                ListNode<RelationshipExt> node = new ListNode<>(current.data);
+                this.ettree.append(node);
+
+                long edge_id = node.data.relationship.getId();
+                long start_node_id = node.data.start_id;
+
+                if (this.firstOccurrences.containsKey(node.data.relationship.getId())) {
+                    this.lastOccurrences.put(edge_id, node);
+                } else {
+                    this.firstOccurrences.put(edge_id, node);
+                }
+
+                if (this.nodeFirstOccurrences.containsKey(start_node_id)) {
+                    this.nodeLastOccurrences.put(start_node_id, node);
+                } else {
+                    this.nodeFirstOccurrences.put(start_node_id, node);
+                }
+
+                current = current.next;
+            }
+
+            ListNode<RelationshipExt> node = new ListNode<>(current.data);
+            long edge_id = node.data.relationship.getId();
+            long start_node_id = node.data.start_id;
+
+            if (this.firstOccurrences.containsKey(node.data.relationship.getId())) {
+                this.lastOccurrences.put(edge_id, node);
+            } else {
+                this.firstOccurrences.put(edge_id, node);
+            }
+
+            if (this.nodeFirstOccurrences.containsKey(start_node_id)) {
+                this.nodeLastOccurrences.put(start_node_id, node);
+            } else {
+                this.nodeFirstOccurrences.put(start_node_id, node);
+            }
+
+            this.ettree.append(node);
+        }
+    }
+
 
     /**
      * Initialization:
@@ -289,6 +366,18 @@ public class SpanningTree {
         ListNode<RelationshipExt> f_p = firstOccurrences.get(r.getId());
         ListNode<RelationshipExt> l_p = lastOccurrences.get(r.getId());
 
+//        if(r.getId()==104L) {
+//            SpanningTree level1_tree = this;
+//            this.printETTree();
+//            this.firstOccurrences.forEach((k,v)->System.out.println("Item : " + k + " Count : " + v.data));
+//            this.lastOccurrences.forEach((k,v)->System.out.println("Item : " + k + " Count : " + v.data));
+//            this.nodeFirstOccurrences.forEach((k,v)->System.out.println("Item : " + k + " Count : " + v.data));
+//            this.nodeLastOccurrences.forEach((k,v)->System.out.println("Item : " + k + " Count : " + v.data));
+//
+//            System.out.println(this.ettree.head.data+"   "+ f_p.data+"  "+(this.ettree.head == f_p));
+////            System.exit(0);
+//        }
+
         boolean left_tree_empty = (this.ettree.head == f_p);
         boolean middle_tree_empty = (f_p.next == l_p && l_p.prev == f_p);
         boolean right_tree_empty = (this.ettree.tail == l_p);
@@ -308,16 +397,8 @@ public class SpanningTree {
 
             left_sub_tree.ettree.head = this.ettree.head;
             left_sub_tree.ettree.tail = f_p.prev;
-
-            if (r.getId() == 617) {
-                System.out.println("@@@@@@@@@@@@@@@@@@@@@" + left_sub_tree.ettree.head.data);
-                System.out.println("@@@@@@@@@@@@@@@@@@@@@" + left_sub_tree.ettree.tail.data);
-                System.out.println("@@@@@@@@@@@@@@@@@@@@@" + f_p.prev.data);
-//                left_sub_tree.printETTree();
-            }
-
-
             left_sub_tree.etTreeUpdateInformation();
+
 
             middle_sub_tree.initializedAsSingleTree(f_p.data.end_id);
 
@@ -358,7 +439,6 @@ public class SpanningTree {
                 right_sub_tree.ettree.head = l_p.next;
                 right_sub_tree.ettree.tail = this.ettree.tail;
                 right_sub_tree.etTreeUpdateInformation();
-
                 case_number = 5;
             }
         } else if (!middle_tree_empty) {
@@ -401,14 +481,6 @@ public class SpanningTree {
         return case_number;
     }
 
-    private void initializedAsEmptyTree() {
-        this.N_nodes.clear();
-        this.SpTree.clear();
-        this.N = 0;
-        this.E = 0;
-        this.isSingle = false;
-        this.isEmpty = true;
-    }
 
     //Todo: the performance can be improved, for example, used the original spanning tree information to update the splitted trees.
     public void etTreeUpdateInformation() {
@@ -478,14 +550,37 @@ public class SpanningTree {
     }
 
     public void initializedAsSingleTree(long nodeid) {
+        this.lastOccurrences.clear();
+        this.firstOccurrences.clear();
+
+        this.nodeFirstOccurrences.clear();
+        this.nodeLastOccurrences.clear();
+
         this.N_nodes.clear();
         this.N_nodes.add(nodeid);
         this.SpTree.clear();
         this.N = 1;
         this.E = 0;
         this.isSingle = true;
+        this.isEmpty = false;
         this.ettree = new LinkedList<>();
 
+    }
+
+    private void initializedAsEmptyTree() {
+
+        this.lastOccurrences.clear();
+        this.firstOccurrences.clear();
+
+        this.nodeFirstOccurrences.clear();
+        this.nodeLastOccurrences.clear();
+
+        this.N_nodes.clear();
+        this.SpTree.clear();
+        this.N = 0;
+        this.E = 0;
+        this.isSingle = false;
+        this.isEmpty = true;
     }
 
     public void increaseEdgeLevel(int current_level) {
@@ -495,9 +590,6 @@ public class SpanningTree {
                 int c_level = (int) rel.getProperty("level");
                 if (c_level == current_level) {
                     rel.setProperty("level", current_level + 1);
-                    if (rel.getId() == 596) {
-                        System.out.println("update ................................................... " + c_level);
-                    }
                 }
             }
             tx.success();

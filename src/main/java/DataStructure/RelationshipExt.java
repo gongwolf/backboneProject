@@ -11,7 +11,6 @@ public class RelationshipExt {
     public int end_id;
 
     public RelationshipExt(){
-
     }
 
     public RelationshipExt(Relationship relationship, int src_id, int dest_id) {

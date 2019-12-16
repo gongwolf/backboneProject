@@ -1,5 +1,7 @@
 package DataStructure;
 
+import v5LinkedList.SpanningTree;
+
 public class LinkedList<T> {
     public ListNode<T> head;
     public ListNode<T> tail;
@@ -56,6 +58,7 @@ public class LinkedList<T> {
             ListNode<T> current = head;
             ListNode<T> dummy_tail = tail;
             head = tail = null;
+
             while (current != dummy_tail) {
                 ListNode<T> node = new ListNode<T>(current.data);
                 this.append(node);
