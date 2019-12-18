@@ -45,7 +45,7 @@ public class SpanningForests {
     public boolean putNewSpanningTree(SpanningTree sub_tree) {
         this.trees.add(sub_tree);
         if (trees.size() == 1) {
-            System.out.println("There is only one tree in level " + level + ", do not need to merge");
+//            System.out.println("There is only one tree in level " + level + ", do not need to merge");
             return true;
         }
 
@@ -53,7 +53,7 @@ public class SpanningForests {
         while ((tree_idx = hasCouldMergedTree()) != null) {
             int i = tree_idx.getKey();
             int j = tree_idx.getValue();
-            System.out.println("Merging tree ..... " + i + "  and  " + j);
+//            System.out.println("Merging tree ..... " + i + "  and  " + j);
 
             SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j));
             /**

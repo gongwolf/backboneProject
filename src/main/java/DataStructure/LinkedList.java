@@ -17,11 +17,12 @@ public class LinkedList<T> {
         ListNode<T> node = new ListNode<>(data);
         if (head == null) {
             head = tail = node;
+            node.prev = node.next = null;
         } else {
             ListNode<T> last = tail;
-            last.setNext(node);
-            node.setNext(null);
-            node.setPrev(last);
+            last.next = node;
+            node.next = null;
+            node.prev = last;
             tail = node;
         }
         n++;

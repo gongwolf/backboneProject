@@ -365,24 +365,13 @@ public class SpanningTree {
 
         ListNode<RelationshipExt> f_p = firstOccurrences.get(r.getId());
         ListNode<RelationshipExt> l_p = lastOccurrences.get(r.getId());
-
-//        if(r.getId()==104L) {
-//            SpanningTree level1_tree = this;
-//            this.printETTree();
-//            this.firstOccurrences.forEach((k,v)->System.out.println("Item : " + k + " Count : " + v.data));
-//            this.lastOccurrences.forEach((k,v)->System.out.println("Item : " + k + " Count : " + v.data));
-//            this.nodeFirstOccurrences.forEach((k,v)->System.out.println("Item : " + k + " Count : " + v.data));
-//            this.nodeLastOccurrences.forEach((k,v)->System.out.println("Item : " + k + " Count : " + v.data));
-//
-//            System.out.println(this.ettree.head.data+"   "+ f_p.data+"  "+(this.ettree.head == f_p));
-////            System.exit(0);
-//        }
+        
 
         boolean left_tree_empty = (this.ettree.head == f_p);
         boolean middle_tree_empty = (f_p.next == l_p && l_p.prev == f_p);
         boolean right_tree_empty = (this.ettree.tail == l_p);
 
-        System.out.println("left tree empty ? " + left_tree_empty + ", middle tree empty ? " + middle_tree_empty + ", right tree empty ? " + right_tree_empty);
+//        System.out.println("left tree empty ? " + left_tree_empty + ", middle tree empty ? " + middle_tree_empty + ", right tree empty ? " + right_tree_empty);
 
         if (left_tree_empty && middle_tree_empty && right_tree_empty) {
 
@@ -434,7 +423,7 @@ public class SpanningTree {
             } else if (left_tree_empty && !right_tree_empty) {
                 left_sub_tree.initializedAsEmptyTree();
 
-                middle_sub_tree.initializedAsSingleTree(f_p.data.start_id);
+                middle_sub_tree.initializedAsSingleTree(f_p.data.end_id);
 
                 right_sub_tree.ettree.head = l_p.next;
                 right_sub_tree.ettree.tail = this.ettree.tail;
@@ -590,6 +579,9 @@ public class SpanningTree {
                 int c_level = (int) rel.getProperty("level");
                 if (c_level == current_level) {
                     rel.setProperty("level", current_level + 1);
+                    if(rel.getId() == 13866){
+                        System.out.println("Update the "+rel + " to level "+ (current_level+1)+"    &&&&&&&&&   ");
+                    }
                 }
             }
             tx.success();
@@ -608,11 +600,6 @@ public class SpanningTree {
         }
     }
 
-    //Todo: fix and implement it
-    public void removeEdge(long deleted_id, int case_number) {
-        this.SpTree.remove(deleted_id);
-    }
-
 
     public void printETTree() {
         if (!ettree.isEmpty()) {
@@ -623,7 +610,16 @@ public class SpanningTree {
             }
             System.out.println(current.data);
         }
+    }
 
+    public void printETTreeLast() {
+        if (!ettree.isEmpty()) {
+            ListNode<RelationshipExt> current = ettree.head;
+            while (current != ettree.tail) {
+                current = current.next;
+            }
+            System.out.println(current.data);
+        }
     }
 
     public void printETTree(int limit) {
@@ -641,6 +637,10 @@ public class SpanningTree {
             if (counter <= limit) {
                 System.out.println(current.data);
             }
+        }else if(this.isSingle){
+            System.out.println("It's a single tree with the node "+ this.N_nodes.iterator().next());
+        }else if(this.isEmpty){
+            System.out.println("it's a empty tree !!!!!!");
         }
     }
 

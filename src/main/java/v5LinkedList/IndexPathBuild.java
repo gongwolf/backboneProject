@@ -257,7 +257,6 @@ public class IndexPathBuild {
 //        System.out.println("pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
 //        this.deletedEdges_layer.add(deletedEdges);
         neo4j.closeDB();
-//        return numberOfNodes;
         return 0;
     }
 
@@ -356,7 +355,7 @@ public class IndexPathBuild {
 
                         if (flag) {
                             deletedEdges.add(r.getId());
-
+//                            deleteRelationshipFromDB(r, deletedNodes);
                             if (!deleted) {
                                 deleted = true;
                             }
@@ -366,6 +365,7 @@ public class IndexPathBuild {
                     }
                 }
             }
+            System.out.println("Finished the remove of the edge by using the threshold " + threshold_p + " !!!!!!!!!!!!!!!!!!!!!!");
             tx.success();
         }
 
@@ -378,13 +378,15 @@ public class IndexPathBuild {
         if (dforests.isTreeEdge(r.getId())) {
             System.out.println("   is a tree edge");
             canBeDeleted = this.dforests.deleteEdge(r);
+            if (canBeDeleted) {
+                deleteRelationshipFromDB(r, deletedNodes);
+            }
         } else {
             System.out.println("   is not a tree edge");
             deleteRelationshipFromDB(r, deletedNodes);
             canBeDeleted = true;
         }
-
-        System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
+//        System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         return canBeDeleted;
     }
 
