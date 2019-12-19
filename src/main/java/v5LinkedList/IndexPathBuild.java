@@ -50,10 +50,6 @@ public class IndexPathBuild {
     }
 
     private void initLevel() {
-        int currentLevel = 0;
-//        String sub_db_name = graphsize + "_" + degree + "_" + dimension + "_Level" + currentLevel;
-//        String sub_db_name = city_name + "_Level0";
-//        String sub_db_name = graphsize + "_" + samenode_t + "_Level" + currentLevel;
 
         String sub_db_name = "sub_ny_USA_Level0";
         neo4j = new Neo4jDB(sub_db_name);
@@ -91,6 +87,8 @@ public class IndexPathBuild {
                 t_threshold = threshold.getKey() + threshold.getValue();
                 currentLevel = upperlevel;
             }
+
+            if (currentLevel == 2) break;
 
         } while (cn != 0 && threshold != null);
     }
@@ -145,23 +143,18 @@ public class IndexPathBuild {
         if (t_degree_pair.isEmpty()) {
             return null;
         }
-        System.out.println("Find updated threshold:");
+        System.out.print("Find updated threshold:");
         int max = (int) (this.numberOfEdges * percentage);
 
-        System.out.println("number of edges:" + this.numberOfEdges + "   percentage:" + max + "   number of nodes :" + cn + "   degree pair sum( number of edges ):" + degree_pairs_sum + "\nIs the Max is less than the number of degree pair ?" + (max < this.degree_pairs_sum));
-//        for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> p : this.degree_pairs.entrySet()) {
-//            System.out.println(p.getKey() + "  ==>>> " + p.getValue());
-//        }
+        System.out.println("number of edges:" + this.numberOfEdges + "   percentage:" + max + "   number of nodes :" + cn + "   degree pair sum( number of edges ):" + degree_pairs_sum + "   Is the Max is less than the number of degree pair ?" + (max < this.degree_pairs_sum));
 
         //get the last degree pair
         if (max > this.degree_pairs_sum) {
             return t_degree_pair.get(t_degree_pair.size() - 1);
         }
 
-
         int t_num = 0;
         int idx;
-
 
         for (idx = 0; idx < t_degree_pair.size(); idx++) {
             Pair<Integer, Integer> key = t_degree_pair.get(idx);
@@ -170,8 +163,6 @@ public class IndexPathBuild {
                 break;
             }
         }
-
-//        System.out.println(t_num + "   " + idx);
 
         //idx is the index of the first degree pair which summation number is greater than |E|*p
         if (0 <= idx && idx < t_degree_pair.size()) {
@@ -209,8 +200,6 @@ public class IndexPathBuild {
 
     private long handleUpperLevelGraph(int currentLevel, Pair<Integer, Integer> threshold_p, int threshold_t) {
         Hashtable<Long, ArrayList<Long>> nodesToHighWay = new Hashtable<>();
-//        String sub_db_name = city_name + "_Level" + currentLevel;
-//        String sub_db_name = graphsize + "_" + samenode_t + "_Level" + currentLevel;
         String sub_db_name = this.base_db_name + "_Level" + currentLevel;
 
         String prefix = "/home/gqxwolf/mydata/projectData/BackBone/";
@@ -220,7 +209,7 @@ public class IndexPathBuild {
         graphdb = neo4j.graphDB;
         long pre_n = neo4j.getNumberofNodes();
         long pre_e = neo4j.getNumberofEdges();
-        System.out.println("deal with level " + currentLevel + " graph at " + neo4j.DB_PATH);
+        System.out.println("deal with level " + currentLevel + " graph at " + neo4j.DB_PATH+"  "+pre_n+" nodes and "+pre_e+" edges");
 
         // record the nodes that are deleted in this layer.
         HashSet<Long> deletedNodes = new HashSet<>();
@@ -247,6 +236,7 @@ public class IndexPathBuild {
         boolean deleted = removeLowerDegreePairEdgesByThreshold(threshold_p, threshold_t, deletedNodes, deletedEdges);
         System.out.println("Removing the edges in level " + currentLevel + "  with degree threshold  : " + threshold_p);
 
+
         getDegreePairs();
         deletedEdges.addAll(removeSingletonEdgesInForests(deletedNodes));
         long numberOfNodes = neo4j.getNumberofNodes();
@@ -257,10 +247,11 @@ public class IndexPathBuild {
         String textFilePath = prefix + "busline_sub_graph_NY_/level" + currentLevel + "/";
         neo4j.saveGraphToTextFormation(textFilePath);
 //
-        System.out.println("pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
+        System.out.println(neo4j.graphDB +" ~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
         this.deletedEdges_layer.add(deletedEdges);
+
         neo4j.closeDB();
-        return 0;
+        return numberOfNodes;
     }
 
     private HashSet<Long> removeSingletonEdges(Neo4jDB neo4j, HashSet<Long> deletedNodes) {
@@ -288,10 +279,8 @@ public class IndexPathBuild {
                     }
                 }
                 tx.success();
-            } catch (NotFoundException e) {
-                System.out.println("no property found exception ");
-                System.exit(0);
             }
+
             getDegreePairs();
             System.out.println("delete single : pre:" + pre_node_num + " " + pre_edge_num + " " + pre_degree_num + " " +
                     "single_edges:" + sum_single + " " +
@@ -333,8 +322,7 @@ public class IndexPathBuild {
     private boolean removeLowerDegreePairEdgesByThreshold(Pair<Integer, Integer> threshold_p, int threshold_t, HashSet<Long> deletedNodes, HashSet<Long> deletedEdges) {
         boolean deleted = false;
         Transaction tx = graphdb.beginTx();
-        try{
-            System.out.println(graphdb);
+        try {
             for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> dp : this.degree_pairs.entrySet()) {
                 int sd = dp.getKey().getKey(); // the first number of the degree pair
                 int ed = dp.getKey().getValue(); // the second number of the degree pair
@@ -354,12 +342,10 @@ public class IndexPathBuild {
 
                     for (long rel : dp.getValue()) {
                         Relationship r = graphdb.getRelationshipById(rel);
-
+//                        System.out.println("====== 1111" + neo4j.graphDB.getRelationshipById(159));
                         boolean flag = deleteEdge(r, deletedNodes);
-
                         if (flag) {
                             deletedEdges.add(r.getId());
-//                            deleteRelationshipFromDB(r, deletedNodes);
                             if (!deleted) {
                                 deleted = true;
                             }
@@ -367,34 +353,32 @@ public class IndexPathBuild {
 
 
                     }
+                    tx.success();
                 }
             }
             System.out.println("Finished the remove of the edge by using the threshold " + threshold_p + " !!!!!!!!!!!!!!!!!!!!!!");
-            System.out.println(graphdb);
             tx.success();
-        }catch (RuntimeException e){
-            e.printStackTrace();
+        } catch (RuntimeException e) {
             tx.failure();
+            System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ run exception!!!!");
+            System.exit(0);
         }
 
         return deleted;
     }
 
     private boolean deleteEdge(Relationship r, HashSet<Long> deletedNodes) {
-//        System.out.print("~~~~~ deleted the edge " + r);
         boolean canBeDeleted;
+//        System.out.println("Deleting the edge " + r);
         if (dforests.isTreeEdge(r.getId())) {
-//            System.out.println("   is a tree edge");
             canBeDeleted = this.dforests.deleteEdge(r);
             if (canBeDeleted) {
                 deleteRelationshipFromDB(r, deletedNodes);
             }
         } else {
-//            System.out.println("   is not a tree edge");
             deleteRelationshipFromDB(r, deletedNodes);
             canBeDeleted = true;
         }
-//        System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         return canBeDeleted;
     }
 
@@ -422,37 +406,26 @@ public class IndexPathBuild {
                             Relationship r = graphdb.getRelationshipById(rel_id);
                             int edge_level = (int) r.getProperty("level");
 
-                            for(int l = edge_level; l >= 0; l--){
-                                SpanningTree sp_tree = this.dforests.dforests.get(l).findTree(r);
-                                sp_tree.removeSingleEdge(r.getId());
-                                if(sp_tree==null){
-                                    System.out.println("Error !!!!!!!!!!!!!!!!!!!!!!!!!");
+//                            if(r.getId()==5249){
+//                                System.out.println(r+"   "+edge_level+" !!!!!");
+//                                SpanningTree sp = this.dforests.dforests.get(edge_level).findTree(r);
+//                                System.out.println("====================================");
+//                            }
+
+                            for (int l = edge_level; l >= 0; l--) {
+                                int sp_idx = this.dforests.dforests.get(l).findTreeIndex(r);
+
+                                SpanningTree sp_tree = this.dforests.dforests.get(l).trees.get(sp_idx);
+                                int remove_case = sp_tree.removeSingleEdge(r.getId());
+
+                                if (remove_case == 1) {
+                                    this.dforests.dforests.get(l).trees.remove(sp_idx);
+                                } else if (remove_case == 0) {
+                                    System.out.println("Remove single edge error !!!!!!!!!!!!!!!!!!!!!");
                                     System.exit(0);
                                 }
                             }
 
-//                            for (Map.Entry<Integer, SpanningForests> sp_forest_mapkey : this.dforests.dforests.entrySet()) {
-//                                int level = sp_forest_mapkey.getKey();
-////                                v3.SpanningForests sp_forest = sp_forest_mapkey.getValue();
-//                                int sp_tree_idx;
-//                                if ((sp_tree_idx = sp_forest.findTreeIndex(r)) != -1) {
-//                                    v3.SpanningTree sp_tree = sp_forest.trees.get(sp_tree_idx);
-//                                    sp_tree.rbtree.delete((Integer) r.getProperty("pFirstID" + level));
-//                                    sp_tree.rbtree.delete((Integer) r.getProperty("pSecondID" + level));
-//                                    sp_tree.deleteAdditionalInformationByRelationship(r);
-//
-//                                    if (sp_tree.rbtree.root == nil) {
-//                                        sp_forest.trees.remove(sp_tree_idx);
-//                                    }
-//                                }
-//                            }
-
-                            /**
-                             * although single edges are deleted, the remove type is multiple.
-                             * It is used to make sure the highway knows the information of connection between two highway nodes.
-                             * See the OneNote "backbone  --> Index organization"
-                             * **/
-//                            updateLayerIndex(r, layer_index, nodesToHighWay, multiple);
                             deleteRelationshipFromDB(r, deletedNodes);
                             deletedEdges.add(r.getId());
                         }

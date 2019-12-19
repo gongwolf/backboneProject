@@ -22,6 +22,17 @@ public class Neo4jDB {
     public static ArrayList<String> propertiesName = new ArrayList<>();
 
 
+    public static void main(String args[]){
+        String sub_db_name = "sub_ny_USA_Level0";
+
+        Neo4jDB neo4j = new Neo4jDB(sub_db_name);
+        neo4j.startDB(false);
+        long pre_n = neo4j.getNumberofNodes();
+        long pre_e = neo4j.getNumberofEdges();
+        System.out.println(pre_n+"  "+pre_e);
+        neo4j.closeDB();
+    }
+
     public Neo4jDB() {
         this.DB_PATH = prop.params.get("neo4jdb");
         System.out.println(this.DB_PATH);

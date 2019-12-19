@@ -3,11 +3,9 @@ package v5LinkedList;
 import DataStructure.LinkedList;
 import DataStructure.ListNode;
 import DataStructure.RelationshipExt;
-import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
 import configurations.ProgramProperty;
 import javafx.util.Pair;
-import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.graphdb.*;
 
 import java.util.*;
@@ -123,7 +121,6 @@ public class SpanningTree {
             } else {
                 this.nodeFirstOccurrences.put(start_node_id, node);
             }
-
             this.ettree.append(node);
         }
     }
@@ -372,8 +369,6 @@ public class SpanningTree {
         boolean middle_tree_empty = (f_p.next == l_p && l_p.prev == f_p);
         boolean right_tree_empty = (this.ettree.tail == l_p);
 
-//        System.out.println("left tree empty ? " + left_tree_empty + ", middle tree empty ? " + middle_tree_empty + ", right tree empty ? " + right_tree_empty);
-
         if (left_tree_empty && middle_tree_empty && right_tree_empty) {
 
             left_sub_tree.initializedAsSingleTree(r.getStartNodeId());
@@ -383,12 +378,9 @@ public class SpanningTree {
             case_number = 1;
 
         } else if (!left_tree_empty && middle_tree_empty && !right_tree_empty) {
-
-
             left_sub_tree.ettree.head = this.ettree.head;
             left_sub_tree.ettree.tail = f_p.prev;
             left_sub_tree.etTreeUpdateInformation();
-
 
             middle_sub_tree.initializedAsSingleTree(f_p.data.end_id);
 
@@ -400,7 +392,6 @@ public class SpanningTree {
         } else if (left_tree_empty && !middle_tree_empty && right_tree_empty) {
             left_sub_tree.initializedAsSingleTree(f_p.data.start_id);
 
-
             middle_sub_tree.ettree.head = f_p.next;
             middle_sub_tree.ettree.tail = l_p.prev;
             middle_sub_tree.etTreeUpdateInformation();
@@ -408,7 +399,6 @@ public class SpanningTree {
             right_sub_tree.initializedAsEmptyTree();
 
             case_number = 3;
-
         } else if (middle_tree_empty) {
             if (!left_tree_empty && right_tree_empty) {
                 left_sub_tree.ettree.head = this.ettree.head;
@@ -432,7 +422,6 @@ public class SpanningTree {
                 case_number = 5;
             }
         } else if (!middle_tree_empty) {
-
             middle_sub_tree.ettree.head = f_p.next;
             middle_sub_tree.ettree.tail = l_p.prev;
             middle_sub_tree.etTreeUpdateInformation();
@@ -445,7 +434,6 @@ public class SpanningTree {
                 right_sub_tree.initializedAsEmptyTree();
 
                 case_number = 6;
-
             } else if (left_tree_empty && !right_tree_empty) {
                 left_sub_tree.initializedAsEmptyTree();
 
@@ -454,7 +442,6 @@ public class SpanningTree {
                 right_sub_tree.etTreeUpdateInformation();
 
                 case_number = 7;
-
             } else if (!left_tree_empty && !right_tree_empty) {
                 left_sub_tree.ettree.head = this.ettree.head;
                 left_sub_tree.ettree.tail = f_p.prev;
@@ -590,6 +577,11 @@ public class SpanningTree {
         ListNode<RelationshipExt> back_node = new ListNode<>(back_edge);
         this.ettree.append(back_node);
 
+        firstOccurrences.put(next_level_rel.getId(),node);
+        lastOccurrences.put(next_level_rel.getId(),back_node);
+        nodeFirstOccurrences.put((long) start_id,node);
+        nodeLastOccurrences.put((long) start_id,back_node);
+
     }
 
     private void initializedAsEmptyTree() {
@@ -615,9 +607,6 @@ public class SpanningTree {
                 int c_level = (int) rel.getProperty("level");
                 if (c_level == current_level) {
                     rel.setProperty("level", current_level + 1);
-//                    if(rel.getId() == 13866){
-//                        System.out.println("Update the "+rel + " to level "+ (current_level+1)+"    &&&&&&&&&   ");
-//                    }
                 }
             }
             tx.success();
@@ -684,19 +673,46 @@ public class SpanningTree {
         return SpTree.contains(rel_id);
     }
 
-    public void removeSingleEdge(long id) {
+    public int removeSingleEdge(long id) {
         ListNode<RelationshipExt> f_p = firstOccurrences.get(id);
         ListNode<RelationshipExt> l_p = lastOccurrences.get(id);
 
-        if (f_p != ettree.head && l_p != ettree.tail) {
-            f_p.prev.next = l_p.next;
-            l_p.next.prev = f_p.prev;
-        } else if (f_p == ettree.head && l_p != ettree.tail) {
-        } else if (f_p != ettree.head && l_p == ettree.tail) {
-        } else if (f_p == ettree.head && l_p == ettree.tail) {
+        int remove_case = 0;
 
+        try {
+            if (f_p == ettree.head && l_p == ettree.tail) {
+                if (f_p.next == l_p && l_p.prev == f_p) {
+                    ettree.head = ettree.tail = null;
+                    remove_case = 1;
+                } else if (f_p.next != l_p && l_p.prev != f_p) {
+                    ettree.head = f_p.next;
+                    ettree.head.prev = null;
+                    ettree.tail = l_p.prev;
+                    ettree.tail.next = null;
+                    remove_case = 2;
+                }
+            } else {
+                if (f_p != ettree.head && l_p != ettree.tail) {
+                    f_p.prev.next = l_p.next;
+                    l_p.next.prev = f_p.prev;
+                    remove_case = 3;
+                } else if (f_p == ettree.head && l_p != ettree.tail) {
+                    ettree.head = l_p.next;
+                    ettree.head.prev = null;
+                    remove_case = 4;
+                } else if (f_p != ettree.head && l_p == ettree.tail) {
+                    ettree.tail = f_p.prev;
+                    ettree.tail.next = null;
+                    remove_case = 5;
+                }
+            }
+
+            this.etTreeUpdateInformation();
+        } catch (Exception e) {
+            System.out.println(id+"    "+remove_case);
+            e.printStackTrace();
         }
-
+        return remove_case;
     }
 }
 

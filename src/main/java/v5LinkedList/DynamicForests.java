@@ -73,9 +73,6 @@ public class DynamicForests {
         int l = e_level;
         for (; l >= 0; l--) {
             SpanningTree sp_tree = this.dforests.get(l).findTree(r);
-            int sp_idx = this.dforests.get(l).findTreeIndex(r);
-
-//            System.out.println("--- Find the relationship " + r + " at level " + l + "   " + (sp_tree == null) + "     size of the trees:" + this.dforests.get(l).trees.size() + "  " + sp_idx);
 
             /** Three sub-tree **/
             SpanningTree[] splittedTrees = new SpanningTree[3];
@@ -93,7 +90,6 @@ public class DynamicForests {
             combine_nodes_list.addAll(left_sub_tree.N_nodes);
             combine_nodes_list.addAll(right_sub_tree.N_nodes);
 
-//            System.out.println("##### " + combine_nodes_list.size() + " (" + left_sub_tree.N_nodes.size() + " + " + right_sub_tree.N_nodes.size() + ") " + middle_sub_tree.N + " | " + left_sub_tree.N_nodes.size() + ", " + right_sub_tree.N_nodes.size() + " | " + left_sub_tree.N + ", " + right_sub_tree.N);
             rel = findReplacementEdge(middle_sub_tree, l, r, combine_nodes_list, left_sub_tree, right_sub_tree);
 
             if (rel != null) {
@@ -143,8 +139,6 @@ public class DynamicForests {
             middle_tree.etTreeUpdateInformation();
             right_tree.etTreeUpdateInformation();
 
-//            System.out.println("deleting edge at level " + l + "  ##### " + left_tree.N + "  " + middle_tree.N + "   " + right_tree.N + "  (replacement edge level: " + level_replacement + " )  case_number:" + case_number);
-
             right_tree = combineSpanningTree(left_tree, right_tree, case_number);
             right_tree.etTreeUpdateInformation();
 
@@ -152,29 +146,24 @@ public class DynamicForests {
              *  else, delete and replace with the replacement edge.
              */
             if (l <= level_replacement) {
+
                 long mid_new_root_id = (middle_tree.N_nodes.contains(replacement_rel.getStartNodeId())) ? replacement_rel.getStartNodeId() : replacement_rel.getEndNodeId();
                 long right_new_root_id = (right_tree.N_nodes.contains(replacement_rel.getStartNodeId())) ? replacement_rel.getStartNodeId() : replacement_rel.getEndNodeId();
-//                System.out.println("new root: " + mid_new_root_id + "(" + middle_tree.isEmpty + " " + middle_tree.isSingle + ")" + "  " + right_new_root_id+ "(" + right_tree.isEmpty + " " + right_tree.isSingle + ")" );
                 right_tree.reroot(right_new_root_id);
                 middle_tree.reroot(mid_new_root_id);
                 connectTwoTreeByRel(middle_tree, right_tree, replacement_rel);
                 middle_tree.etTreeUpdateInformation();
                 this.dforests.get(l).trees.add(middle_tree);
+
             } else {
                 if (!middle_tree.isSingle && !middle_tree.isEmpty) {
                     this.dforests.get(l).trees.add(middle_tree);
                     middle_tree.etTreeUpdateInformation();
-//                    System.out.println("add back the splitted middle tree to the level " + l + "  forest ");
-                } else {
-//                    System.out.println("The middle tree is empty or single, don't need to push back to the level " + l + "  forest ");
                 }
 
                 if (!right_tree.isSingle && !right_tree.isEmpty) {
                     this.dforests.get(l).trees.add(right_tree);
                     right_tree.etTreeUpdateInformation();
-//                    System.out.println("add back the splitted right tree to the level " + l + "  forest ");
-                } else {
-//                    System.out.println("The right tree is empty or single, don't need to push back to the level " + l + "  forest ");
                 }
             }
         }
@@ -201,8 +190,6 @@ public class DynamicForests {
         RelationshipExt back_iter_edge = new RelationshipExt(replacement_rel, right_tree_root_id, middle_tree_root_id);
         ListNode<RelationshipExt> back_node = new ListNode<>(back_iter_edge);
         middle_tree.ettree.append(back_node);
-
-//        middle_tree.etTreeUpdateInformation();
     }
 
     private Relationship findReplacementEdge(SpanningTree middle_sub_tree, int current_level, Relationship r, HashSet<Long> combine_nodes_list, SpanningTree left_sub_tree, SpanningTree right_sub_tree) {
@@ -214,60 +201,33 @@ public class DynamicForests {
         if ((combine_nodes_list.size()) <= middle_sub_tree.N) { // find the replacement induces to the left tree and the right tree
 
             if (upper_forests == null) {
-//                System.out.println("Create higher level forests at level " + upper_level + "  for left sub tree" + " , " + combine_nodes_list.size());
                 upper_forests = new SpanningForests(current_level + 1);
             }
 
-//            System.out.println("push the right tree to level " + upper_level + "======>   Is a single tree ?   " + right_sub_tree.isSingle + "   " + right_sub_tree.isEmpty);
-//            System.out.println("(before) number of trees at level " + upper_level + " is " + upper_forests.trees.size());
 
             if (!right_sub_tree.isSingle && !right_sub_tree.isEmpty) {
                 SpanningTree new_tree = new SpanningTree(left_sub_tree, right_sub_tree);
                 new_tree.increaseEdgeLevel(current_level);
                 upper_forests.putNewSpanningTree(new_tree);
                 this.dforests.put(upper_level, upper_forests);
-//            } else if (right_sub_tree.isSingle) {
-//                System.out.println("right tree is a single tree, it contains the only node " + right_sub_tree.N_nodes.iterator().next());
-//            } else {
-//                System.out.println("The tree is single or empty, no need to be pushed to higher level");
             }
 
-//            System.out.println("(after) number of trees at level " + upper_level + " is " + upper_forests.trees.size());
-
             rel = findReplacementEdgeByNodes(combine_nodes_list, middle_sub_tree.N_nodes, current_level, r, right_sub_tree.neo4j, upper_forests);
-
-//            if (rel != null) {
-//                System.out.println("found the replacement edge (right tree)" + rel + "  at level" + current_level);
-//            }
 
         } else { // find the replacement induce to the middle tree
 
             if (upper_forests == null) {
-//                System.out.println("Create higher level forests at level " + upper_level + "  for right sub tree" + "  " + middle_sub_tree.N + " , " + combine_nodes_list.size());
                 upper_forests = new SpanningForests(upper_level);
             }
-
-//            System.out.println("push the middle tree to level " + upper_level + "   Is a single tree ?   " + middle_sub_tree.isSingle + "   " + middle_sub_tree.isEmpty);
-//            System.out.println("(before) number of trees at level " + upper_level + " is " + upper_forests.trees.size());
 
             if (!middle_sub_tree.isSingle && !middle_sub_tree.isEmpty) {
                 SpanningTree new_tree = new SpanningTree(middle_sub_tree);
                 new_tree.increaseEdgeLevel(current_level);
                 upper_forests.putNewSpanningTree(new_tree);
                 this.dforests.put(upper_level, upper_forests);
-//            } else if (middle_sub_tree.isSingle) {
-//                System.out.println("middle tree is a single tree, it contains the only node " + middle_sub_tree.N_nodes.iterator().next());
-//            } else {
-//                System.out.println("The tree is single or empty, no need to be pushed to higher level");
             }
 
-//            System.out.println("(after) number of trees at level " + upper_level + " is " + upper_forests.trees.size());
-
             rel = findReplacementEdgeByNodes(middle_sub_tree.N_nodes, combine_nodes_list, current_level, r, middle_sub_tree.neo4j, upper_forests);
-
-//            if (rel != null) {
-//                System.out.println("found the replacement edge (middle tree)" + rel + "  at level" + current_level);
-//            }
         }
 
         return rel;
@@ -286,7 +246,6 @@ public class DynamicForests {
                 right_tree.ettree.head.prev = left_tree.ettree.tail;
                 right_tree.ettree.head = left_tree.ettree.head;
                 left_tree.ettree.tail = right_tree.ettree.tail;
-//                left_tree.etTreeUpdateInformation(); //Todo: may can be simplified, at this time, it changes the structure of the linked list
                 return left_tree;
             case 5:
             case 7:
@@ -319,7 +278,6 @@ public class DynamicForests {
                             return rel;
                         } else {
                             next_rel.setProperty("level", edge_level + 1); //Increase the edge level by 1
-                            int upper_level = edge_level + 1;
                             if (this.isTreeEdge(next_rel.getId(), edge_level)) {
                                 upper_forests.pushEdgeToHigherLevelForest(next_rel, neo4j);
                             }

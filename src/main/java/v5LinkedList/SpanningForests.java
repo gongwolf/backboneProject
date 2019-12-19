@@ -25,6 +25,15 @@ public class SpanningForests {
         return null;
     }
 
+    public SpanningTree findTree(int rid) {
+        for (SpanningTree current_tree : trees) {
+            if (current_tree.hasEdge(rid)) {
+                return current_tree;
+            }
+        }
+        return null;
+    }
+
     public int findTreeIndex(Relationship r) {
         for (int index = 0; index < trees.size(); index++) {
             if (trees.get(index).hasEdge(r)) {
@@ -43,10 +52,13 @@ public class SpanningForests {
         return -1;
     }
 
+    /**
+     * because i is always less than j, i is deleted before j.
+     * After deletion of tree i, the index of tree j needs to decrease 1.
+     * **/
     public boolean putNewSpanningTree(SpanningTree sub_tree) {
         this.trees.add(sub_tree);
         if (trees.size() == 1) {
-//            System.out.println("There is only one tree in level " + level + ", do not need to merge");
             return true;
         }
 
@@ -54,16 +66,10 @@ public class SpanningForests {
         while ((tree_idx = hasCouldMergedTree()) != null) {
             int i = tree_idx.getKey();
             int j = tree_idx.getValue();
-//            System.out.println("Merging tree ..... " + i + "  and  " + j);
 
             SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j));
-            /**
-             * because i is always less than j, i is deleted before j.
-             * After deletion of tree i, the index of tree j needs to decrease 1.
-             * **/
             trees.remove(i);
             trees.remove(j - 1);
-
             trees.add(new_tree);
         }
         return true;
@@ -71,18 +77,13 @@ public class SpanningForests {
 
     private SpanningTree mergeTree(SpanningTree onetree, SpanningTree anothertree) {
         SpanningTree new_tree = new SpanningTree(onetree.neo4j, false);
-
         new_tree.N_nodes.addAll(onetree.N_nodes);
         new_tree.N_nodes.addAll(anothertree.N_nodes);
-
         new_tree.SpTree.addAll(onetree.SpTree);
         new_tree.SpTree.addAll(anothertree.SpTree);
-
         new_tree.N = new_tree.N_nodes.size();
         new_tree.E = new_tree.SpTree.size();
-
         new_tree.FindEulerTourStringWiki();
-
         return new_tree;
 
     }
@@ -125,7 +126,6 @@ public class SpanningForests {
             int j = tree_idx.getValue();
 
             SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j));
-//            System.out.println("Merge ...... "+i+"  and   "+j);
             /**
              * because i is always less than j, i is deleted before j.
              * After deletion of tree i, the index of tree j needs to decrease 1.
@@ -146,4 +146,6 @@ public class SpanningForests {
         }
         return false;
     }
+
+
 }
