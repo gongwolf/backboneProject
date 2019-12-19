@@ -7,6 +7,7 @@ import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
 import configurations.ProgramProperty;
 import javafx.util.Pair;
+import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.graphdb.*;
 
 import java.util.*;
@@ -365,7 +366,7 @@ public class SpanningTree {
 
         ListNode<RelationshipExt> f_p = firstOccurrences.get(r.getId());
         ListNode<RelationshipExt> l_p = lastOccurrences.get(r.getId());
-        
+
 
         boolean left_tree_empty = (this.ettree.head == f_p);
         boolean middle_tree_empty = (f_p.next == l_p && l_p.prev == f_p);
@@ -556,6 +557,41 @@ public class SpanningTree {
 
     }
 
+
+    public void initializedSingleEdge(Relationship next_level_rel) {
+        this.lastOccurrences.clear();
+        this.firstOccurrences.clear();
+
+        this.nodeFirstOccurrences.clear();
+        this.nodeLastOccurrences.clear();
+
+        this.N_nodes.clear();
+        this.N_nodes.add(next_level_rel.getStartNodeId());
+        this.N_nodes.add(next_level_rel.getEndNodeId());
+
+        this.SpTree.clear();
+        this.SpTree.add(next_level_rel.getId());
+
+        this.N = 2;
+        this.E = 1;
+
+        this.isSingle = false;
+        this.isEmpty = false;
+        this.ettree = new LinkedList<>();
+
+        int start_id = (int) next_level_rel.getStartNodeId();
+        int end_id = (int) next_level_rel.getEndNodeId();
+
+        RelationshipExt edge = new RelationshipExt(next_level_rel, start_id, end_id);
+        ListNode<RelationshipExt> node = new ListNode<>(edge);
+        this.ettree.append(node);
+
+        RelationshipExt back_edge = new RelationshipExt(next_level_rel, end_id, start_id);
+        ListNode<RelationshipExt> back_node = new ListNode<>(back_edge);
+        this.ettree.append(back_node);
+
+    }
+
     private void initializedAsEmptyTree() {
 
         this.lastOccurrences.clear();
@@ -579,9 +615,9 @@ public class SpanningTree {
                 int c_level = (int) rel.getProperty("level");
                 if (c_level == current_level) {
                     rel.setProperty("level", current_level + 1);
-                    if(rel.getId() == 13866){
-                        System.out.println("Update the "+rel + " to level "+ (current_level+1)+"    &&&&&&&&&   ");
-                    }
+//                    if(rel.getId() == 13866){
+//                        System.out.println("Update the "+rel + " to level "+ (current_level+1)+"    &&&&&&&&&   ");
+//                    }
                 }
             }
             tx.success();
@@ -637,15 +673,30 @@ public class SpanningTree {
             if (counter <= limit) {
                 System.out.println(current.data);
             }
-        }else if(this.isSingle){
-            System.out.println("It's a single tree with the node "+ this.N_nodes.iterator().next());
-        }else if(this.isEmpty){
+        } else if (this.isSingle) {
+            System.out.println("It's a single tree with the node " + this.N_nodes.iterator().next());
+        } else if (this.isEmpty) {
             System.out.println("it's a empty tree !!!!!!");
         }
     }
 
     public boolean hasEdge(long rel_id) {
         return SpTree.contains(rel_id);
+    }
+
+    public void removeSingleEdge(long id) {
+        ListNode<RelationshipExt> f_p = firstOccurrences.get(id);
+        ListNode<RelationshipExt> l_p = lastOccurrences.get(id);
+
+        if (f_p != ettree.head && l_p != ettree.tail) {
+            f_p.prev.next = l_p.next;
+            l_p.next.prev = f_p.prev;
+        } else if (f_p == ettree.head && l_p != ettree.tail) {
+        } else if (f_p != ettree.head && l_p == ettree.tail) {
+        } else if (f_p == ettree.head && l_p == ettree.tail) {
+
+        }
+
     }
 }
 

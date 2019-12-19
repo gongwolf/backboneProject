@@ -1,5 +1,6 @@
 package v5LinkedList;
 
+import Neo4jTools.Neo4jDB;
 import javafx.util.Pair;
 import org.neo4j.graphdb.Relationship;
 
@@ -109,4 +110,40 @@ public class SpanningForests {
     }
 
 
+    public boolean pushEdgeToHigherLevelForest(Relationship next_level_rel, Neo4jDB neo4j) {
+        SpanningTree new_sub_tree = new SpanningTree(neo4j, false);
+        new_sub_tree.initializedSingleEdge(next_level_rel);
+        this.trees.add(new_sub_tree);
+
+        if (trees.size() == 1) {
+            return true;
+        }
+
+        Pair<Integer, Integer> tree_idx;
+        while ((tree_idx = hasCouldMergedTree()) != null) {
+            int i = tree_idx.getKey();
+            int j = tree_idx.getValue();
+
+            SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j));
+//            System.out.println("Merge ...... "+i+"  and   "+j);
+            /**
+             * because i is always less than j, i is deleted before j.
+             * After deletion of tree i, the index of tree j needs to decrease 1.
+             * **/
+            trees.remove(i);
+            trees.remove(j - 1);
+
+            trees.add(new_tree);
+        }
+        return true;
+    }
+
+    public boolean containsEdge(long id) {
+        for (SpanningTree t : trees) {
+            if (t.SpTree.contains(id)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
