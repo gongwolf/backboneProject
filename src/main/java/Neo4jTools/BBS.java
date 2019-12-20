@@ -24,6 +24,12 @@ public class BBS {
     }
 
     private void bbsatlevel() {
+        long start_time = System.currentTimeMillis();
+        long expansion_time = 0;
+        long mynode_finding_time = 0;
+        long addtoskyline_time = 0;
+
+
         String graph_db_folder = this.base_db_name + "_Level" + 6;
 
         Neo4jDB neo4j_level = new Neo4jDB(graph_db_folder);
@@ -52,18 +58,28 @@ public class BBS {
                         path p = v.skyPaths.get(i);
                         if (!p.expaned) {
                             p.expaned = true;
+
+                            long expansion_time_start = System.nanoTime();
                             ArrayList<path> new_paths = p.expand(neo4j_level);
+                            expansion_time += System.nanoTime() - expansion_time_start;
+
+
                             for (path np : new_paths) {
-//                                    System.out.println("    " + np);
                                 myNode next_n;
+                                long mynode_finding_time_start = System.nanoTime();
                                 if (tmpStoreNodes.containsKey(np.endNode)) {
                                     next_n = tmpStoreNodes.get(np.endNode);
                                 } else {
                                     next_n = new myNode(snode, np.endNode, neo4j_level);
                                     tmpStoreNodes.put(next_n.id, next_n);
                                 }
+                                mynode_finding_time += System.nanoTime() - mynode_finding_time_start;
 
-                                if (next_n.addToSkyline(np) && !next_n.inqueue) {
+                                long addtoskyline_time_start = System.nanoTime();
+                                boolean add_succ = next_n.addToSkyline(np);
+                                addtoskyline_time += System.nanoTime() - addtoskyline_time_start;
+
+                                if (add_succ && !next_n.inqueue) {
                                     mqueue.add(next_n);
                                     next_n.inqueue = true;
                                 }
@@ -71,12 +87,33 @@ public class BBS {
                         }
                     }
                 }
-                System.out.println("Finished find the skyline paths for node   " + nodeID);
+                System.out.println("Finished find the skyline paths for node   " + nodeID + " " + (System.currentTimeMillis() - start_time));
+
+                long number_addtoskyline = 0;
+                StringBuffer sb = new StringBuffer();
+                sb.append("[");
+                for(Map.Entry<Long, myNode> e:tmpStoreNodes.entrySet()){
+                    number_addtoskyline += e.getValue().callAddToSkylineFunction;
+                    if(e.getValue().skyPaths.size()==3338){
+                        sb.append(e.getKey()).append(",");
+                    }
+                    System.out.println(e.getKey()+"   "+e.getValue().skyPaths.size());
+                }
+                sb.append("]");
+                System.out.println("call add to skyline function "+number_addtoskyline);
+                System.out.println(sb);
+
+                break;
             }
             tx.success();
-        }
+            System.out.println((System.currentTimeMillis() - start_time));
 
+        }
         neo4j_level.closeDB();
+        System.out.println((System.currentTimeMillis() - start_time));
+        System.out.println(expansion_time / 1000000);
+        System.out.println(mynode_finding_time / 1000000);
+        System.out.println(addtoskyline_time/1000000);
 
     }
 

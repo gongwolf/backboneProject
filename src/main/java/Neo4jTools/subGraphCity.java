@@ -26,7 +26,6 @@ public class subGraphCity {
         System.out.println("number of edges :" + neo4j.getNumberofEdges());
         System.out.println("====================================================================");
 
-//        HashSet<Long> visited_map = new HashSet<>();
         HashSet<Relationship> edges = new HashSet<>();
         HashSet<Long> nodes = new HashSet<>();
 
