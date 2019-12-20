@@ -7,13 +7,13 @@ public class RelationshipExt {
     public boolean visited;
     public Relationship relationship;
     public int level;
-    public int start_id;
-    public int end_id;
+    public long start_id;
+    public long end_id;
 
     public RelationshipExt(){
     }
 
-    public RelationshipExt(Relationship relationship, int src_id, int dest_id) {
+    public RelationshipExt(Relationship relationship, long src_id, long dest_id) {
         this.rel_id = relationship.getId();
         this.relationship = relationship;
         this.visited = false;

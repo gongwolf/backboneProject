@@ -6,7 +6,9 @@ import javafx.util.Pair;
 import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.*;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
@@ -47,6 +49,8 @@ public class IndexPathBuild {
     private void build() throws CloneNotSupportedException {
         initLevel();
         construction();
+        createIndexFolder();
+        indexBuild();
     }
 
     private void initLevel() {
@@ -88,7 +92,7 @@ public class IndexPathBuild {
                 currentLevel = upperlevel;
             }
 
-            if (currentLevel == 2) break;
+//            if (currentLevel == 2) break;
 
         } while (cn != 0 && threshold != null);
     }
@@ -199,7 +203,6 @@ public class IndexPathBuild {
 
 
     private long handleUpperLevelGraph(int currentLevel, Pair<Integer, Integer> threshold_p, int threshold_t) {
-        Hashtable<Long, ArrayList<Long>> nodesToHighWay = new Hashtable<>();
         String sub_db_name = this.base_db_name + "_Level" + currentLevel;
 
         String prefix = "/home/gqxwolf/mydata/projectData/BackBone/";
@@ -209,7 +212,8 @@ public class IndexPathBuild {
         graphdb = neo4j.graphDB;
         long pre_n = neo4j.getNumberofNodes();
         long pre_e = neo4j.getNumberofEdges();
-        System.out.println("deal with level " + currentLevel + " graph at " + neo4j.DB_PATH+"  "+pre_n+" nodes and "+pre_e+" edges");
+        System.out.println("deal with level " + currentLevel + " graph at " + neo4j.DB_PATH + "  " + pre_n + " nodes and " + pre_e + " edges");
+
 
         // record the nodes that are deleted in this layer.
         HashSet<Long> deletedNodes = new HashSet<>();
@@ -228,6 +232,7 @@ public class IndexPathBuild {
             System.out.println("Finish finding the level 0 spanning tree..........");
         } else {
             updateNeb4jConnectorInDynamicForests();
+            System.out.println("Updated the neo4j database object ................");
         }
 
         System.out.println("#####");
@@ -235,19 +240,21 @@ public class IndexPathBuild {
 
         boolean deleted = removeLowerDegreePairEdgesByThreshold(threshold_p, threshold_t, deletedNodes, deletedEdges);
         System.out.println("Removing the edges in level " + currentLevel + "  with degree threshold  : " + threshold_p);
+        long post_n = neo4j.getNumberofNodes();
+        long post_e = neo4j.getNumberofEdges();
+        System.out.println("~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
 
 
         getDegreePairs();
         deletedEdges.addAll(removeSingletonEdgesInForests(deletedNodes));
         long numberOfNodes = neo4j.getNumberofNodes();
-        long post_n = neo4j.getNumberofNodes();
-        long post_e = neo4j.getNumberofEdges();
+        post_n = neo4j.getNumberofNodes();
+        post_e = neo4j.getNumberofEdges();
 //
-//        String textFilePath = prefix + "busline_" + this.graphsize + "_" + this.samenode_t + "/level" + currentLevel + "/";
         String textFilePath = prefix + "busline_sub_graph_NY_/level" + currentLevel + "/";
         neo4j.saveGraphToTextFormation(textFilePath);
 //
-        System.out.println(neo4j.graphDB +" ~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
+        System.out.println(neo4j.graphDB + " ~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
         this.deletedEdges_layer.add(deletedEdges);
 
         neo4j.closeDB();
@@ -321,55 +328,43 @@ public class IndexPathBuild {
 
     private boolean removeLowerDegreePairEdgesByThreshold(Pair<Integer, Integer> threshold_p, int threshold_t, HashSet<Long> deletedNodes, HashSet<Long> deletedEdges) {
         boolean deleted = false;
-        Transaction tx = graphdb.beginTx();
-        try {
-            for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> dp : this.degree_pairs.entrySet()) {
-                int sd = dp.getKey().getKey(); // the first number of the degree pair
-                int ed = dp.getKey().getValue(); // the second number of the degree pair
-                int ct = sd + ed; //summation of the degree pair.
+        for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> dp : this.degree_pairs.entrySet()) {
+            int sd = dp.getKey().getKey(); // the first number of the degree pair
+            int ed = dp.getKey().getValue(); // the second number of the degree pair
+            int ct = sd + ed; //summation of the degree pair.
 
-                /**
-                 * Four case pair of degree needs to be deleted
-                 * 1) the summation of the degree pair (ct) is less than the summation of the given threshold degree pair (threshold_t).
-                 * 2) if threshold_t is equal to ct, the first number of the degree pair is less than the first number of the the given degree pair
-                 * 3) the given degree pair is equal to the degree pair dp.
-                 */
+            /**
+             * Four case pair of degree needs to be deleted
+             * 1) the summation of the degree pair (ct) is less than the summation of the given threshold degree pair (threshold_t).
+             * 2) if threshold_t is equal to ct, the first number of the degree pair is less than the first number of the the given degree pair
+             * 3) the given degree pair is equal to the degree pair dp.
+             */
 
-                if ((ct < threshold_t) ||
-                        (threshold_t == ct && sd < threshold_p.getKey()) ||
-                        (sd == threshold_p.getKey() && ed == threshold_p.getValue()) ||
-                        (ed == threshold_p.getKey() && sd == threshold_p.getValue())) {
-
+            if ((ct < threshold_t) || (threshold_t == ct && sd < threshold_p.getKey()) || (sd == threshold_p.getKey() && ed == threshold_p.getValue()) || (ed == threshold_p.getKey() && sd == threshold_p.getValue())) {
+                try (Transaction tx = graphdb.beginTx()) {
                     for (long rel : dp.getValue()) {
                         Relationship r = graphdb.getRelationshipById(rel);
-//                        System.out.println("====== 1111" + neo4j.graphDB.getRelationshipById(159));
+//                        System.out.println(r);
                         boolean flag = deleteEdge(r, deletedNodes);
+
                         if (flag) {
                             deletedEdges.add(r.getId());
                             if (!deleted) {
                                 deleted = true;
                             }
                         }
-
-
                     }
                     tx.success();
                 }
             }
-            System.out.println("Finished the remove of the edge by using the threshold " + threshold_p + " !!!!!!!!!!!!!!!!!!!!!!");
-            tx.success();
-        } catch (RuntimeException e) {
-            tx.failure();
-            System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ run exception!!!!");
-            System.exit(0);
         }
 
+        System.out.println("Finished the remove of the edge by using the threshold " + threshold_p + " !!!!!!!!!!!!!!!!!!!!!!");
         return deleted;
     }
 
     private boolean deleteEdge(Relationship r, HashSet<Long> deletedNodes) {
         boolean canBeDeleted;
-//        System.out.println("Deleting the edge " + r);
         if (dforests.isTreeEdge(r.getId())) {
             canBeDeleted = this.dforests.deleteEdge(r);
             if (canBeDeleted) {
@@ -379,6 +374,7 @@ public class IndexPathBuild {
             deleteRelationshipFromDB(r, deletedNodes);
             canBeDeleted = true;
         }
+
         return canBeDeleted;
     }
 
@@ -405,12 +401,6 @@ public class IndexPathBuild {
                         for (Long rel_id : e.getValue()) {
                             Relationship r = graphdb.getRelationshipById(rel_id);
                             int edge_level = (int) r.getProperty("level");
-
-//                            if(r.getId()==5249){
-//                                System.out.println(r+"   "+edge_level+" !!!!!");
-//                                SpanningTree sp = this.dforests.dforests.get(edge_level).findTree(r);
-//                                System.out.println("====================================");
-//                            }
 
                             for (int l = edge_level; l >= 0; l--) {
                                 int sp_idx = this.dforests.dforests.get(l).findTreeIndex(r);
@@ -443,6 +433,186 @@ public class IndexPathBuild {
                     "dgr_paris:" + degree_pairs.size());
         }
         return deletedEdges;
+    }
+
+
+    private void createIndexFolder() {
+        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/busline_sub_graph_NY/";
+
+        File idx_folder = new File(folder);
+        try {
+            if (idx_folder.exists()) {
+                System.out.println("delete the folder : " + folder);
+                FileUtils.deleteDirectory(idx_folder);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        idx_folder.mkdirs();
+    }
+
+
+    /***
+     * Build the index for each layer based on the deletedEdges_layers information
+     */
+    private void indexBuild() {
+        System.out.println("============== index building process");
+        long overallIndex = 0;
+        int maxlevel = this.deletedEdges_layer.size();
+        for (int l = 0; l < maxlevel; l++) {
+            int level = l;
+
+            int nextlevel = level + 1;
+            HashSet<Long> remind_nodes = new HashSet<>(); // the nodes remain in next level.
+            if (nextlevel != maxlevel) {
+                remind_nodes = getNodeListAtLevel(nextlevel);
+            }
+
+            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/busline_sub_graph_NY/level" + level;
+
+            File sub_folder_f = new File(sub_folder_str);
+            if (sub_folder_f.exists()) {
+                sub_folder_f.delete();
+            }
+            sub_folder_f.mkdirs();
+
+            HashSet<Long> de = deletedEdges_layer.get(level);
+
+            String graph_db_folder = this.base_db_name + "_Level" + level;
+
+            Neo4jDB neo4j_level = new Neo4jDB(graph_db_folder);
+            System.out.println(neo4j_level.DB_PATH + "   deleted edges:" + de.size());
+            System.out.println(level + " " + nextlevel + " " + maxlevel + "  size of remind nodes " + remind_nodes.size());
+            neo4j_level.startDB(true);
+            GraphDatabaseService graphdb_level = neo4j_level.graphDB;
+
+            long numIndex = 0;
+            long sizeOverallSkyline = 0;
+            try (Transaction tx = graphdb_level.beginTx()) {
+                ResourceIterable<Node> allnodes_iteratable = graphdb_level.getAllNodes();
+                ResourceIterator<Node> allnodes_iter = allnodes_iteratable.iterator();
+
+                BufferedWriter writer = null;
+
+                int counter = 1;
+                while (allnodes_iter.hasNext()) {
+                    HashMap<Long, myNode> tmpStoreNodes = new HashMap();
+                    Node node = allnodes_iter.next();
+
+                    long nodeID = node.getId();
+                    if (level == maxlevel - 1) {
+                        System.out.println(counter+"   "+nodeID+"    .........");
+                        counter++;
+                    }
+
+                    myNode snode = new myNode(nodeID, neo4j_level);
+                    myNodePriorityQueue mqueue = new myNodePriorityQueue();
+                    tmpStoreNodes.put(snode.id, snode);
+                    mqueue.add(snode);
+                    while (!mqueue.isEmpty()) {
+                        myNode v = mqueue.pop();
+                        for (int i = 0; i < v.skyPaths.size(); i++) {
+                            path p = v.skyPaths.get(i);
+                            if (!p.expaned) {
+                                p.expaned = true;
+                                ArrayList<path> new_paths = p.expand(neo4j_level, de);
+                                for (path np : new_paths) {
+                                    myNode next_n;
+                                    if (tmpStoreNodes.containsKey(np.endNode)) {
+                                        next_n = tmpStoreNodes.get(np.endNode);
+                                    } else {
+                                        next_n = new myNode(snode, np.endNode, neo4j_level);
+                                        tmpStoreNodes.put(next_n.id, next_n);
+                                    }
+
+                                    if (next_n.addToSkyline(np) && !next_n.inqueue) {
+                                        mqueue.add(next_n);
+                                        next_n.inqueue = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    int sum = 0;
+                    for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
+                        ArrayList<path> sk = e.getValue().skyPaths;
+                        //remove the index of the self connection that node only has one skyline path and the skyline path is to itself
+                        if (!(sk.size() == 1 && sk.get(0).costs[0] == 0 && sk.get(0).costs[1] == 0 && sk.get(0).costs[2] == 0)) {
+                            for (path p : sk) {
+                                if (remind_nodes.size() != 0 && remind_nodes.contains(p.endNode)) {
+                                    sum++;
+                                } else if (remind_nodes.size() == 0) {
+                                    sum++;
+                                }
+                            }
+                        }
+                    }
+
+                    sizeOverallSkyline += sum;
+
+                    if (sum != 0) {
+                        numIndex++;
+                        /**clean the built index file*/
+                        File idx_file = new File(sub_folder_str + "/" + nodeID + ".idx");
+                        if (idx_file.exists()) {
+                            idx_file.delete();
+                        }
+
+                        writer = new BufferedWriter(new FileWriter(idx_file.getAbsolutePath()));
+                        for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
+                            long nodeid = e.getKey();
+                            myNode node_obj = e.getValue();
+                            ArrayList<path> skys = node_obj.skyPaths;
+                            for (path p : skys) {
+                                /** the end node of path is a highway, the node is still appear in next level, also, the path is not a dummy path of source node **/
+                                if (p.endNode != nodeID) {
+                                    if (level != (maxlevel - 1)) {
+                                        if (remind_nodes.contains(p.endNode)) {
+                                            writer.write(nodeid + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
+                                        }
+                                    } else {
+                                        writer.write(nodeid + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
+
+                                    }
+                                }
+                            }
+                        }
+                        writer.close();
+                    }
+                }
+
+                overallIndex += sizeOverallSkyline;
+                System.out.println(numIndex + "    " + sizeOverallSkyline);
+                tx.success();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            System.out.println(overallIndex);
+            neo4j_level.closeDB();
+        }
+    }
+
+
+    private HashSet<Long> getNodeListAtLevel(int level) {
+        HashSet<Long> nodeList = new HashSet<Long>();
+        String graph_db_folder = this.base_db_name + "_Level" + level;
+
+        Neo4jDB neo4j_level = new Neo4jDB(graph_db_folder);
+        neo4j_level.startDB(true);
+        GraphDatabaseService graphdb_level = neo4j_level.graphDB;
+
+        try (Transaction tx = graphdb_level.beginTx()) {
+            ResourceIterable<Node> allnodes_iteratable = graphdb_level.getAllNodes();
+            ResourceIterator<Node> allnodes_iter = allnodes_iteratable.iterator();
+            while (allnodes_iter.hasNext()) {
+                Node node = allnodes_iter.next();
+                nodeList.add(node.getId());
+            }
+            tx.success();
+        }
+        neo4j_level.closeDB();
+        return nodeList;
     }
 
 }

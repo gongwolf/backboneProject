@@ -68,8 +68,6 @@ public class DynamicForests {
         Relationship rel = null;
         boolean canBeDeleted = false;
 
-//        System.out.println("Size of the Forests " + this.dforests.size() + "   edge at level : " + e_level);
-
         int l = e_level;
         for (; l >= 0; l--) {
             SpanningTree sp_tree = this.dforests.get(l).findTree(r);
@@ -135,10 +133,6 @@ public class DynamicForests {
             SpanningTree middle_tree = splittedTrees[1];
             SpanningTree right_tree = splittedTrees[2];
 
-            left_tree.etTreeUpdateInformation();
-            middle_tree.etTreeUpdateInformation();
-            right_tree.etTreeUpdateInformation();
-
             right_tree = combineSpanningTree(left_tree, right_tree, case_number);
             right_tree.etTreeUpdateInformation();
 
@@ -146,7 +140,6 @@ public class DynamicForests {
              *  else, delete and replace with the replacement edge.
              */
             if (l <= level_replacement) {
-
                 long mid_new_root_id = (middle_tree.N_nodes.contains(replacement_rel.getStartNodeId())) ? replacement_rel.getStartNodeId() : replacement_rel.getEndNodeId();
                 long right_new_root_id = (right_tree.N_nodes.contains(replacement_rel.getStartNodeId())) ? replacement_rel.getStartNodeId() : replacement_rel.getEndNodeId();
                 right_tree.reroot(right_new_root_id);
@@ -154,8 +147,8 @@ public class DynamicForests {
                 connectTwoTreeByRel(middle_tree, right_tree, replacement_rel);
                 middle_tree.etTreeUpdateInformation();
                 this.dforests.get(l).trees.add(middle_tree);
-
             } else {
+
                 if (!middle_tree.isSingle && !middle_tree.isEmpty) {
                     this.dforests.get(l).trees.add(middle_tree);
                     middle_tree.etTreeUpdateInformation();
@@ -170,10 +163,8 @@ public class DynamicForests {
     }
 
     private void connectTwoTreeByRel(SpanningTree middle_tree, SpanningTree right_tree, Relationship replacement_rel) {
-        int middle_tree_root_id = middle_tree.isEmpty || middle_tree.isSingle ? Math.toIntExact(middle_tree.N_nodes.iterator().next()) : middle_tree.ettree.head.data.start_id;
-        int right_tree_root_id = right_tree.isEmpty || right_tree.isSingle ? Math.toIntExact(right_tree.N_nodes.iterator().next()) : right_tree.ettree.head.data.start_id;
-
-//        System.out.println("Left root: " + middle_tree_root_id + "(" + middle_tree.isEmpty + " " + middle_tree.isSingle + ")" + "  Right Root:" + right_tree_root_id + "(" + right_tree.isEmpty + " " + right_tree.isSingle + ")");
+        long middle_tree_root_id = middle_tree.isEmpty || middle_tree.isSingle ? Math.toIntExact(middle_tree.N_nodes.iterator().next()) : middle_tree.ettree.head.data.start_id;
+        long right_tree_root_id = right_tree.isEmpty || right_tree.isSingle ? Math.toIntExact(right_tree.N_nodes.iterator().next()) : right_tree.ettree.head.data.start_id;
 
         // new edge back from the root of the right_tree to the root of the middle tree
         RelationshipExt iter_edge = new RelationshipExt(replacement_rel, middle_tree_root_id, right_tree_root_id); // new edge back from the root of the right_tree to the root of the middle tree
@@ -185,11 +176,13 @@ public class DynamicForests {
             right_tree.ettree.head.prev = middle_tree.ettree.tail;
             middle_tree.ettree.tail = right_tree.ettree.tail;
         }
-
         // new edge back from the root of the right_tree to the root of the middle tree
         RelationshipExt back_iter_edge = new RelationshipExt(replacement_rel, right_tree_root_id, middle_tree_root_id);
         ListNode<RelationshipExt> back_node = new ListNode<>(back_iter_edge);
         middle_tree.ettree.append(back_node);
+
+        middle_tree.isSingle = false;
+        middle_tree.isEmpty = false;
     }
 
     private Relationship findReplacementEdge(SpanningTree middle_sub_tree, int current_level, Relationship r, HashSet<Long> combine_nodes_list, SpanningTree left_sub_tree, SpanningTree right_sub_tree) {
@@ -265,28 +258,26 @@ public class DynamicForests {
      */
     public Relationship findReplacementEdgeByNodes(HashSet<Long> self_nodes_list, HashSet<Long> other_tree_nodes_list, int current_level, Relationship del, Neo4jDB neo4j, SpanningForests upper_forests) {
         Relationship rel = null;
-        try (Transaction tx = neo4j.graphDB.beginTx()) {
-            for (long node_id : self_nodes_list) {
-                Node n = neo4j.graphDB.getNodeById(node_id);
-                Iterator<Relationship> rels_iter = n.getRelationships(Line.Linked, Direction.BOTH).iterator();
-                while (rels_iter.hasNext()) {
-                    Relationship next_rel = rels_iter.next();
-                    int edge_level = (int) next_rel.getProperty("level");
-                    if (edge_level == current_level && next_rel.getId() != del.getId()) {
-                        if (other_tree_nodes_list.contains(next_rel.getOtherNodeId(node_id))) {
-                            rel = next_rel;
-                            return rel;
-                        } else {
-                            next_rel.setProperty("level", edge_level + 1); //Increase the edge level by 1
-                            if (this.isTreeEdge(next_rel.getId(), edge_level)) {
-                                upper_forests.pushEdgeToHigherLevelForest(next_rel, neo4j);
-                            }
+        for (long node_id : self_nodes_list) {
+            Node n = neo4j.graphDB.getNodeById(node_id);
+            Iterator<Relationship> rels_iter = n.getRelationships(Line.Linked, Direction.BOTH).iterator();
+            while (rels_iter.hasNext()) {
+                Relationship next_rel = rels_iter.next();
+                int edge_level = (int) next_rel.getProperty("level");
+                if (edge_level == current_level && next_rel.getId() != del.getId()) {
+                    if (other_tree_nodes_list.contains(next_rel.getOtherNodeId(node_id))) {
+                        rel = next_rel;
+                        return rel;
+                    } else {
+                        next_rel.setProperty("level", edge_level + 1); //Increase the edge level by 1
+                        if (this.isTreeEdge(next_rel.getId(), edge_level)) {
+                            upper_forests.pushEdgeToHigherLevelForest(next_rel, neo4j);
                         }
                     }
                 }
             }
-            tx.success();
         }
+
         return rel;
     }
 }

@@ -461,10 +461,11 @@ public class SpanningTree {
 
     //Todo: the performance can be improved, for example, used the original spanning tree information to update the splitted trees.
     public void etTreeUpdateInformation() {
-        this.nodeFirstOccurrences.clear();
-        this.nodeLastOccurrences.clear();
-        this.firstOccurrences.clear();
-        this.lastOccurrences.clear();
+        if(isSingle||isEmpty){
+            return;
+        }
+
+        clearData();
 
         int counter = 0;
         if (!ettree.isEmpty()) {
@@ -475,8 +476,8 @@ public class SpanningTree {
                 long start_node_id = current.data.start_id;
 
                 this.SpTree.add(edge_id);
-                this.N_nodes.add(current.data.relationship.getStartNodeId());
-                this.N_nodes.add(current.data.relationship.getEndNodeId());
+                this.N_nodes.add(current.data.start_id);
+                this.N_nodes.add(current.data.end_id);
 
                 if (this.firstOccurrences.containsKey(current.data.relationship.getId())) {
                     this.lastOccurrences.put(edge_id, current);
@@ -498,8 +499,8 @@ public class SpanningTree {
             long edge_id = current.data.relationship.getId();
 
             this.SpTree.add(edge_id);
-            this.N_nodes.add(current.data.relationship.getStartNodeId());
-            this.N_nodes.add(current.data.relationship.getEndNodeId());
+            this.N_nodes.add(current.data.start_id);
+            this.N_nodes.add(current.data.end_id);
             long start_node_id = current.data.start_id;
 
             this.E = SpTree.size();
@@ -521,21 +522,24 @@ public class SpanningTree {
         ettree.n = counter;
     }
 
+    private void clearData() {
+        this.nodeFirstOccurrences.clear();
+        this.nodeLastOccurrences.clear();
+        this.firstOccurrences.clear();
+        this.lastOccurrences.clear();
+        this.SpTree.clear();
+        this.N_nodes.clear();
+    }
+
 
     public boolean hasEdge(Relationship r) {
         return this.SpTree.contains(r.getId());
     }
 
     public void initializedAsSingleTree(long nodeid) {
-        this.lastOccurrences.clear();
-        this.firstOccurrences.clear();
+        clearData();
 
-        this.nodeFirstOccurrences.clear();
-        this.nodeLastOccurrences.clear();
-
-        this.N_nodes.clear();
         this.N_nodes.add(nodeid);
-        this.SpTree.clear();
         this.N = 1;
         this.E = 0;
         this.isSingle = true;
@@ -546,17 +550,10 @@ public class SpanningTree {
 
 
     public void initializedSingleEdge(Relationship next_level_rel) {
-        this.lastOccurrences.clear();
-        this.firstOccurrences.clear();
+        clearData();
 
-        this.nodeFirstOccurrences.clear();
-        this.nodeLastOccurrences.clear();
-
-        this.N_nodes.clear();
         this.N_nodes.add(next_level_rel.getStartNodeId());
         this.N_nodes.add(next_level_rel.getEndNodeId());
-
-        this.SpTree.clear();
         this.SpTree.add(next_level_rel.getId());
 
         this.N = 2;
@@ -577,23 +574,16 @@ public class SpanningTree {
         ListNode<RelationshipExt> back_node = new ListNode<>(back_edge);
         this.ettree.append(back_node);
 
-        firstOccurrences.put(next_level_rel.getId(),node);
-        lastOccurrences.put(next_level_rel.getId(),back_node);
-        nodeFirstOccurrences.put((long) start_id,node);
-        nodeLastOccurrences.put((long) start_id,back_node);
+        firstOccurrences.put(next_level_rel.getId(), node);
+        lastOccurrences.put(next_level_rel.getId(), back_node);
+        nodeFirstOccurrences.put((long) start_id, node);
+        nodeLastOccurrences.put((long) start_id, back_node);
 
     }
 
     private void initializedAsEmptyTree() {
+        clearData();
 
-        this.lastOccurrences.clear();
-        this.firstOccurrences.clear();
-
-        this.nodeFirstOccurrences.clear();
-        this.nodeLastOccurrences.clear();
-
-        this.N_nodes.clear();
-        this.SpTree.clear();
         this.N = 0;
         this.E = 0;
         this.isSingle = false;
@@ -674,6 +664,7 @@ public class SpanningTree {
     }
 
     public int removeSingleEdge(long id) {
+
         ListNode<RelationshipExt> f_p = firstOccurrences.get(id);
         ListNode<RelationshipExt> l_p = lastOccurrences.get(id);
 
@@ -708,8 +699,9 @@ public class SpanningTree {
             }
 
             this.etTreeUpdateInformation();
+
         } catch (Exception e) {
-            System.out.println(id+"    "+remove_case);
+            System.out.println("error when remove the single edges "+id + "    " + remove_case);
             e.printStackTrace();
         }
         return remove_case;

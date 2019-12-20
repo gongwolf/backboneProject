@@ -59,8 +59,8 @@ public class IndexPathBuild {
 //            numberofedges+= de.size();
 //        }
 //        System.out.println(numberofedges);
-//        createIndexFolder();
-//        indexBuild();
+        createIndexFolder();
+        indexBuild();
 //        printSummurizationInformation();
 //        test();
     }

@@ -5,6 +5,7 @@ import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -60,13 +61,14 @@ public class Neo4jDB {
 
     public void startDB(boolean getProperties) {
         GraphDatabaseBuilder builder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(new File(this.DB_PATH));
-        graphDB = builder.newGraphDatabase();
+//        builder.loadPropertiesFromFile(conFile)
+        builder.setConfig(GraphDatabaseSettings.pagecache_memory, "8G");
+        this.graphDB = builder.newGraphDatabase();
+
         if (this.graphDB != null) {
-//            System.out.println("Connect the neo4j db (" + this.DB_PATH + ") success !!!!");
         } else {
             System.out.println("connect to neo4j DB (" + this.DB_PATH + ") failure !!!!");
             System.exit(0);
-//            System.out.println("Connect the neo4j db (" + this.DB_PATH + ") Failure !!!!");
         }
 
         if(getProperties){
