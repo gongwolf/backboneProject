@@ -1,8 +1,6 @@
-package Baseline;
+package Neo4jTools;
 
 
-import Neo4jTools.Line;
-import Neo4jTools.Neo4jDB;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Relationship;
@@ -10,6 +8,7 @@ import org.neo4j.graphdb.Transaction;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 
 
@@ -18,8 +17,8 @@ public class path {
     public boolean expaned;
     public long startNode, endNode;
 
-//    public ArrayList<Long> nodes;
-//    public ArrayList<Long> rels;
+    public ArrayList<Long> nodes;
+    public ArrayList<Long> rels;
     public ArrayList<String> propertiesName;
 
 
@@ -32,28 +31,27 @@ public class path {
         this.propertiesName = new ArrayList<>();
         this.setPropertiesName(current.neo4j);
 
-//        this.nodes = new ArrayList<>();
-//        this.rels = new ArrayList<>();
-//        this.nodes.add(current.id);
+        this.nodes = new ArrayList<>();
+        this.rels = new ArrayList<>();
+        this.nodes.add(current.id);
     }
 
     public path(path old_path, Relationship rel) {
         this.costs = new double[3];
         this.startNode = old_path.startNode;
         this.endNode = rel.getOtherNodeId(old_path.endNode);
-//        System.out.println("            create new path "+this.startNode+"   "+this.endNode);
         this.propertiesName = new ArrayList<>(old_path.propertiesName);
+
         expaned = false;
         System.arraycopy(old_path.costs, 0, this.costs, 0, this.costs.length);
         calculateCosts(rel);
 
-
-//        this.nodes = new ArrayList<>();
-//        this.rels = new ArrayList<>();
-//        this.nodes.addAll(old_path.nodes);
-//        this.nodes.add(rel.getOtherNodeId(nodes.get(nodes.size() - 1)));
-//        this.rels.addAll(old_path.rels);
-//        this.rels.add(rel.getId());
+        this.nodes = new ArrayList<>();
+        this.rels = new ArrayList<>();
+        this.nodes.addAll(old_path.nodes);
+        this.nodes.add(rel.getOtherNodeId(nodes.get(nodes.size() - 1)));
+        this.rels.addAll(old_path.rels);
+        this.rels.add(rel.getId());
 
 
     }
@@ -62,22 +60,24 @@ public class path {
         this.startNode = paths.startNode().getId();
         this.endNode = paths.endNode().getId();
 
-
         this.propertiesName = Neo4jDB.propertiesName;
 
         this.costs = new double[3];
 
-//        this.nodes = new ArrayList<>();
-//        this.rels = new ArrayList<>();
-//        this.nodes.add(startNode);
+        this.nodes = new ArrayList<>();
+        this.rels = new ArrayList<>();
+        this.nodes.add(startNode);
+
         for (Relationship r : paths.relationships()) {
             costs[0] += (double) r.getProperty(this.propertiesName.get(0));
             costs[1] += (double) r.getProperty(this.propertiesName.get(1));
             costs[2] += (double) r.getProperty(this.propertiesName.get(2));
-//            this.rels.add(r.getId());
-//            this.nodes.add(r.getOtherNodeId(nodes.get(nodes.size() - 1)));
+            this.rels.add(r.getId());
+            this.nodes.add(r.getOtherNodeId(nodes.get(nodes.size() - 1)));
 
         }
+
+        this.nodes.add(endNode);
         this.expaned = false;
     }
 
@@ -95,6 +95,38 @@ public class path {
             tx.success();
         }
         return result;
+    }
+
+    /**
+     * only expand the path by using the deleted edges
+     *
+     * @param neo4j the connection to the neo4j database
+     * @param de    the list of deleted edges in current layer
+     * @return the expanded paths
+     */
+    public ArrayList<path> expand(Neo4jDB neo4j, HashSet<Long> de) {
+        ArrayList<path> result = new ArrayList<>();
+        try (Transaction tx = neo4j.graphDB.beginTx()) {
+            Iterable<Relationship> rels = neo4j.graphDB.getNodeById(this.endNode).getRelationships(Line.Linked, Direction.BOTH);
+            Iterator<Relationship> rel_Iter = rels.iterator();
+            while (rel_Iter.hasNext()) {
+                Relationship rel = rel_Iter.next();
+                if (de.contains(rel.getId())) {
+                    path nPath = new path(this, rel);
+                    if (!nPath.hasCycle()) {
+                        result.add(nPath);
+                    }
+                }
+            }
+            tx.success();
+        }
+        return result;
+    }
+
+    private boolean hasCycle() {
+        Long nextNodeId = nodes.get(nodes.size() - 1);
+        int occurrences = Collections.frequency(this.nodes, nextNodeId);
+        return occurrences >= 2;
     }
 
 
@@ -121,22 +153,14 @@ public class path {
         }
         sb.append("]  ");
 
-//        for(int i =0 ; i < this.nodes.size()-1;i++){
-//            sb.append("("+this.nodes.get(i)+")");
-//            sb.append("--["+this.rels.get(i)+"]-->");
+//        for (int i = 0; i < this.nodes.size() - 1; i++) {
+//            sb.append("(" + this.nodes.get(i) + ")");
+//            sb.append("--[" + this.rels.get(i) + "]-->");
 //        }
 //
-//        sb.append("("+this.nodes.get(nodes.size()-1)+")");
+//        sb.append("(" + this.nodes.get(nodes.size() - 1) + ")");
 
         return sb.toString();
-    }
-
-
-    public boolean hasCycle() {
-//        Long nextNodeId = nodes.get(nodes.size() - 1);
-//        int occurrences = Collections.frequency(this.nodes, nextNodeId);
-//        return occurrences >= 2;
-        return false;
     }
 
     @Override
@@ -170,4 +194,6 @@ public class path {
 //        }
         return true;
     }
+
+
 }

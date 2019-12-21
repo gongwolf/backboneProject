@@ -66,6 +66,17 @@ public class SpanningTree {
 
         this.N = N_nodes.size();
         this.E = SpTree.size();
+
+        if (N == 1) {
+            this.isSingle = true;
+            this.isEmpty = false;
+        } else if (N == 0) {
+            this.isSingle = false;
+            this.isEmpty = true;
+        }else {
+            this.isSingle = false;
+            this.isEmpty = false;
+        }
     }
 
     public SpanningTree(SpanningTree other_tree) {
@@ -79,6 +90,17 @@ public class SpanningTree {
         this.appendTree(other_tree);
         this.N = N_nodes.size();
         this.E = SpTree.size();
+
+        if (N == 1) {
+            this.isSingle = true;
+            this.isEmpty = false;
+        } else if (N == 0) {
+            this.isSingle = false;
+            this.isEmpty = true;
+        }else {
+            this.isSingle = false;
+            this.isEmpty = false;
+        }
     }
 
     private void appendTree(SpanningTree other_tree) {
@@ -369,6 +391,8 @@ public class SpanningTree {
         boolean middle_tree_empty = (f_p.next == l_p && l_p.prev == f_p);
         boolean right_tree_empty = (this.ettree.tail == l_p);
 
+//        System.out.println(left_tree_empty + "  " + middle_tree_empty + "  " + right_tree_empty);
+
         if (left_tree_empty && middle_tree_empty && right_tree_empty) {
 
             left_sub_tree.initializedAsSingleTree(r.getStartNodeId());
@@ -461,7 +485,7 @@ public class SpanningTree {
 
     //Todo: the performance can be improved, for example, used the original spanning tree information to update the splitted trees.
     public void etTreeUpdateInformation() {
-        if(isSingle||isEmpty){
+        if (isSingle || isEmpty) {
             return;
         }
 
@@ -597,6 +621,9 @@ public class SpanningTree {
                 int c_level = (int) rel.getProperty("level");
                 if (c_level == current_level) {
                     rel.setProperty("level", current_level + 1);
+//                    if (rel.getId() == 169) {
+//                        System.out.println("increase the edge " + rel + "  from " + c_level + " to " + (current_level + 1));
+//                    }
                 }
             }
             tx.success();
@@ -701,7 +728,7 @@ public class SpanningTree {
             this.etTreeUpdateInformation();
 
         } catch (Exception e) {
-            System.out.println("error when remove the single edges "+id + "    " + remove_case);
+            System.out.println("error when remove the single edges " + id + "    " + remove_case);
             e.printStackTrace();
         }
         return remove_case;

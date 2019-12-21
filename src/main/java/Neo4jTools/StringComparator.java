@@ -30,12 +30,5 @@ class LongComparator implements Comparator<Long> {
 }
 
 
-class NodeComparator implements Comparator<Node> {
-
-    @Override
-    public int compare(Node o1, Node o2) {
-        return Math.toIntExact(o1.getId() - o2.getId());
-    }
-}
 
 

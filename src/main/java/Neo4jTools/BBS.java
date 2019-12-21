@@ -1,9 +1,6 @@
 package Neo4jTools;
 
 import org.neo4j.graphdb.*;
-import v4.myNode;
-import v4.myNodePriorityQueue;
-import v4.path;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -63,7 +60,6 @@ public class BBS {
                             ArrayList<path> new_paths = p.expand(neo4j_level);
                             expansion_time += System.nanoTime() - expansion_time_start;
 
-
                             for (path np : new_paths) {
                                 myNode next_n;
                                 long mynode_finding_time_start = System.nanoTime();
@@ -87,6 +83,7 @@ public class BBS {
                         }
                     }
                 }
+
                 System.out.println("Finished find the skyline paths for node   " + nodeID + " " + (System.currentTimeMillis() - start_time));
 
                 long number_addtoskyline = 0;
@@ -97,7 +94,7 @@ public class BBS {
                     if(e.getValue().skyPaths.size()==3338){
                         sb.append(e.getKey()).append(",");
                     }
-                    System.out.println(e.getKey()+"   "+e.getValue().skyPaths.size());
+//                    System.out.println(e.getKey()+"   "+e.getValue().skyPaths.size());
                 }
                 sb.append("]");
                 System.out.println("call add to skyline function "+number_addtoskyline);
@@ -111,6 +108,7 @@ public class BBS {
         }
         neo4j_level.closeDB();
         System.out.println((System.currentTimeMillis() - start_time));
+        System.out.println("====================================================");
         System.out.println(expansion_time / 1000000);
         System.out.println(mynode_finding_time / 1000000);
         System.out.println(addtoskyline_time/1000000);

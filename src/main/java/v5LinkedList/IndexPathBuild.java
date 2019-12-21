@@ -24,7 +24,7 @@ public class IndexPathBuild {
     private long cn; //number of graph nodes
     private long numberOfEdges; // number of edges ;
     private DynamicForests dforests;
-    private double percentage = 0.1;
+    private double percentage = 0.06;
     public ProgramProperty prop = new ProgramProperty();
     public String city_name;
     public String base_db_name = "sub_ny_USA";
@@ -366,14 +366,20 @@ public class IndexPathBuild {
     private boolean deleteEdge(Relationship r, HashSet<Long> deletedNodes) {
         boolean canBeDeleted;
         if (dforests.isTreeEdge(r.getId())) {
+//            System.out.println("tree_edge ====  " + r);
             canBeDeleted = this.dforests.deleteEdge(r);
             if (canBeDeleted) {
                 deleteRelationshipFromDB(r, deletedNodes);
             }
         } else {
+//            System.out.println("non tree_edge ====  " + r);
             deleteRelationshipFromDB(r, deletedNodes);
             canBeDeleted = true;
         }
+
+//        if (r.getId() == 169) {
+//            System.exit(0);
+//        }
 
         return canBeDeleted;
     }
@@ -501,7 +507,7 @@ public class IndexPathBuild {
 
                     long nodeID = node.getId();
                     if (level == maxlevel - 1) {
-                        System.out.println(counter+"   "+nodeID+"    .........");
+                        System.out.println(counter + "   " + nodeID + "    .........");
                         counter++;
                     }
 
