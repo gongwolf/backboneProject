@@ -16,14 +16,13 @@ public class BBSBuslineTest {
     public static void main(String args[]) {
         BBSBuslineTest bbstest = new BBSBuslineTest();
 
-        bbstest.queries.add(new Pair<>(9700L, 3669L));
-        bbstest.queries.add(new Pair<>(9519L, 4502L));
-        bbstest.queries.add(new Pair<>(688L, 4280L));
-        bbstest.queries.add(new Pair<>(4348L, 4087L));
-        bbstest.queries.add(new Pair<>(4816L, 3131L));
+//        bbstest.queries.add(new Pair<>(9700L, 3669L));
+//        bbstest.queries.add(new Pair<>(9519L, 4502L));
+//        bbstest.queries.add(new Pair<>(688L, 4280L));
+//        bbstest.queries.add(new Pair<>(4348L, 4087L));
+//        bbstest.queries.add(new Pair<>(4816L, 3131L));
 
-//        bbstest.generateQueries(5);
-
+        bbstest.generateQueries(5);
         bbstest.test(true, true);
         System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         bbstest.test(true, false);
@@ -49,10 +48,11 @@ public class BBSBuslineTest {
             tx.success();
         }
 
-        for(int i = 0 ; i < numOfQueries ;i++){
+        for (int i = 0; i < numOfQueries; i++) {
             long src = getRondomNodes(nodelist);
             long dest = getRondomNodes(nodelist);
             this.queries.add(new Pair<>(src, dest));
+            System.out.println(src + "    ------>   " + dest);
         }
         baseline.closeDB();
 
@@ -88,11 +88,12 @@ public class BBSBuslineTest {
 //            }
         }
 
-        long start_ms = System.currentTimeMillis();
 
 
         for (int i = 0; i < queries.size(); i++) {
             int sizeofinit = 0;
+
+            long start_ms = System.currentTimeMillis();
 
             long src = this.queries.get(i).getKey();
             long dest = this.queries.get(i).getValue();
@@ -102,19 +103,14 @@ public class BBSBuslineTest {
             if (init) {
                 baseline.initilizeSkylinePath(src, dest);
                 sizeofinit = baseline.results.size();
-//                for (path c : baseline.results) {
-//                    System.out.println(c);
-//                }
                 baseline.monitor.spInitTimeInBaseline = (System.currentTimeMillis() - start_ms);
             }
 
 
-//            System.out.println("=======================================");
 
             baseline.queryOnline(src, dest);
             long end_ms = System.currentTimeMillis();
             baseline.monitor.overallRuningtime = end_ms - start_ms;
-//            System.out.println("=======================================");
             monitor.clone(baseline.monitor);
 
             ArrayList<path> results = new ArrayList<>();

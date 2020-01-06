@@ -32,6 +32,7 @@ public class subGraphCity {
         int target_graph_size = 10000;
 
         try (Transaction tx = neo4j.graphDB.beginTx()) {
+
             ArrayList<Node> nodelist = new ArrayList<>();
             ResourceIterable<Node> nodes_iterable = neo4j.graphDB.getAllNodes();
             ResourceIterator<Node> nodes_iter = nodes_iterable.iterator();

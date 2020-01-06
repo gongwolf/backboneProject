@@ -7,7 +7,6 @@ import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.*;
-import scala.reflect.api.Symbols;
 
 
 import java.util.*;
@@ -31,13 +30,28 @@ public class BBSBaselineBusline {
 
     public static void main(String args[]) {
         BBSBaselineBusline bbs = new BBSBaselineBusline();
-        bbs.buildLandmarkIndex(4);
+//        int number_of_hops_1 = bbs.findShortestPath(3227l, 8222l, Neo4jDB.propertiesName.get(0)).length();
+//        int number_of_hops_2 = bbs.findShortestPath(3227l, 8222l, Neo4jDB.propertiesName.get(1)).length();
+//        int number_of_hops_3 = bbs.findShortestPath(3227l, 8222l, Neo4jDB.propertiesName.get(2)).length();
+//        System.out.println(Neo4jDB.propertiesName.get(0)+"  "+number_of_hops_1+" | "+Neo4jDB.propertiesName.get(1)+"  "+number_of_hops_2+" | "+Neo4jDB.propertiesName.get(2)+"  "+number_of_hops_3+" ");
+        bbs.buildLandmarkIndex(3);
         long start_rt = System.currentTimeMillis();
         ArrayList<path> results = bbs.queryOnline(3227, 8222);
         System.out.println(results.size() + "   " + (System.currentTimeMillis() - start_rt));
-
         bbs.closeDB();
 
+    }
+
+    private WeightedPath findShortestPath(long src, long dest, String property_name) {
+        WeightedPath paths;
+        try (Transaction tx = graphdb.beginTx()) {
+            Node src_node = graphdb.getNodeById(src);
+            Node dest_node = graphdb.getNodeById(dest);
+            PathFinder<WeightedPath> finder = GraphAlgoFactory
+                    .dijkstra(PathExpanders.forTypeAndDirection(Line.Linked, Direction.BOTH), property_name);
+            paths = finder.findSinglePath(src_node, dest_node);
+        }
+        return paths;
     }
 
     public BBSBaselineBusline(int graphsize, double samet, int level) {
@@ -54,11 +68,11 @@ public class BBSBaselineBusline {
     }
 
     public BBSBaselineBusline() {
-        String sub_db_name = "sub_ny_USA_Level6";
+        String sub_db_name = "sub_ny_USA_Level0";
         neo4j = new Neo4jDB(sub_db_name);
-        System.out.println(neo4j.DB_PATH);
         neo4j.startDB(true);
         graphdb = neo4j.graphDB;
+        System.out.println(neo4j.DB_PATH + "  number of nodes:" + neo4j.getNumberofNodes() + "   number of edges : " + neo4j.getNumberofEdges());
         this.monitor = new Monitor();
     }
 
@@ -176,10 +190,12 @@ public class BBSBaselineBusline {
     public ArrayList<path> queryOnline(long src, long dest) {
         HashMap<Long, myNode> tmpStoreNodes = new HashMap();
 
+        long quer_running_time = System.nanoTime();
+
         long addtoskyline_rt = 0;
         long number_addtoskyline = 0;
-        long upperbound_find_rt = 0 ;
-        long check_dominate_result_rt = 0; 
+        long upperbound_find_rt = 0;
+        long check_dominate_result_rt = 0;
 
         try (Transaction tx = this.graphdb.beginTx()) {
             myNode snode = new myNode(src, neo4j);
@@ -199,14 +215,14 @@ public class BBSBaselineBusline {
 
                         long upperbound_find_rt_start = System.nanoTime();
                         double[] p_l_costs = getLowerBound(p.costs, p.endNode, dest);
-                        upperbound_find_rt += System.nanoTime()-upperbound_find_rt_start;
+                        upperbound_find_rt += System.nanoTime() - upperbound_find_rt_start;
 
 
                         long dominate_rt_start = System.nanoTime();
                         if (dominatedByResult(p_l_costs)) {
                             isDominatedByResult = true;
                         }
-                        check_dominate_result_rt+= System.nanoTime()-dominate_rt_start;
+                        check_dominate_result_rt += System.nanoTime() - dominate_rt_start;
                     }
 
                     if (isDominatedByResult) {
@@ -232,7 +248,7 @@ public class BBSBaselineBusline {
 
                             long dominate_rt_start = System.nanoTime();
                             boolean dominatebyresult = dominatedByResult(np);
-                            check_dominate_result_rt+= System.nanoTime()-dominate_rt_start;
+                            check_dominate_result_rt += System.nanoTime() - dominate_rt_start;
 
                             if (np.endNode == dest) {
                                 long addtoskyline_start = System.nanoTime();
@@ -243,7 +259,7 @@ public class BBSBaselineBusline {
                                 boolean add_succ = next_n.addToSkyline(np);
                                 addtoskyline_rt += System.nanoTime() - addtoskyline_start;
 
-                                if ( add_succ && !next_n.inqueue) {
+                                if (add_succ && !next_n.inqueue) {
                                     mqueue.add(next_n);
                                     next_n.inqueue = true;
                                 }
@@ -255,13 +271,16 @@ public class BBSBaselineBusline {
             tx.success();
         }
 
+        System.out.println("Query time : " + (System.nanoTime() - quer_running_time) / 1000000);
+
         for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
             number_addtoskyline += e.getValue().callAddToSkylineFunction;
         }
-        System.out.println(addtoskyline_rt/1000000);
-        System.out.println(check_dominate_result_rt/1000000);
-        System.out.println(upperbound_find_rt/1000000);
-        System.out.println(number_addtoskyline);
+
+        System.out.println("add to skyline running time : "+addtoskyline_rt / 1000000);
+        System.out.println("check domination by result time : "+check_dominate_result_rt / 1000000);
+        System.out.println("upperbound calculation time  : "+upperbound_find_rt / 1000000);
+        System.out.println("# of time to add to skyline function : "+ number_addtoskyline);
 
         return results;
 
