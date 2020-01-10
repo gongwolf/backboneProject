@@ -21,6 +21,7 @@ public class BBSBaselineBusline {
     Monitor monitor;
     private GraphDatabaseService graphdb;
     public Neo4jDB neo4j;
+    public HashSet<Long> node_list = new HashSet<>();
 
     /**
      * landmark nodes --> <dest nodes, <the value of shortest path from landmark nodes to dest nodes in each dimension>>
@@ -83,6 +84,9 @@ public class BBSBaselineBusline {
         neo4j.startDB(true);
         graphdb = neo4j.graphDB;
         System.out.println(neo4j.DB_PATH + "  number of nodes:" + neo4j.getNumberofNodes() + "   number of edges : " + neo4j.getNumberofEdges());
+
+        this.node_list = this.neo4j.getNodes();
+
         this.monitor = new Monitor();
     }
 

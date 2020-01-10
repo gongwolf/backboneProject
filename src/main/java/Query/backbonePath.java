@@ -88,7 +88,17 @@ public class backbonePath {
 
     public backbonePath(backbonePath source_bp, path bbs_p, backbonePath dest_bp) {
         this.source = source_bp.source;
-        this.destination = dest_bp.destination;
+        this.destination = dest_bp.source;
+
+        this.highwayList.clear();
+        this.highwayList.addAll(source_bp.highwayList);
+
+        this.highwayList.addAll(bbs_p.nodes);
+
+        ArrayList<Long> reversed_highway = new ArrayList<>(dest_bp.highwayList);
+        Collections.reverse(reversed_highway);
+        this.highwayList.addAll(reversed_highway);
+
         calculatedCosts(source_bp.costs, bbs_p.costs, dest_bp.costs);
     }
 

@@ -11,10 +11,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Neo4jDB {
     public GraphDatabaseService graphDB;
@@ -23,14 +21,14 @@ public class Neo4jDB {
     public static ArrayList<String> propertiesName = new ArrayList<>();
 
 
-    public static void main(String args[]){
+    public static void main(String args[]) {
         String sub_db_name = "sub_ny_USA_Level0";
 
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);
         neo4j.startDB(false);
         long pre_n = neo4j.getNumberofNodes();
         long pre_e = neo4j.getNumberofEdges();
-        System.out.println(pre_n+"  "+pre_e);
+        System.out.println(pre_n + "  " + pre_e);
         neo4j.closeDB();
     }
 
@@ -71,7 +69,7 @@ public class Neo4jDB {
             System.exit(0);
         }
 
-        if(getProperties){
+        if (getProperties) {
 //            this.getPropertiesName();
             propertiesName.clear();
             propertiesName.add("EDistence");
@@ -263,7 +261,7 @@ public class Neo4jDB {
 
     public void saveGraphToTextFormation(String textFilePath) {
 
-        try(Transaction tx = graphDB.beginTx()){
+        try (Transaction tx = graphDB.beginTx()) {
 
             File dataF = new File(textFilePath);
             try {
@@ -274,17 +272,16 @@ public class Neo4jDB {
             }
 
 
-
-            BufferedWriter Nodewriter = new BufferedWriter(new FileWriter(textFilePath+"/NodeInfo.txt"));
-            BufferedWriter Edgewriter = new BufferedWriter(new FileWriter(textFilePath+"/SegInfo.txt"));
+            BufferedWriter Nodewriter = new BufferedWriter(new FileWriter(textFilePath + "/NodeInfo.txt"));
+            BufferedWriter Edgewriter = new BufferedWriter(new FileWriter(textFilePath + "/SegInfo.txt"));
 
             //Get nodes' information and save
             ResourceIterable<Node> nodes_iterable = graphDB.getAllNodes();
             ResourceIterator<Node> nodes_iter = nodes_iterable.iterator();
-            while(nodes_iter.hasNext()){
+            while (nodes_iter.hasNext()) {
                 Node n = nodes_iter.next();
 //                System.out.println(n.getId()+" "+n.getProperty("lat")+" "+n.getProperty("log"));
-                Nodewriter.write(n.getId()+" "+n.getProperty("lat")+" "+n.getProperty("log")+"\n");
+                Nodewriter.write(n.getId() + " " + n.getProperty("lat") + " " + n.getProperty("log") + "\n");
             }
             Nodewriter.close();
 
@@ -292,10 +289,10 @@ public class Neo4jDB {
             //Get nodes' information and save
             ResourceIterable<Relationship> edges_iterable = graphDB.getAllRelationships();
             ResourceIterator<Relationship> edges_iter = edges_iterable.iterator();
-            while(edges_iter.hasNext()){
+            while (edges_iter.hasNext()) {
                 Relationship r = edges_iter.next();
 //                System.out.println(r.getStartNodeId()+" "+r.getEndNodeId()+" "+r.getProperty("EDistence")+" "+r.getProperty("MetersDistance")+" "+r.getProperty("RunningTime"));
-                Edgewriter.write(r.getStartNodeId()+" "+r.getEndNodeId()+" "+r.getProperty("EDistence")+" "+r.getProperty("MetersDistance")+" "+r.getProperty("RunningTime")+"\n");
+                Edgewriter.write(r.getStartNodeId() + " " + r.getEndNodeId() + " " + r.getProperty("EDistence") + " " + r.getProperty("MetersDistance") + " " + r.getProperty("RunningTime") + "\n");
             }
 
             Edgewriter.close();
@@ -303,5 +300,17 @@ public class Neo4jDB {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public HashSet<Long> getNodes() {
+        HashSet<Long> node_list = new HashSet<>();
+        try (Transaction tx = this.graphDB.beginTx()) {
+            ResourceIterator<Node> nodes_iter = this.graphDB.getAllNodes().iterator();
+            while (nodes_iter.hasNext()) {
+                node_list.add(nodes_iter.next().getId());
+            }
+            tx.success();
+        }
+        return node_list;
     }
 }

@@ -28,7 +28,7 @@ public class QueryProcess {
 
         String sub_db_name = "sub_ny_USA_Level" + this.index_level;
         bbs = new BBSBaselineBusline(sub_db_name);
-//        bbs.buildLandmarkIndex(1);
+//        bbs.buildLandmarkIndex(3);
         this.monitor = new Monitor();
 
     }
@@ -175,20 +175,20 @@ public class QueryProcess {
             System.out.println("======================================================================");
         }
 
-//        System.out.println("~~~~~~~~~~~~~~~~~~~~~ find the common highway nodes at lower level (except the highest level) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-//        HashSet<Long> commonset = findCommandHighways(source_to_highway_results.keySet(), destination_to_highway_results.keySet());
-//        if (!commonset.isEmpty()) {
-//            for (long common_node : commonset) {
-//                ArrayList<backbonePath> temp_combined_results = combinationResult(source_to_highway_results.get(common_node), destination_to_highway_results.get(common_node));
-//                for (backbonePath pp : temp_combined_results) {
-//                    System.out.println(pp);
-//                }
-//            }
-//        }
-//        printResult();
-//        System.out.println("~~~~~~~~~~~~~~~~~~~~~ find the common highway nodes at the highest level                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-//        findAtTheHighestLevel();
-//        printResult();
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~ find the common highway nodes at lower level (except the highest level) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+        HashSet<Long> commonset = findCommandHighways(source_to_highway_results.keySet(), destination_to_highway_results.keySet());
+        if (!commonset.isEmpty()) {
+            for (long common_node : commonset) {
+                ArrayList<backbonePath> temp_combined_results = combinationResult(source_to_highway_results.get(common_node), destination_to_highway_results.get(common_node));
+                for (backbonePath pp : temp_combined_results) {
+                    System.out.println(pp);
+                }
+            }
+        }
+        printResult();
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~ find the common highway nodes at the highest level                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+        findAtTheHighestLevel();
+        printResult();
     }
 
     private void findAtTheHighestLevel() {
@@ -200,16 +200,21 @@ public class QueryProcess {
 
             for (Map.Entry<Long, ArrayList<backbonePath>> dest_info_list : destination_to_highway_results.entrySet()) {
                 long dest_node = dest_info_list.getKey();
-                ArrayList<path> bbs_result = bbs.queryOnline(source_node, dest_node);
 
-                for (backbonePath source_bp : source_info_list.getValue()) {
-                    for (backbonePath dest_bp : dest_info_list.getValue()) {
-                        for (path bbs_p : bbs_result) {
-                            backbonePath final_backbone_path = new backbonePath(source_bp, bbs_p, dest_bp);
-                            addToSkyline(result, final_backbone_path);
-                        }
-                    }
-                }
+//                if (bbs.node_list.contains(source_node) && bbs.node_list.contains(dest_node)) {
+//                    System.out.println(source_node+"   =================>>>>>>>>>>>>>>>>>>> "+dest_node);
+//                    ArrayList<path> bbs_result = bbs.queryOnline(source_node, dest_node);
+//                    for (backbonePath source_bp : source_info_list.getValue()) {
+//                        for (backbonePath dest_bp : dest_info_list.getValue()) {
+//                            for (path bbs_p : bbs_result) {
+//                                backbonePath final_backbone_path = new backbonePath(source_bp, bbs_p, dest_bp);
+//                                if(addToSkyline(result, final_backbone_path)){
+//                                    System.out.println(final_backbone_path);
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
             }
         }
 
@@ -221,7 +226,7 @@ public class QueryProcess {
         System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ " + source_to_highway_results.size());
         for (Map.Entry<Long, ArrayList<backbonePath>> e : source_to_highway_results.entrySet()) {
             for (backbonePath bp : e.getValue()) {
-                System.out.println(e + "   " + bp);
+                System.out.println(e.getKey() + " ############  " + bp + "  " + bbs.node_list.contains(e.getKey()));
             }
         }
         System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
