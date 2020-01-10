@@ -76,6 +76,16 @@ public class BBSBaselineBusline {
         this.monitor = new Monitor();
     }
 
+
+    public BBSBaselineBusline(String db_name) {
+        String sub_db_name = db_name;
+        neo4j = new Neo4jDB(sub_db_name);
+        neo4j.startDB(true);
+        graphdb = neo4j.graphDB;
+        System.out.println(neo4j.DB_PATH + "  number of nodes:" + neo4j.getNumberofNodes() + "   number of edges : " + neo4j.getNumberofEdges());
+        this.monitor = new Monitor();
+    }
+
     public void buildLandmarkIndex(int num_landmarks) {
         this.landmark_index.clear();
 
@@ -189,6 +199,8 @@ public class BBSBaselineBusline {
 
     public ArrayList<path> queryOnline(long src, long dest) {
         HashMap<Long, myNode> tmpStoreNodes = new HashMap();
+        this.results.clear();
+
 
         long quer_running_time = System.nanoTime();
 
@@ -271,16 +283,16 @@ public class BBSBaselineBusline {
             tx.success();
         }
 
-        System.out.println("Query time : " + (System.nanoTime() - quer_running_time) / 1000000);
-
-        for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
-            number_addtoskyline += e.getValue().callAddToSkylineFunction;
-        }
-
-        System.out.println("add to skyline running time : "+addtoskyline_rt / 1000000);
-        System.out.println("check domination by result time : "+check_dominate_result_rt / 1000000);
-        System.out.println("upperbound calculation time  : "+upperbound_find_rt / 1000000);
-        System.out.println("# of time to add to skyline function : "+ number_addtoskyline);
+//        System.out.println("Query time : " + (System.nanoTime() - quer_running_time) / 1000000);
+//
+//        for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
+//            number_addtoskyline += e.getValue().callAddToSkylineFunction;
+//        }
+//
+//        System.out.println("add to skyline running time : "+addtoskyline_rt / 1000000);
+//        System.out.println("check domination by result time : "+check_dominate_result_rt / 1000000);
+//        System.out.println("upperbound calculation time  : "+upperbound_find_rt / 1000000);
+//        System.out.println("# of time to add to skyline function : "+ number_addtoskyline);
 
         return results;
 

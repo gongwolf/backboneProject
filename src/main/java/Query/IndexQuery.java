@@ -6,7 +6,7 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.util.*;
 
-public class Index {
+public class IndexQuery {
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
     public ArrayList<Hashtable<Long, ArrayList<Long>>> nodesToHighway_index = new ArrayList();        //level --> <source_node_id --> list of the highway>
     public ArrayList<Hashtable<Long, Hashtable<Long, ArrayList<double[]>>>> intra_index = new ArrayList();  //level --> <node id --->{ highway id ==> <skyline paths > }  >
@@ -24,7 +24,7 @@ public class Index {
     HashMap<Long, ArrayList<backbonePath>> destination_to_highway_results = new HashMap<>(); //the temporary results from destination node to highways
 
 
-    public Index(long graphsize, int dimension, int degree, boolean readIntraIndex) {
+    public IndexQuery(long graphsize, int dimension, int degree, boolean readIntraIndex) {
         this.graphsize = graphsize;
         this.degree = degree;
         this.dimension = dimension;
@@ -37,7 +37,7 @@ public class Index {
     public static void main(String args[]) {
         long start_ms = System.currentTimeMillis();
         boolean readIntraIndex = true;
-        Index i = new Index(30, 3, 3, readIntraIndex);
+        IndexQuery i = new IndexQuery(30, 3, 3, readIntraIndex);
         long running_start_ms = System.currentTimeMillis();
 
         i.test(16, 22, readIntraIndex);

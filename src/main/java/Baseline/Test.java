@@ -1,7 +1,6 @@
 package Baseline;
 
 import DataStructure.Monitor;
-import Query.Index;
 import Query.IndexAccuracy;
 import Query.backbonePath;
 import javafx.util.Pair;

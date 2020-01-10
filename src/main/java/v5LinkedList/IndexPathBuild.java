@@ -49,8 +49,8 @@ public class IndexPathBuild {
     private void build() throws CloneNotSupportedException {
         initLevel();
         construction();
-//        createIndexFolder();
-//        indexBuild();
+        createIndexFolder();
+        indexBuild();
     }
 
     private void initLevel() {
@@ -116,19 +116,19 @@ public class IndexPathBuild {
         long pre_e = neo4j.getNumberofEdges();
         System.out.println("deal with the last level " + lastLevel + " graph at " + neo4j.DB_PATH + "  " + pre_n + " nodes and " + pre_e + " edges");
         getDegreePairs();
-        try (Transaction tx = graphdb.beginTx()) {
-            for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> dp : this.degree_pairs.entrySet()) {
-                if (dp.getKey().getKey() != 2 || dp.getKey().getValue() != 2) {
-                    System.out.println(dp.getKey().getKey() + "  " + dp.getKey().getValue() + "  ================================================");
-                    for (long rel_id : dp.getValue()) {
-                        Node start_node = graphdb.getRelationshipById(rel_id).getStartNode();
-                        Node end_node = graphdb.getRelationshipById(rel_id).getEndNode();
-                        System.out.println(start_node.getProperty("lat")+" "+start_node.getProperty("log")+" "+end_node.getProperty("lat")+" "+end_node.getProperty("log"));
-                    }
-                }
-            }
-            tx.success();
-        }
+//        try (Transaction tx = graphdb.beginTx()) {
+//            for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> dp : this.degree_pairs.entrySet()) {
+//                if (dp.getKey().getKey() != 2 || dp.getKey().getValue() != 2) {
+//                    System.out.println(dp.getKey().getKey() + "  " + dp.getKey().getValue() + "  ================================================");
+//                    for (long rel_id : dp.getValue()) {
+//                        Node start_node = graphdb.getRelationshipById(rel_id).getStartNode();
+//                        Node end_node = graphdb.getRelationshipById(rel_id).getEndNode();
+//                        System.out.println(start_node.getProperty("lat")+" "+start_node.getProperty("log")+" "+end_node.getProperty("lat")+" "+end_node.getProperty("log"));
+//                    }
+//                }
+//            }
+//            tx.success();
+//        }
 
 //        Relationship r = graphdb.getRelationshipById(rel);
 //        boolean flag = deleteEdge(r, deletedNodes);
@@ -693,6 +693,7 @@ public class IndexPathBuild {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
             System.out.println(overallIndex);
             neo4j_level.closeDB();
         }

@@ -1,5 +1,7 @@
 package Query;
 
+import Baseline.path;
+
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -84,6 +86,13 @@ public class backbonePath {
         System.arraycopy(costs, 0, this.costs, 0, this.costs.length);
     }
 
+    public backbonePath(backbonePath source_bp, path bbs_p, backbonePath dest_bp) {
+        this.source = source_bp.source;
+        this.destination = dest_bp.destination;
+        calculatedCosts(source_bp.costs, bbs_p.costs, dest_bp.costs);
+    }
+
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -95,6 +104,13 @@ public class backbonePath {
         this.costs = new double[3];
         for (int i = 0; i < this.costs.length; i++) {
             this.costs[i] = old_costs[i] + new_costs[i];
+        }
+    }
+
+    private void calculatedCosts(double[] source_costs, double[] bbs_costs, double[] dest_costs) {
+        this.costs = new double[3];
+        for (int i = 0; i < this.costs.length; i++) {
+            this.costs[i] = source_costs[i] + bbs_costs[i] + dest_costs[i];
         }
     }
 }
