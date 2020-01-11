@@ -6,12 +6,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class backbonePath {
-    boolean hasCycle;
-    long source;
-    long destination;
+    public boolean hasCycle;
+    public long source;
+    public long destination;
     public double[] costs;
-    ArrayList<Long> highwayList = new ArrayList<>();
-    private ArrayList<String> propertiesName;
+    public ArrayList<Long> highwayList = new ArrayList<>();
+    public ArrayList<String> propertiesName;
 
     public backbonePath(long node_id) {
         this.source = node_id;

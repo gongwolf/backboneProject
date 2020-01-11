@@ -4,6 +4,7 @@ import Baseline.BBSBaselineBusline;
 import Baseline.path;
 import DataStructure.Monitor;
 import Neo4jTools.Neo4jDB;
+import Query.landmark.LandmarkBBS;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.util.*;
@@ -20,15 +21,15 @@ public class QueryProcess {
     HashMap<Long, ArrayList<backbonePath>> destination_to_highway_results = new HashMap<>(); //the temporary results from destination node to highways
 
     public ArrayList<backbonePath> result = new ArrayList<>();
-    BBSBaselineBusline bbs;
+    LandmarkBBS bbs;
 
     public QueryProcess() {
         index = new BackBoneIndex(index_files_folder);
         this.index_level = index.total_level;
 
         String sub_db_name = "sub_ny_USA_Level" + this.index_level;
-        bbs = new BBSBaselineBusline(sub_db_name);
-//        bbs.buildLandmarkIndex(3);
+        bbs = new LandmarkBBS(sub_db_name);
+        bbs.buildLandmarkIndex(3);
         this.monitor = new Monitor();
 
     }
@@ -185,36 +186,23 @@ public class QueryProcess {
                 }
             }
         }
+
         printResult();
+
         System.out.println("~~~~~~~~~~~~~~~~~~~~~ find the common highway nodes at the highest level                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        findAtTheHighestLevel();
+        findAtTheHighestLevel(source_node, destination_node);
         printResult();
     }
 
-    private void findAtTheHighestLevel() {
+    private void findAtTheHighestLevel(long source_node, long destination_node) {
         printNodeToHighway(source_to_highway_results);
         printNodeToHighway(destination_to_highway_results);
 
         for (Map.Entry<Long, ArrayList<backbonePath>> source_info_list : source_to_highway_results.entrySet()) {
-            long source_node = source_info_list.getKey();
+            long highway_source = source_info_list.getKey();
 
-            for (Map.Entry<Long, ArrayList<backbonePath>> dest_info_list : destination_to_highway_results.entrySet()) {
-                long dest_node = dest_info_list.getKey();
-
-//                if (bbs.node_list.contains(source_node) && bbs.node_list.contains(dest_node)) {
-//                    System.out.println(source_node+"   =================>>>>>>>>>>>>>>>>>>> "+dest_node);
-//                    ArrayList<path> bbs_result = bbs.queryOnline(source_node, dest_node);
-//                    for (backbonePath source_bp : source_info_list.getValue()) {
-//                        for (backbonePath dest_bp : dest_info_list.getValue()) {
-//                            for (path bbs_p : bbs_result) {
-//                                backbonePath final_backbone_path = new backbonePath(source_bp, bbs_p, dest_bp);
-//                                if(addToSkyline(result, final_backbone_path)){
-//                                    System.out.println(final_backbone_path);
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
+            if (bbs.node_list.contains(source_node)) {
+                bbs.landmark_bbs(source_node, source_info_list, destination_to_highway_results);
             }
         }
 
