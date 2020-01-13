@@ -1,6 +1,6 @@
 package Query;
 
-import Baseline.path;
+import Query.landmark.path;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,6 +12,7 @@ public class backbonePath {
     public double[] costs;
     public ArrayList<Long> highwayList = new ArrayList<>();
     public ArrayList<String> propertiesName;
+    path p = null;
 
     public backbonePath(long node_id) {
         this.source = node_id;
@@ -86,20 +87,30 @@ public class backbonePath {
         System.arraycopy(costs, 0, this.costs, 0, this.costs.length);
     }
 
-    public backbonePath(backbonePath source_bp, path bbs_p, backbonePath dest_bp) {
-        this.source = source_bp.source;
-        this.destination = dest_bp.source;
+//    public backbonePath(backbonePath source_bp, path bbs_p, backbonePath dest_bp) {
+//        this.source = source_bp.source;
+//        this.destination = dest_bp.source;
+//
+//        this.highwayList.clear();
+//        this.highwayList.addAll(source_bp.highwayList);
+//
+//        this.highwayList.addAll(bbs_p.nodes);
+//
+//        ArrayList<Long> reversed_highway = new ArrayList<>(dest_bp.highwayList);
+//        Collections.reverse(reversed_highway);
+//        this.highwayList.addAll(reversed_highway);
+//
+//        calculatedCosts(source_bp.costs, bbs_p.costs, dest_bp.costs);
+//    }
 
+    public backbonePath(backbonePath bp, path dp) {
+        this.source = bp.source;
+        this.destination = bp.destination;
         this.highwayList.clear();
-        this.highwayList.addAll(source_bp.highwayList);
+        this.highwayList.addAll(bp.highwayList);
+        System.arraycopy(bp.costs, 0, this.costs, 0, this.costs.length);
+        this.p = dp;
 
-        this.highwayList.addAll(bbs_p.nodes);
-
-        ArrayList<Long> reversed_highway = new ArrayList<>(dest_bp.highwayList);
-        Collections.reverse(reversed_highway);
-        this.highwayList.addAll(reversed_highway);
-
-        calculatedCosts(source_bp.costs, bbs_p.costs, dest_bp.costs);
     }
 
 

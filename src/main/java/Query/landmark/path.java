@@ -26,9 +26,10 @@ public class path {
 
     /**
      * initialize the path by using the backbone path from sid to highway at the highest level
-     * @param bp the backbone path from sid to highway node at the highest level
-     * @param neo4j the neo4j object to find the property names
-     * @param destination_highways_results the list of destination node with its skyline paths
+     *
+     * @param bp                           the backbone path from sid to highway node at the highest level
+     * @param neo4j                        the neo4j object to find the property names
+     * @param destination_highways_results the list of destination node with its skyline paths, the possible last components (destination highway to destination node) could form the final results.
      */
     public path(backbonePath bp, Neo4jDB neo4j, HashMap<Long, ArrayList<backbonePath>> destination_highways_results) {
         this.costs = new double[3];
@@ -40,14 +41,18 @@ public class path {
         this.setPropertiesName(neo4j);
 
         this.nodes = new ArrayList<>();
-        this.rels = new ArrayList<>();
         this.nodes.addAll(bp.highwayList);
 
-        costs[0]=bp.costs[0];
-        costs[1]=bp.costs[1];
-        costs[2]=bp.costs[2];
+        this.rels = new ArrayList<>();
+        for (int i = 0; i < nodes.size()-1; i++) {
+            rels.add(null);
+        }
 
-        possible_destination=new HashMap<>(destination_highways_results);
+        costs[0] = bp.costs[0];
+        costs[1] = bp.costs[1];
+        costs[2] = bp.costs[2];
+
+        possible_destination = new HashMap<>(destination_highways_results);
     }
 
 
@@ -68,7 +73,8 @@ public class path {
         this.nodes.add(rel.getOtherNodeId(nodes.get(nodes.size() - 1)));
         this.rels.addAll(old_path.rels);
         this.rels.add(rel.getId());
-        possible_destination=new HashMap<>(old_path.possible_destination);
+
+        possible_destination = new HashMap<>(old_path.possible_destination);
     }
 
 

@@ -9,7 +9,7 @@ import java.util.*;
 public class myNode {
     public long source_node_id;
     public long id;
-    public ArrayList<path> skyPaths; // destination node --> skyline (from source node to destination node)
+    public ArrayList<backbonePath> skyPaths; // destination node --> skyline (from source node to destination node)
     public double distance_q;
     public double[] locations;
     public boolean inqueue;
@@ -17,6 +17,13 @@ public class myNode {
     public long callAddToSkylineFunction = 0;
 
 
+    /**
+     *
+     * @param source_node_id the source node of the skyline paths, also it's the query source node
+     * @param source_skyline_paths the skyline paths from the query point to the key of the source_skyline_paths
+     * @param destination_highways_results the skyline paths from the destination highways to destination node
+     * @param neo4j the neo4j object
+     */
     public myNode(long source_node_id, Map.Entry<Long, ArrayList<backbonePath>> source_skyline_paths, HashMap<Long, ArrayList<backbonePath>> destination_highways_results, Neo4jDB neo4j) {
         this.source_node_id = source_node_id;
         this.id = source_skyline_paths.getKey();
@@ -30,10 +37,14 @@ public class myNode {
 
         for (backbonePath bp : source_skyline_paths.getValue()) {
             path dp = new path(bp, neo4j, destination_highways_results);
-            this.skyPaths.add(dp);
+            backbonePath high_bp = new backbonePath(bp, dp);
+            this.skyPaths.add(high_bp);
         }
     }
 
+    /**
+     * calculate the distance from the query point to current point
+     */
     public void setLocations() {
         try (Transaction tx = neo4j.graphDB.beginTx()) {
             locations[0] = (double) neo4j.graphDB.getNodeById(this.id).getProperty("lat");
@@ -54,7 +65,7 @@ public class myNode {
         this.id = id;
     }
 
-    public boolean addToSkyline(path np) {
+    public boolean addToSkyline(backbonePath np) {
         this.callAddToSkylineFunction++;
         int i = 0;
         if (skyPaths.isEmpty()) {

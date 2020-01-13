@@ -182,7 +182,7 @@ public class QueryProcess {
             for (long common_node : commonset) {
                 ArrayList<backbonePath> temp_combined_results = combinationResult(source_to_highway_results.get(common_node), destination_to_highway_results.get(common_node));
                 for (backbonePath pp : temp_combined_results) {
-                    System.out.println(pp);
+                    addToSkyline(result, pp);
                 }
             }
         }
@@ -190,18 +190,21 @@ public class QueryProcess {
         printResult();
 
         System.out.println("~~~~~~~~~~~~~~~~~~~~~ find the common highway nodes at the highest level                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        findAtTheHighestLevel(source_node, destination_node);
+        findAtTheHighestLevel(source_node);
         printResult();
     }
 
-    private void findAtTheHighestLevel(long source_node, long destination_node) {
+    /**
+     * the informaiton of the destination node is included in the structure of the destination_to_highway_results
+     * @param source_node
+     */
+    private void findAtTheHighestLevel(long source_node) {
         printNodeToHighway(source_to_highway_results);
         printNodeToHighway(destination_to_highway_results);
 
         for (Map.Entry<Long, ArrayList<backbonePath>> source_info_list : source_to_highway_results.entrySet()) {
             long highway_source = source_info_list.getKey();
-
-            if (bbs.node_list.contains(source_node)) {
+            if (bbs.node_list.contains(highway_source)) {
                 bbs.landmark_bbs(source_node, source_info_list, destination_to_highway_results);
             }
         }
