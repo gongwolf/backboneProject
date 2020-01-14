@@ -261,10 +261,10 @@ public class BBSBaselineBusline {
                                 continue;
                             }
 
-
-                            long dominate_rt_start = System.nanoTime();
+//                            boolean dominatebyresult = false;
+//                            long dominate_rt_start = System.nanoTime();
                             boolean dominatebyresult = dominatedByResult(np);
-                            check_dominate_result_rt += System.nanoTime() - dominate_rt_start;
+//                            check_dominate_result_rt += System.nanoTime() - dominate_rt_start;
 
                             if (np.endNode == dest) {
                                 long addtoskyline_start = System.nanoTime();
@@ -287,16 +287,16 @@ public class BBSBaselineBusline {
             tx.success();
         }
 
-//        System.out.println("Query time : " + (System.nanoTime() - quer_running_time) / 1000000);
-//
-//        for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
-//            number_addtoskyline += e.getValue().callAddToSkylineFunction;
-//        }
-//
-//        System.out.println("add to skyline running time : "+addtoskyline_rt / 1000000);
-//        System.out.println("check domination by result time : "+check_dominate_result_rt / 1000000);
-//        System.out.println("upperbound calculation time  : "+upperbound_find_rt / 1000000);
-//        System.out.println("# of time to add to skyline function : "+ number_addtoskyline);
+        System.out.println("Query time : " + (System.nanoTime() - quer_running_time) / 1000000);
+
+        for (Map.Entry<Long, myNode> e : tmpStoreNodes.entrySet()) {
+            number_addtoskyline += e.getValue().callAddToSkylineFunction;
+        }
+
+        System.out.println("add to skyline running time : "+addtoskyline_rt / 1000000);
+        System.out.println("check domination by result time : "+check_dominate_result_rt / 1000000);
+        System.out.println("upperbound calculation time  : "+upperbound_find_rt / 1000000);
+        System.out.println("# of time to add to skyline function : "+ number_addtoskyline);
 
         return results;
 

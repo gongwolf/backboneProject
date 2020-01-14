@@ -29,7 +29,7 @@ public class QueryProcess {
 
         String sub_db_name = "sub_ny_USA_Level" + this.index_level;
         bbs = new LandmarkBBS(sub_db_name);
-        bbs.buildLandmarkIndex(3);
+        bbs.buildLandmarkIndex(1);
         this.monitor = new Monitor();
 
     }
@@ -180,10 +180,7 @@ public class QueryProcess {
         HashSet<Long> commonset = findCommandHighways(source_to_highway_results.keySet(), destination_to_highway_results.keySet());
         if (!commonset.isEmpty()) {
             for (long common_node : commonset) {
-                ArrayList<backbonePath> temp_combined_results = combinationResult(source_to_highway_results.get(common_node), destination_to_highway_results.get(common_node));
-                for (backbonePath pp : temp_combined_results) {
-                    addToSkyline(result, pp);
-                }
+                combinationResult(source_to_highway_results.get(common_node), destination_to_highway_results.get(common_node));
             }
         }
 
@@ -196,16 +193,19 @@ public class QueryProcess {
 
     /**
      * the informaiton of the destination node is included in the structure of the destination_to_highway_results
+     *
      * @param source_node
      */
     private void findAtTheHighestLevel(long source_node) {
-        printNodeToHighway(source_to_highway_results);
-        printNodeToHighway(destination_to_highway_results);
 
         for (Map.Entry<Long, ArrayList<backbonePath>> source_info_list : source_to_highway_results.entrySet()) {
             long highway_source = source_info_list.getKey();
             if (bbs.node_list.contains(highway_source)) {
-                bbs.landmark_bbs(source_node, source_info_list, destination_to_highway_results);
+                System.out.println("Process the node " + highway_source);
+                bbs.landmark_bbs(source_node, source_info_list, destination_to_highway_results, result);
+                System.out.println("number of results sets " + this.result.size());
+//                printResult();
+                System.out.println("================================================================================");
             }
         }
 
@@ -341,9 +341,9 @@ public class QueryProcess {
     }
 
 
-    private ArrayList<backbonePath> combinationResult(ArrayList<backbonePath> src_to_common_highway, ArrayList<backbonePath> dest_to_common_highway) {
+    private void combinationResult(ArrayList<backbonePath> src_to_common_highway, ArrayList<backbonePath> dest_to_common_highway) {
 
-        ArrayList<backbonePath> bps_results = new ArrayList<>();
+//        ArrayList<backbonePath> bps_results = new ArrayList<>();
 
         for (backbonePath s_t_h_bpath : src_to_common_highway) {
             for (backbonePath d_t_h_bpath : dest_to_common_highway) {
@@ -354,7 +354,7 @@ public class QueryProcess {
 
                 monitor.finnalCallAddToSkyline++;
                 if (addToSkyline(this.result, result_backbone)) {
-                    bps_results.add(result_backbone);
+//                    bps_results.add(result_backbone);
                 }
 
                 long e_add_rt = System.nanoTime();
@@ -363,6 +363,6 @@ public class QueryProcess {
             }
         }
 
-        return bps_results;
+//        return bps_results;
     }
 }

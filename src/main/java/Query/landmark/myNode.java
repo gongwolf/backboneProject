@@ -18,11 +18,10 @@ public class myNode {
 
 
     /**
-     *
-     * @param source_node_id the source node of the skyline paths, also it's the query source node
-     * @param source_skyline_paths the skyline paths from the query point to the key of the source_skyline_paths
+     * @param source_node_id               the source node of the skyline paths, also it's the query source node
+     * @param source_skyline_paths         the skyline paths from the query point to the key of the source_skyline_paths
      * @param destination_highways_results the skyline paths from the destination highways to destination node
-     * @param neo4j the neo4j object
+     * @param neo4j                        the neo4j object
      */
     public myNode(long source_node_id, Map.Entry<Long, ArrayList<backbonePath>> source_skyline_paths, HashMap<Long, ArrayList<backbonePath>> destination_highways_results, Neo4jDB neo4j) {
         this.source_node_id = source_node_id;
@@ -36,10 +35,24 @@ public class myNode {
         setLocations();
 
         for (backbonePath bp : source_skyline_paths.getValue()) {
-            path dp = new path(bp, neo4j, destination_highways_results);
-            backbonePath high_bp = new backbonePath(bp, dp);
+            path dp = new path(bp, destination_highways_results);
+            backbonePath high_bp = new backbonePath(bp, dp, neo4j);
+//            System.out.println(high_bp);
             this.skyPaths.add(high_bp);
         }
+//        System.out.println("initialization 11111111   ------------------------------------------------");
+    }
+
+
+    public myNode(long source_node_id, long highway_source_id, Neo4jDB neo4j) {
+        this.source_node_id = source_node_id;
+        this.id = highway_source_id;
+        this.locations = new double[2];
+        this.distance_q = 0;
+        skyPaths = new ArrayList<>();
+        inqueue = false;
+        this.neo4j = neo4j;
+        setLocations();
     }
 
     /**
@@ -121,5 +134,12 @@ public class myNode {
 
         // Compare the data members and return accordingly
         return c.id == this.id;
+    }
+
+    @Override
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
+        sb.append(" node id = " + id + "  source_id = " + source_node_id + "  size of skyline = " + skyPaths.size());
+        return sb.toString();
     }
 }
