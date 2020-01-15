@@ -29,7 +29,7 @@ public class QueryProcess {
 
         String sub_db_name = "sub_ny_USA_Level" + this.index_level;
         bbs = new LandmarkBBS(sub_db_name);
-        bbs.buildLandmarkIndex(5);
+        bbs.buildLandmarkIndex(3);
         this.monitor = new Monitor();
 
     }
@@ -38,6 +38,8 @@ public class QueryProcess {
         QueryProcess query = new QueryProcess();
         long running_time = System.nanoTime();
         query.query(3227, 8222);
+//        9580    ------>   4090
+//        query.query(9580, 4090);
         System.out.println("Total Runningt time is " + (System.nanoTime() - running_time) / 1000000 + " ms ");
     }
 

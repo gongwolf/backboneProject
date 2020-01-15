@@ -22,10 +22,10 @@ public class BBSBuslineTest {
 //        bbstest.queries.add(new Pair<>(4348L, 4087L));
 //        bbstest.queries.add(new Pair<>(4816L, 3131L));
 
-        bbstest.generateQueries(5);
+        bbstest.generateQueries(1);
         bbstest.test(true, true);
         System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-        bbstest.test(true, false);
+//        bbstest.test(true, false);
 //        System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 //        bbstest.test(false, true);
 //        System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
@@ -67,25 +67,6 @@ public class BBSBuslineTest {
         System.out.println("number of edges " + baseline.neo4j.getNumberofEdges());
         if (uselandmark) {
             baseline.buildLandmarkIndex(3);
-
-//            for (Map.Entry<Long, HashMap<Long, double[]>> landindex :
-//                    baseline.landmark_index.entrySet()) {
-//
-//                long sid = landindex.getKey();
-//                for (Map.Entry<Long, double[]> did_index : landindex.getValue().entrySet()) {
-//                    long did = did_index.getKey();
-//                    double costs[] = did_index.getValue();
-//                    // "EDistence","MetersDistance","RunningTime"
-//                    double c1 = baseline.myDijkstra(sid, did, "EDistence");
-//                    double c2 = baseline.myDijkstra(sid, did, "MetersDistance");
-//                    double c3 = baseline.myDijkstra(sid, did, "RunningTime");
-//
-//                    boolean equal = (costs[0] == c1 && costs[1] == c2 && costs[2] == c3);
-//                    if (!equal) {
-//                        System.out.println(sid + "   ---->>>>  " + did + " " + c1 + " " + c2 + " " + c3 + " " + equal);
-//                    }
-//                }
-//            }
         }
 
 
@@ -115,11 +96,11 @@ public class BBSBuslineTest {
 
             ArrayList<path> results = new ArrayList<>();
             results.addAll(baseline.results);
-//            System.out.println("# of node add to skyline function : " + baseline.monitor.node_call_addtoskyline + "    # of add to skyline in final:" + baseline.monitor.callAddToSkyline);
-//            System.out.println("# dominated checking :" + baseline.monitor.callcheckdominatedbyresult);
-//            System.out.println("# of coverd node during the query process： " + baseline.monitor.coveredNodes);
-//            System.out.println(baseline.monitor.getRunningtime_check_domination_resultByms());
-//            System.out.println(baseline.monitor.allsizeofthecheckdominatedbyresult);
+            System.out.println("# of node add to skyline function : " + baseline.monitor.node_call_addtoskyline + "    # of add to skyline in final:" + baseline.monitor.callAddToSkyline);
+            System.out.println("# dominated checking :" + baseline.monitor.callcheckdominatedbyresult);
+            System.out.println("# of coverd node during the query process： " + baseline.monitor.coveredNodes);
+            System.out.println(baseline.monitor.getRunningtime_check_domination_resultByms());
+            System.out.println(baseline.monitor.allsizeofthecheckdominatedbyresult);
             System.out.println("results size " + results.size());
             System.out.println(baseline.monitor.getOverallRuningtime_in_Sec() + " s");
             System.out.println("=======================================================================");
