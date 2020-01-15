@@ -29,7 +29,7 @@ public class QueryProcess {
 
         String sub_db_name = "sub_ny_USA_Level" + this.index_level;
         bbs = new LandmarkBBS(sub_db_name);
-        bbs.buildLandmarkIndex(1);
+        bbs.buildLandmarkIndex(5);
         this.monitor = new Monitor();
 
     }
@@ -75,6 +75,7 @@ public class QueryProcess {
                 if (highwaysOfsrcNode != null) {
                     for (long h_node : highwaysOfsrcNode) {//h_node is highway node of the sid, it's the source node to the next level
                         ArrayList<double[]> cost_from_src_to_highway = index.readHighwaysInformation(h_node, l, s_id);
+
                         if (cost_from_src_to_highway != null || !cost_from_src_to_highway.isEmpty()) {
                             if (h_node == destination_node) {
                                 ArrayList<backbonePath> bps_src_to_sid = source_to_highway_results.get(s_id); // the backbone paths from source node to s_id;
@@ -93,7 +94,7 @@ public class QueryProcess {
                                     for (double[] costs : cost_from_src_to_highway) {
                                         long s_creat_rt_src = System.nanoTime();
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the sid->old_highway->new_highway
-                                        System.out.println(s_id + "   " + h_node + " : " + old_path + " =====================> " + new_bp + " --> " + new_bp.hasCycle);
+//                                        System.out.println(s_id + "   " + h_node + " : " + old_path + " =====================> " + new_bp + " --> " + new_bp.hasCycle);
                                         long e_creat_rt_src = System.nanoTime();
                                         monitor.runningtime_src_create_newpath += (e_creat_rt_src - s_creat_rt_src);
 
@@ -128,7 +129,6 @@ public class QueryProcess {
 
                         if (cost_from_dest_to_highway != null || !cost_from_dest_to_highway.isEmpty()) {
                             if (h_node == source_node) {
-
                                 ArrayList<backbonePath> bps_dest_to_did = destination_to_highway_results.get(d_id); // the backbone paths from destination node to d_id;
                                 for (backbonePath old_path : bps_dest_to_did) {
                                     for (double[] costs : cost_from_dest_to_highway) {
@@ -142,11 +142,10 @@ public class QueryProcess {
                                 boolean needtoinserted = false;
                                 ArrayList<backbonePath> bps_dest_to_did = destination_to_highway_results.get(d_id); //the backbone paths from destination to did
                                 for (backbonePath old_path : bps_dest_to_did) {
-
                                     for (double[] costs : cost_from_dest_to_highway) {
                                         long s_creat_rt_dest = System.nanoTime();
                                         backbonePath new_bp = new backbonePath(h_node, costs, old_path); //the new path from the destination->old_highway->new_highway
-                                        System.out.println(h_node + "     " + d_id + " : " + old_path + " =====================> " + new_bp + " --> " + new_bp.hasCycle);
+//                                        System.out.println(h_node + "     " + d_id + " : " + old_path + " =====================> " + new_bp + " --> " + new_bp.hasCycle);
                                         long e_creat_rt_dest = System.nanoTime();
                                         monitor.runningtime_dest_create_newpath += (e_creat_rt_dest - s_creat_rt_dest);
                                         if (!dominatedByResult(new_bp) && !new_bp.hasCycle) {
@@ -183,10 +182,9 @@ public class QueryProcess {
                 combinationResult(source_to_highway_results.get(common_node), destination_to_highway_results.get(common_node));
             }
         }
-
         printResult();
 
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~ find the common highway nodes at the highest level                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~ find the highway nodes at the highest level                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         findAtTheHighestLevel(source_node);
         printResult();
     }
@@ -197,15 +195,24 @@ public class QueryProcess {
      * @param source_node
      */
     private void findAtTheHighestLevel(long source_node) {
+        printNodeToHighway(source_to_highway_results);
+        printNodeToHighway(destination_to_highway_results);
+
+        HashMap<Long, ArrayList<backbonePath>> all_possible_dest_node_with_skypaths = new HashMap<>();
+        for (Map.Entry<Long, ArrayList<backbonePath>> e : destination_to_highway_results.entrySet()) {
+            if (this.bbs.node_list.contains(e.getKey())) {
+                all_possible_dest_node_with_skypaths.put(e.getKey(), e.getValue());
+            }
+        }
 
         for (Map.Entry<Long, ArrayList<backbonePath>> source_info_list : source_to_highway_results.entrySet()) {
             long highway_source = source_info_list.getKey();
             if (bbs.node_list.contains(highway_source)) {
                 System.out.println("Process the node " + highway_source);
-                bbs.landmark_bbs(source_node, source_info_list, destination_to_highway_results, result);
+                bbs.landmark_bbs(source_node, source_info_list, all_possible_dest_node_with_skypaths, result);
                 System.out.println("number of results sets " + this.result.size());
-//                printResult();
                 System.out.println("================================================================================");
+//                System.exit(0);
             }
         }
 

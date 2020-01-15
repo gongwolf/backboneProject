@@ -34,14 +34,13 @@ public class backbonePath {
 
         this.highwayList.clear();
         this.highwayList.addAll(old_path.highwayList);
-
-        if (highwayList.contains(h_node)) {
-            this.hasCycle = true;
-        }
-
         this.highwayList.add(h_node);
 
         calculatedCosts(costs, old_path.costs);
+
+        if (Collections.frequency(highwayList, destination) >= 2) {
+            this.hasCycle = true;
+        }
     }
 
     public backbonePath(backbonePath s_t_h_bpath, backbonePath d_t_h_bpath) {
@@ -58,11 +57,26 @@ public class backbonePath {
         costs = new double[3];
         calculatedCosts(s_t_h_bpath.costs, d_t_h_bpath.costs);
 
-//        if (p == null) {
-//            this.highwayList.remove(this.highwayList.size() - 1);
-//        }
+        if (highwayList.contains(this.destination)) {
+            this.hasCycle = true;
+        }
 
+        if (s_t_h_bpath.p != null) {
+            this.p = s_t_h_bpath.p;
+        }
+
+        int last_index = this.highwayList.size() - 1;
+
+        this.highwayList.remove(this.highwayList.size() - 1);
         this.highwayList.addAll(reversed_highway);
+
+        for (int idx = last_index; idx < highwayList.size() - 1; idx++) {
+            p.rels.add(null);
+        }
+
+        if (Collections.frequency(highwayList, destination) >= 2) {
+            this.hasCycle = true;
+        }
 
     }
 
@@ -81,8 +95,10 @@ public class backbonePath {
         costs = new double[3];
         calculatedCosts(s_t_h_bpath.costs, d_t_h_bpath.costs);
         calculatedCosts(this.costs, costsInHighestLevel);
-//        System.out.println(s_t_h_bpath + "\n ["+costsInHighestLevel[0]+" "+costsInHighestLevel[1]+" "+costsInHighestLevel[2]+"]\n " + d_t_h_bpath);
 
+        if (Collections.frequency(highwayList, destination) >= 2) {
+            this.hasCycle = true;
+        }
 
     }
 
@@ -115,6 +131,10 @@ public class backbonePath {
 
         this.setPropertiesName(neo4j);
         this.p = dp;
+
+        if (Collections.frequency(highwayList, destination) >= 2) {
+            this.hasCycle = true;
+        }
     }
 
     /**
@@ -135,10 +155,13 @@ public class backbonePath {
         this.highwayList.add(this.destination);
 
         this.setPropertiesName(neo4j);
-        System.arraycopy(old_bp.costs,0, this.costs, 0, this.costs.length);
+        System.arraycopy(old_bp.costs, 0, this.costs, 0, this.costs.length);
         calculateCosts(rel, neo4j);
         this.p = np;
 
+        if (Collections.frequency(highwayList, destination) >= 2) {
+            this.hasCycle = true;
+        }
 
     }
 
@@ -152,10 +175,10 @@ public class backbonePath {
                 sb.append("(" + this.highwayList.get(i) + ")");
                 sb.append("--[" + this.p.rels.get(i) + "]-->");
             }
-        }else {
-            sb.append(" "+highwayList);
+            sb.append("(" + this.highwayList.get(highwayList.size() - 1) + ")");
+        } else {
+            sb.append(" " + highwayList);
         }
-        sb.append("(" + this.highwayList.get(highwayList.size() - 1) + ")");
         return sb.toString();
     }
 

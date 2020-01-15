@@ -42,7 +42,6 @@ public class path {
         this.rels.add(rel.getId());
 
         this.expanded = false;
-//        possible_destination = new HashMap<>(old_path.possible_destination);
 
         possible_destination = new HashMap<>();
         for (Map.Entry<Long, ArrayList<backbonePath>> e : old_path.possible_destination.entrySet()) {

@@ -101,16 +101,8 @@ public class LandmarkBBS {
         return nodelist.get(idx);
     }
 
-    public void landmark_bbs(long source_node, Map.Entry<Long, ArrayList<backbonePath>> source_skyline_paths_costs, HashMap<Long, ArrayList<backbonePath>> destination_highways_results, ArrayList<backbonePath> results) {
+    public void landmark_bbs(long source_node, Map.Entry<Long, ArrayList<backbonePath>> source_skyline_paths_costs, HashMap<Long, ArrayList<backbonePath>> all_possible_dest_node_with_skypaths, ArrayList<backbonePath> results) {
         HashMap<Long, myNode> tmpStoreNodes = new HashMap();
-
-        HashMap<Long, ArrayList<backbonePath>> all_possible_dest_node_with_skypaths = new HashMap<>();
-        for (Map.Entry<Long, ArrayList<backbonePath>> e : destination_highways_results.entrySet()) {
-            if (this.node_list.contains(e.getKey())) {
-                all_possible_dest_node_with_skypaths.put(e.getKey(), e.getValue());
-            }
-        }
-
 
         try (Transaction tx = this.graphdb.beginTx()) {
             myNode snode = new myNode(source_node, source_skyline_paths_costs, all_possible_dest_node_with_skypaths, neo4j);
@@ -148,11 +140,16 @@ public class LandmarkBBS {
                                 //Todo: check if the new backbone path is dominated by the results
                                 if (all_possible_dest_node_with_skypaths.keySet().contains(next_n.id)) {
                                     for (backbonePath d_skyline_bp : new_bp.p.possible_destination.get(next_n.id)) {
+//                                        System.out.println("1    " + new_bp);
+//                                        System.out.println("2    " + d_skyline_bp);
                                         backbonePath final_bp = new backbonePath(new_bp, d_skyline_bp);
+//                                        System.out.println("3    " + final_bp);
                                         addToSkyline(results, final_bp);
+//                                        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
                                     }
                                 } else if (next_n.addToSkyline(new_bp) && !next_n.inqueue) {
                                     mqueue.add(next_n);
+                                    next_n.inqueue = true;
                                 }
                             }
                         }
@@ -176,7 +173,7 @@ public class LandmarkBBS {
 
             ArrayList<backbonePath> dest_skyline = dest_element.getValue();
 
-            //Todo: could be optimized
+            //Todo: could be optimized by using the max or min values of the all the skyline paths from dest_highway to dest, so, it will not iterate all the skyline paths
             for (int dp_idx = 0; dp_idx < dest_skyline.size(); ) {
                 backbonePath dest_skyline_bp = dest_skyline.get(dp_idx); //the skyline paths from dest_highways to destination node
                 double[] p_l_costs = getLowerBound(p.costs, p.destination, dest_skyline_bp);
@@ -235,7 +232,7 @@ public class LandmarkBBS {
         }
 
         for (long landmark : this.landmark_index.keySet()) {
-            double[] src_cost = this.landmark_index.get(landmark).get(src);
+            double[] src_cost = this.landmark_index.get(landmark).get(src); //the source node (the destination of the current path) to landmark
             double[] dest_cost = this.landmark_index.get(landmark).get(dest_dp.destination); // the dest_highways to landmark
             for (int i = 0; i < estimated_costs.length; i++) {
                 double value = Math.abs(src_cost[i] - dest_cost[i]);

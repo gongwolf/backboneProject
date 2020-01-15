@@ -37,10 +37,9 @@ public class myNode {
         for (backbonePath bp : source_skyline_paths.getValue()) {
             path dp = new path(bp, destination_highways_results);
             backbonePath high_bp = new backbonePath(bp, dp, neo4j);
-//            System.out.println(high_bp);
+//            System.out.println("0   "+high_bp);
             this.skyPaths.add(high_bp);
         }
-//        System.out.println("initialization 11111111   ------------------------------------------------");
     }
 
 

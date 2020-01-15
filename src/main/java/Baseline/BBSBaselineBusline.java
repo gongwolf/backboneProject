@@ -261,9 +261,9 @@ public class BBSBaselineBusline {
                                 continue;
                             }
 
-//                            boolean dominatebyresult = false;
+                            boolean dominatebyresult = false;
 //                            long dominate_rt_start = System.nanoTime();
-                            boolean dominatebyresult = dominatedByResult(np);
+//                            boolean dominatebyresult = dominatedByResult(np);
 //                            check_dominate_result_rt += System.nanoTime() - dominate_rt_start;
 
                             if (np.endNode == dest) {
