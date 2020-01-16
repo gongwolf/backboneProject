@@ -8,8 +8,8 @@ import java.util.*;
 
 public class subGraphCity {
     String sub_db_name = "ny_USA_Level0";
-    String EdgesPath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/sub_level0_ny_SegInfo.txt";
-    String NodePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/sub_level0_ny_NodeInfo.txt";
+    String EdgesPath = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/sub_graph/5k/sub_level0_ny_SegInfo_5k.txt";
+    String NodePath = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/sub_graph/5k/sub_level0_ny_NodeInfo_5k.txt";
 
     public static void main(String args[]) {
         subGraphCity sgc = new subGraphCity();
@@ -29,7 +29,7 @@ public class subGraphCity {
         HashSet<Relationship> edges = new HashSet<>();
         HashSet<Long> nodes = new HashSet<>();
 
-        int target_graph_size = 10000;
+        int target_graph_size = 50000;
 
         try (Transaction tx = neo4j.graphDB.beginTx()) {
 

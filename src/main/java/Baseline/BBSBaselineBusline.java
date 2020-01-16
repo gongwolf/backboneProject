@@ -9,6 +9,7 @@ import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.*;
 
 
+import java.io.*;
 import java.util.*;
 
 public class BBSBaselineBusline {
@@ -16,7 +17,6 @@ public class BBSBaselineBusline {
     int graphsize = 2000;
     double samet = 4;
     int level = 3;
-    //    HashMap<Long, HashMap<Long, myNode>> index = new HashMap<>(); //source node id ==> HashMap < destination node id, myNode objects that stores skyline paths>
     ArrayList<path> results = new ArrayList<>();
     Monitor monitor;
     private GraphDatabaseService graphdb;
@@ -39,6 +39,8 @@ public class BBSBaselineBusline {
         long start_rt = System.currentTimeMillis();
         ArrayList<path> results = bbs.queryOnline(3227, 8222);
         System.out.println(results.size() + "   " + (System.currentTimeMillis() - start_rt));
+        String path_name = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/results";
+        bbs.saveToDisk(path_name+"/bbs_3227_8222.txt");
         bbs.closeDB();
 
     }
@@ -293,13 +295,12 @@ public class BBSBaselineBusline {
             number_addtoskyline += e.getValue().callAddToSkylineFunction;
         }
 
-        System.out.println("add to skyline running time : "+addtoskyline_rt / 1000000);
-        System.out.println("check domination by result time : "+check_dominate_result_rt / 1000000);
-        System.out.println("upperbound calculation time  : "+upperbound_find_rt / 1000000);
-        System.out.println("# of time to add to skyline function : "+ number_addtoskyline);
+        System.out.println("add to skyline running time : " + addtoskyline_rt / 1000000);
+        System.out.println("check domination by result time : " + check_dominate_result_rt / 1000000);
+        System.out.println("upperbound calculation time  : " + upperbound_find_rt / 1000000);
+        System.out.println("# of time to add to skyline function : " + number_addtoskyline);
 
         return results;
-
     }
 
     private double[] getLowerBound(double[] costs, long src, long dest) {
@@ -495,6 +496,29 @@ public class BBSBaselineBusline {
     public void clear() {
         this.results.clear();
         this.monitor.clear();
+    }
+
+
+    public void saveToDisk(String target_path) {
+        File file = new File(target_path);
+
+        if (file.exists()) {
+            file.delete();
+        }
+
+        try (FileWriter fw = new FileWriter(target_path, true);
+             BufferedWriter bw = new BufferedWriter(fw);
+             PrintWriter out = new PrintWriter(bw)) {
+
+            for (path p : results) {
+                out.println(p);
+            }
+
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
 

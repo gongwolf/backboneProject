@@ -36,9 +36,13 @@ public class CreateDB {
 //        String nodeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/ny_NodeInfo.txt";
 //        String EdgeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/ny_SegInfo.txt";
 
-        String sub_db_name = "sub_ny_USA_Level0";
-        String nodeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/sub_level0_ny_NodeInfo.txt";
-        String EdgeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/sub_level0_ny_SegInfo.txt";
+//        String sub_db_name = "sub_ny_USA_Level0";
+//        String nodeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/sub_level0_ny_NodeInfo.txt";
+//        String EdgeFilePath = "/home/gqxwolf/mydata/Backbone_Py_Project/process_challenge9/output/sub_level0_ny_SegInfo.txt";
+
+        String sub_db_name = "sub_ny_USA_5k_Level0";
+        String nodeFilePath = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/sub_graph/5k/sub_level0_ny_NodeInfo_5k.txt";
+        String EdgeFilePath = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/sub_graph/5k/sub_level0_ny_SegInfo_5k.txt";
 
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);
         neo4j.deleleDB();
@@ -379,9 +383,7 @@ public class CreateDB {
             rel.setProperty("MetersDistance", metersDistance);
             rel.setProperty("RunningTime", runningTime);
         } catch (Exception e) {
-            System.out.println(src + "-->" + des);
             e.printStackTrace();
-            System.exit(0);
         }
     }
 }
