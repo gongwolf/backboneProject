@@ -13,13 +13,13 @@ public class Analysis {
     private static void findNodeCoverage() {
         int divider = 10000;
         HashSet<Long> covered_node = new HashSet<>();
-        String result_filename = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/results/bbs_3227_8222.txt";
+        String result_filename = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/results/backbone_3227_8222.txt";
         Pattern p = Pattern.compile("\\(.{1,4}\\)");
         try {
             BufferedReader b = new BufferedReader(new FileReader(result_filename));
             String readLine = "";
             while ((readLine = b.readLine()) != null) {
-                String path = readLine.split(" ")[5];
+                String path = readLine.split(" ")[6];
                 System.out.println(readLine);
                 System.out.println(path);
                 Matcher m = p.matcher(path);
@@ -39,5 +39,9 @@ public class Analysis {
 
         System.out.println(1.0*covered_node.size()/divider);
         System.out.println(covered_node.size());
+        System.out.println("==============================================");
+        for(long nd_id:covered_node){
+            System.out.println(nd_id);
+        }
     }
 }
