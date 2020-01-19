@@ -1,11 +1,10 @@
 package Query;
 
-import Baseline.BBSBaselineBusline;
-import Baseline.path;
 import DataStructure.Monitor;
-import Neo4jTools.Neo4jDB;
+import Neo4jTools.BBS;
+import Query.Queue.MyQueue;
+import Query.Queue.myBackNode;
 import Query.landmark.LandmarkBBS;
-import org.neo4j.graphdb.GraphDatabaseService;
 
 import java.util.*;
 
@@ -26,10 +25,11 @@ public class QueryProcess {
     public QueryProcess() {
         index = new BackBoneIndex(index_files_folder);
         this.index_level = index.total_level;
+        this.index.transIndexToFlat(true);
 
         String sub_db_name = "sub_ny_USA_Level" + this.index_level;
         bbs = new LandmarkBBS(sub_db_name);
-        bbs.buildLandmarkIndex(3);
+//        bbs.buildLandmarkIndex(1);
         this.monitor = new Monitor();
 
     }
@@ -37,10 +37,100 @@ public class QueryProcess {
     public static void main(String args[]) {
         QueryProcess query = new QueryProcess();
         long running_time = System.nanoTime();
-        query.query(3227, 8222);
-//        9580    ------>   4090
+        query.flat_query(3227, 8222);
 //        query.query(9580, 4090);
         System.out.println("Total Runningt time is " + (System.nanoTime() - running_time) / 1000000 + " ms ");
+    }
+
+    public void flat_query(long source_node, long destination_node) {
+        HashSet<Long> first_step_highways = new HashSet<>();
+        System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        HashMap<Long, myBackNode> tmpStoreNodes = BBSQueryToHighlevelGrpah(source_node);
+        first_step_highways.addAll(tmpStoreNodes.keySet());
+        System.out.println("====================================================================");
+        for (long key : first_step_highways) {
+            if (bbs.node_list.contains(key)) {
+                System.out.println(key);
+            }
+        }
+
+
+        HashSet<Long> second_step_highways = new HashSet<>();
+        System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        for (long key : first_step_highways) {
+            System.out.println("Process nodes ===>  " + key);
+            tmpStoreNodes.clear();
+            tmpStoreNodes = BBSQueryToHighlevelGrpah(key);
+            second_step_highways.addAll(tmpStoreNodes.keySet());
+        }
+        System.out.println("====================================================================");
+        for (long key : second_step_highways) {
+            if (bbs.node_list.contains(key)) {
+                System.out.println(key);
+            }
+        }
+
+
+        HashSet<Long> third_step_highways = new HashSet<>();
+        System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+        for (long key : second_step_highways) {
+            System.out.println("Process nodes ===>  " + key);
+            tmpStoreNodes.clear();
+            tmpStoreNodes = BBSQueryToHighlevelGrpah(key);
+            third_step_highways.addAll(tmpStoreNodes.keySet());
+        }
+        System.out.println("====================================================================");
+        for (long key : third_step_highways) {
+            if (bbs.node_list.contains(key)) {
+                System.out.println(key);
+            }
+        }
+
+//        BBSQueryToHighlevelGrpah(7869);
+
+
+    }
+
+
+    public HashMap<Long, myBackNode> BBSQueryToHighlevelGrpah(long start_node) {
+        HashMap<Long, myBackNode> tmpStoreNodes = new HashMap();
+
+//        System.out.println("=================================================================================");
+        myBackNode s_my_bnode = new myBackNode(start_node);
+        MyQueue queue = new MyQueue();
+        queue.add(s_my_bnode);
+        tmpStoreNodes.put(s_my_bnode.id, s_my_bnode);
+
+        while (!queue.isEmpty()) {
+            myBackNode v = queue.pop();
+            for (int i = 0; i < v.skypaths.size(); i++) {
+                backbonePath p = v.skypaths.get(i);
+//                System.out.println(p);
+                if (!p.expanded) {
+                    p.expanded = true;
+                    ArrayList<backbonePath> new_paths = index.getNextHighwaysFlat(p);
+                    for (backbonePath n_bp : new_paths) {
+//                        System.out.println("    " + n_bp);
+                        myBackNode next_n;
+                        if (tmpStoreNodes.containsKey(n_bp.destination)) {
+                            next_n = tmpStoreNodes.get(n_bp.destination);
+                        } else {
+                            next_n = new myBackNode(n_bp);
+                            tmpStoreNodes.put(next_n.id, next_n);
+                        }
+
+                        if (bbs.node_list.contains(next_n.id)) {
+
+                        } else if (next_n.addtoSkyline(n_bp) && !next_n.inqueue) {
+                            tmpStoreNodes.put(next_n.id, next_n);
+                            queue.add(next_n);
+                        }
+
+                    }
+                }
+            }
+        }
+        return tmpStoreNodes;
     }
 
     private void query(long source_node, long destination_node) {

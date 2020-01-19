@@ -19,6 +19,7 @@ public class backbonePath {
     public ArrayList<Long> highwayList = new ArrayList<>();
     public ArrayList<String> propertiesName = new ArrayList<>();
     public path p = null; // skyline paths on the highest level
+    public boolean expanded = false;
 
     public backbonePath(long node_id) {
         this.source = node_id;
