@@ -1,7 +1,6 @@
 package Query;
 
 import DataStructure.Monitor;
-import Neo4jTools.BBS;
 import Query.Queue.MyQueue;
 import Query.Queue.myBackNode;
 import Query.landmark.LandmarkBBS;
@@ -20,7 +19,7 @@ public class QueryProcess {
     HashMap<Long, ArrayList<backbonePath>> destination_to_highway_results = new HashMap<>(); //the temporary results from destination node to highways
 
     public ArrayList<backbonePath> result = new ArrayList<>();
-    LandmarkBBS bbs;
+    public LandmarkBBS bbs;
 
     public QueryProcess() {
         index = new BackBoneIndex(index_files_folder);
@@ -45,12 +44,15 @@ public class QueryProcess {
     public void flat_query(long source_node, long destination_node) {
         HashSet<Long> first_step_highways = new HashSet<>();
         System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-        HashMap<Long, myBackNode> tmpStoreNodes = BBSQueryToHighlevelGrpah(source_node);
-        first_step_highways.addAll(tmpStoreNodes.keySet());
+        HashMap<Long, myBackNode> tmpResult = BBSQueryAtHighlevelGrpah(destination_node);
         System.out.println("====================================================================");
-        for (long key : first_step_highways) {
-            if (bbs.node_list.contains(key)) {
-                System.out.println(key);
+        for (Map.Entry<Long, myBackNode> mynode_element : tmpResult.entrySet()) {
+            if (bbs.node_list.contains(mynode_element.getKey())) {
+                System.out.println(mynode_element.getKey());
+//                for (backbonePath p : mynode_element.getValue().skypaths) {
+//                    System.out.println("    " + p);
+//                }
+                first_step_highways.add(mynode_element.getKey());
             }
         }
 
@@ -59,15 +61,17 @@ public class QueryProcess {
         System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         for (long key : first_step_highways) {
             System.out.println("Process nodes ===>  " + key);
-            tmpStoreNodes.clear();
-            tmpStoreNodes = BBSQueryToHighlevelGrpah(key);
-            second_step_highways.addAll(tmpStoreNodes.keySet());
+            tmpResult.clear();
+            tmpResult = BBSQueryAtHighlevelGrpah(key);
+            for (Map.Entry<Long, myBackNode> mynode_element : tmpResult.entrySet()) {
+                if (bbs.node_list.contains(mynode_element.getKey())) {
+                    second_step_highways.add(mynode_element.getKey());
+                }
+            }
         }
         System.out.println("====================================================================");
         for (long key : second_step_highways) {
-            if (bbs.node_list.contains(key)) {
-                System.out.println(key);
-            }
+            System.out.println(key);
         }
 
 
@@ -75,15 +79,18 @@ public class QueryProcess {
         System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         for (long key : second_step_highways) {
             System.out.println("Process nodes ===>  " + key);
-            tmpStoreNodes.clear();
-            tmpStoreNodes = BBSQueryToHighlevelGrpah(key);
-            third_step_highways.addAll(tmpStoreNodes.keySet());
+            tmpResult.clear();
+            tmpResult = BBSQueryAtHighlevelGrpah(key);
+            for (Map.Entry<Long, myBackNode> mynode_element : tmpResult.entrySet()) {
+                if (bbs.node_list.contains(mynode_element.getKey())) {
+                    third_step_highways.add(mynode_element.getKey());
+                }
+            }
         }
         System.out.println("====================================================================");
         for (long key : third_step_highways) {
-            if (bbs.node_list.contains(key)) {
-                System.out.println(key);
-            }
+            System.out.println(key);
+
         }
 
 //        BBSQueryToHighlevelGrpah(7869);
@@ -92,10 +99,9 @@ public class QueryProcess {
     }
 
 
-    public HashMap<Long, myBackNode> BBSQueryToHighlevelGrpah(long start_node) {
+    public HashMap<Long, myBackNode> BBSQueryAtHighlevelGrpah(long start_node) {
         HashMap<Long, myBackNode> tmpStoreNodes = new HashMap();
-
-//        System.out.println("=================================================================================");
+        ArrayList<backbonePath> temp_result = new ArrayList<>();
         myBackNode s_my_bnode = new myBackNode(start_node);
         MyQueue queue = new MyQueue();
         queue.add(s_my_bnode);
@@ -120,7 +126,7 @@ public class QueryProcess {
                         }
 
                         if (bbs.node_list.contains(next_n.id)) {
-
+                            next_n.addtoSkyline(n_bp);
                         } else if (next_n.addtoSkyline(n_bp) && !next_n.inqueue) {
                             tmpStoreNodes.put(next_n.id, next_n);
                             queue.add(next_n);
