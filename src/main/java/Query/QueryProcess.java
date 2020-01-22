@@ -25,8 +25,10 @@ public class QueryProcess {
         index = new BackBoneIndex(index_files_folder);
         this.index_level = index.total_level;
         String sub_db_name = "sub_ny_USA_Level" + this.index_level;
-        bbs = new LandmarkBBS(sub_db_name);
-
+        bbs = new LandmarkBBS(sub_db_name, index.flatindex);
+//        for(long node_id:bbs.node_list){
+//            System.out.println(node_id);
+//        }
 
         index.buildFlatIndex();
         index.buildHighestFlatIndex(bbs.node_list);
@@ -271,7 +273,7 @@ public class QueryProcess {
                 bbs.landmark_bbs(source_node, source_info_list, all_possible_dest_node_with_skypaths, result);
                 System.out.println("number of results sets " + this.result.size());
                 System.out.println("================================================================================");
-//                System.exit(0);
+                break;
             }
         }
 

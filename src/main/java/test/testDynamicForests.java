@@ -91,7 +91,6 @@ public class testDynamicForests {
     }
 
     //Todo:Change the logic: if it is could be deleted, then remove it from highest level to lowest level. Not deleted it once found a replacement edge.
-
     private void deleteTest(int rel_id, Neo4jDB neo4j) {
         GraphDatabaseService graphdb = neo4j.graphDB;
         try (Transaction tx = graphdb.beginTx()) {

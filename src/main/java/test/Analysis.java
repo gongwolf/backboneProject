@@ -13,14 +13,14 @@ import java.util.regex.Pattern;
 
 public class Analysis {
 
-//    public static void main(String args[]) {
-//        Analysis.test();
-//    }
+    public static void main(String args[]) {
+        Analysis.test();
+    }
 
     /**
      * Test the size of the flat index at the highest level
      */
-//    public static void test() {
+    public static void test() {
 //        QueryProcess query = new QueryProcess();
 //        long running_time = System.currentTimeMillis();
 //
@@ -44,10 +44,9 @@ public class Analysis {
 //            overall_size += size;
 //        }
 //
-//
 //        System.out.println("Overall size :   " + overall_size + "  running in " + (System.currentTimeMillis() - running_time) + "  ms ");
-//
-//    }
+
+    }
 
     private static void findNodeCoverage() {
         int divider = 10000;

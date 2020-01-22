@@ -1,6 +1,7 @@
 package Query.landmark;
 
 import Query.backbonePath;
+import org.apache.lucene.queryparser.flexible.standard.nodes.AbstractRangeQueryNode;
 import org.neo4j.graphdb.Relationship;
 
 import java.util.ArrayList;
@@ -36,7 +37,6 @@ public class path {
 
 
     public path(path old_path, Relationship rel) {
-
         rels = new ArrayList<>();
         rels.addAll(old_path.rels);
         this.rels.add(rel.getId());
@@ -45,6 +45,17 @@ public class path {
 
         possible_destination = new HashMap<>();
         for (Map.Entry<Long, ArrayList<backbonePath>> e : old_path.possible_destination.entrySet()) {
+            ArrayList<backbonePath> skyline_bps = new ArrayList<>(e.getValue());
+            long dest_highway_node = e.getKey();
+            possible_destination.put(dest_highway_node, skyline_bps);
+        }
+    }
+
+    public path(path p) {
+        this.rels = new ArrayList<>(p.rels);
+        this.expanded = p.expanded;
+        possible_destination = new HashMap<>();
+        for (Map.Entry<Long, ArrayList<backbonePath>> e : p.possible_destination.entrySet()) {
             ArrayList<backbonePath> skyline_bps = new ArrayList<>(e.getValue());
             long dest_highway_node = e.getKey();
             possible_destination.put(dest_highway_node, skyline_bps);

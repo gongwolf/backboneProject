@@ -29,6 +29,7 @@ public class backbonePath {
         this.highwayList.add(node_id);
     }
 
+    //used in lower level index construction (except the highest lvevel), the attribute p is null.
     public backbonePath(long h_node, double[] costs, backbonePath old_path) {
         this.source = old_path.source;
         this.destination = h_node;
@@ -38,6 +39,12 @@ public class backbonePath {
         this.highwayList.add(h_node);
 
         calculatedCosts(costs, old_path.costs);
+
+        if (old_path.p != null) {
+            this.p = new path(old_path.p);
+            this.p.expanded=false;
+            p.rels.add(null);
+        }
 
         if (Collections.frequency(highwayList, destination) >= 2) {
             this.hasCycle = true;
@@ -63,7 +70,8 @@ public class backbonePath {
         }
 
         if (s_t_h_bpath.p != null) {
-            this.p = s_t_h_bpath.p;
+            this.p = new path(s_t_h_bpath.p);
+            this.p.expanded=false;
         }
 
         int last_index = this.highwayList.size() - 1;
@@ -103,7 +111,7 @@ public class backbonePath {
 
     }
 
-    //the backbone paths in the highest level
+    //the backbone paths in the highest level, used when the pari-wised index at the highest level are built
     public backbonePath(long sid, long did, double[] costs) {
         this.source = sid;
         this.destination = did;
@@ -139,7 +147,8 @@ public class backbonePath {
     }
 
     /**
-     * Create the new backbone on the expansion process
+     * Create the new backbone on the expansion process, used in the BBS
+     * the attribute p is not null
      *
      * @param old_bp the old backbone path
      * @param np     the path object

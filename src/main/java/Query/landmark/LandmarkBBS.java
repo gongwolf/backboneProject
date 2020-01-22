@@ -1,7 +1,9 @@
 package Query.landmark;
 
+import Index.Index;
 import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
+import Query.IndexFlat;
 import Query.backbonePath;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
@@ -16,13 +18,23 @@ public class LandmarkBBS {
     private GraphDatabaseService graphdb;
     public Neo4jDB neo4j;
     public HashSet<Long> node_list = new HashSet<>();
+    public IndexFlat flatindex;
 
     /**
      * landmark nodes --> <dest nodes, <the value of shortest path from landmark nodes to dest nodes in each dimension>>
      **/
     public HashMap<Long, HashMap<Long, double[]>> landmark_index = new HashMap<>();
 
-    //Todo: Add the information of the index and the flat index to help the BBS search function 
+    public LandmarkBBS(String db_name, IndexFlat flatindex) {
+        String sub_db_name = db_name;
+        neo4j = new Neo4jDB(sub_db_name);
+        neo4j.startDB(true);
+        graphdb = neo4j.graphDB;
+        System.out.println(neo4j.DB_PATH + "  number of nodes:" + neo4j.getNumberofNodes() + "   number of edges : " + neo4j.getNumberofEdges());
+        this.node_list = this.neo4j.getNodes();
+        this.flatindex = flatindex;
+    }
+
     public LandmarkBBS(String db_name) {
         String sub_db_name = db_name;
         neo4j = new Neo4jDB(sub_db_name);
@@ -114,9 +126,11 @@ public class LandmarkBBS {
             while (!mqueue.isEmpty()) {
                 myNode v = mqueue.pop();
                 v.inqueue = false;
+//                System.out.println(v);
 
                 for (int i = 0; i < v.skyPaths.size(); i++) {
                     backbonePath p = v.skyPaths.get(i);
+//                    System.out.println("    " + p);
 
                     if (!p.p.expanded) {
                         p.p.expanded = true;
@@ -127,8 +141,17 @@ public class LandmarkBBS {
 
                         //Still can be expand to any of the destination
                         if (!p.p.possible_destination.isEmpty()) {
-                            ArrayList<backbonePath> new_paths = p.expand(neo4j); //Todo: Change the expand function to get the highest_index information
+                            ArrayList<backbonePath> new_paths = p.expand(neo4j);
+                            ArrayList<backbonePath> flat_new_paths = flatindex.expand(p);
+                            new_paths.addAll(flat_new_paths);
+
                             for (backbonePath new_bp : new_paths) {
+                                if (new_bp.hasCycle) {
+                                    continue;
+                                }
+
+//                                System.out.println("    " + new_bp);
+
                                 myNode next_n;
                                 if (tmpStoreNodes.containsKey(new_bp.destination)) {
                                     next_n = tmpStoreNodes.get(new_bp.destination);
@@ -140,12 +163,9 @@ public class LandmarkBBS {
                                 //Todo: check if the new backbone path is dominated by the results
                                 if (all_possible_dest_node_with_skypaths.keySet().contains(next_n.id)) {
                                     for (backbonePath d_skyline_bp : new_bp.p.possible_destination.get(next_n.id)) {
-//                                        System.out.println("1    " + new_bp);
-//                                        System.out.println("2    " + d_skyline_bp);
                                         backbonePath final_bp = new backbonePath(new_bp, d_skyline_bp);
-//                                        System.out.println("3    " + final_bp);
                                         addToSkyline(results, final_bp);
-//                                        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+                                        System.out.println(final_bp);
                                     }
                                 } else if (next_n.addToSkyline(new_bp) && !next_n.inqueue) {
                                     mqueue.add(next_n);

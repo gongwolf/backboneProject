@@ -49,13 +49,11 @@ public class IndexFlat {
                     addElementToIndex(id, e.getKey(), bp.costs, this.highest_index);
                 }
             }
-
-//            System.out.println(id + "    " + size);
             overall_size += size;
         }
 
         this.overall_highest_index_size = overall_size;
-        System.out.println("Overall size :   " + overall_size + "  running in " + (System.currentTimeMillis() - running_time) + "  ms ");
+        System.out.println("Overall size :   " + overall_highest_index_size + "  running in " + (System.currentTimeMillis() - running_time) + "  ms   " + this.highest_index.size());
 
     }
 
@@ -74,7 +72,7 @@ public class IndexFlat {
 
         if (added_skyline_succ) {
             highway_skyline_info.put(highway_node_id, skyline_paths);
-            this.flat_index.put(source_node_id, highway_skyline_info);
+            index_structure.put(source_node_id, highway_skyline_info);
         }
 
     }
@@ -131,7 +129,7 @@ public class IndexFlat {
 //                System.out.println(p);
                 if (!p.expanded) {
                     p.expanded = true;
-                    ArrayList<backbonePath> new_paths = getNextHighwaysFlat(p);
+                    ArrayList<backbonePath> new_paths = getNextHighwaysFlat(p, node_list);
                     for (backbonePath n_bp : new_paths) {
 //                        System.out.println("    " + n_bp);
                         myBackNode next_n;
@@ -156,19 +154,35 @@ public class IndexFlat {
         return tmpStoreNodes;
     }
 
-    public ArrayList<backbonePath> getNextHighwaysFlat(backbonePath p) {
+    public ArrayList<backbonePath> getNextHighwaysFlat(backbonePath p, HashSet<Long> node_list) {
         ArrayList<backbonePath> result = new ArrayList<>();
         HashMap<Long, ArrayList<double[]>> highway_skyline_info = flat_index.get(p.destination);
         if (highway_skyline_info != null) {
             for (Map.Entry<Long, ArrayList<double[]>> highways : highway_skyline_info.entrySet()) {
                 long h_node = highways.getKey();
-                for (double[] c : highways.getValue()) {
-                    backbonePath new_bp = new backbonePath(h_node, c, p);
-                    result.add(new_bp);
+                if (node_list.contains(h_node) && p.destination != h_node) {
+                    for (double[] c : highways.getValue()) {
+                        backbonePath new_bp = new backbonePath(h_node, c, p);
+                        result.add(new_bp);
+                    }
                 }
             }
         }
         return result;
     }
 
+    public ArrayList<backbonePath> expand(backbonePath bp) {
+        ArrayList<backbonePath> result = new ArrayList<>();
+        HashMap<Long, ArrayList<double[]>> highway_infos = this.highest_index.get(bp.destination);
+        if (highway_infos != null) {
+            for (Map.Entry<Long, ArrayList<double[]>> e : highway_infos.entrySet()) {
+                long h_id = e.getKey();
+                for (double[] cost : e.getValue()) {
+                    backbonePath new_p = new backbonePath(h_id, cost, bp);
+                    result.add(new_p);
+                }
+            }
+        }
+        return result;
+    }
 }
