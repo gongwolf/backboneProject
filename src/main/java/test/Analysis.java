@@ -2,6 +2,7 @@ package test;
 
 import Query.QueryProcess;
 import Query.Queue.myBackNode;
+import Query.backbonePath;
 
 import java.io.*;
 import java.util.HashMap;
@@ -12,31 +13,41 @@ import java.util.regex.Pattern;
 
 public class Analysis {
 
-    public static void main(String args[]) {
-        Analysis.test();
-    }
+//    public static void main(String args[]) {
+//        Analysis.test();
+//    }
 
     /**
      * Test the size of the flat index at the highest level
      */
-    public static void test() {
-        QueryProcess query = new QueryProcess();
-        long running_time = System.currentTimeMillis();
-
-        long overall_size = 0;
-        for (long id : query.bbs.node_list) {
-            HashMap<Long, myBackNode> tmpResult = query.BBSQueryAtHighlevelGrpah(id);
-            int size = 0;
-            for (Map.Entry<Long, myBackNode> e : tmpResult.entrySet()) {
-                size += e.getValue().skypaths.size();
-            }
-            System.out.println(id + "    " + size);
-            overall_size += size;
-        }
-
-        System.out.println("Overall size :   "+overall_size+"  running in "+(System.currentTimeMillis()-running_time)+"  ms ");
-
-    }
+//    public static void test() {
+//        QueryProcess query = new QueryProcess();
+//        long running_time = System.currentTimeMillis();
+//
+//        long overall_size = 0;
+//        for (long id : query.bbs.node_list) {
+//            if (id != 8376) {
+//                continue;
+//            }
+//
+//            HashMap<Long, myBackNode> tmpResult = query.BBSQueryAtHighlevelGrpah(id);
+//            int size = 0;
+//            for (Map.Entry<Long, myBackNode> e : tmpResult.entrySet()) {
+//                size += e.getValue().skypaths.size();
+//                for (backbonePath bp : e.getValue().skypaths) {
+//                    System.out.println(bp);
+//                }
+//            }
+//            System.out.println(id + "    " + size);
+//
+//
+//            overall_size += size;
+//        }
+//
+//
+//        System.out.println("Overall size :   " + overall_size + "  running in " + (System.currentTimeMillis() - running_time) + "  ms ");
+//
+//    }
 
     private static void findNodeCoverage() {
         int divider = 10000;

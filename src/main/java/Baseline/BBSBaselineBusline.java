@@ -40,7 +40,7 @@ public class BBSBaselineBusline {
         ArrayList<path> results = bbs.queryOnline(3227, 8222);
         System.out.println(results.size() + "   " + (System.currentTimeMillis() - start_rt));
         String path_name = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/results";
-        bbs.saveToDisk(path_name+"/bbs_3227_8222.txt");
+        bbs.saveToDisk(path_name + "/bbs_3227_8222.txt");
         bbs.closeDB();
 
     }
@@ -214,6 +214,7 @@ public class BBSBaselineBusline {
         long number_addtoskyline = 0;
         long upperbound_find_rt = 0;
         long check_dominate_result_rt = 0;
+        long expansion_rt = 0;
 
         try (Transaction tx = this.graphdb.beginTx()) {
             myNode snode = new myNode(src, neo4j);
@@ -235,7 +236,6 @@ public class BBSBaselineBusline {
                         double[] p_l_costs = getLowerBound(p.costs, p.endNode, dest);
                         upperbound_find_rt += System.nanoTime() - upperbound_find_rt_start;
 
-
                         long dominate_rt_start = System.nanoTime();
                         if (dominatedByResult(p_l_costs)) {
                             isDominatedByResult = true;
@@ -249,7 +249,11 @@ public class BBSBaselineBusline {
 
                     if (!p.expaned) {
                         p.expaned = true;
+                        long st_expansion_rt = System.nanoTime();
                         ArrayList<path> new_paths = p.expand(neo4j);
+                        expansion_rt += (System.nanoTime() - st_expansion_rt);
+
+
                         for (path np : new_paths) {
                             myNode next_n;
                             if (tmpStoreNodes.containsKey(np.endNode)) {
@@ -297,8 +301,9 @@ public class BBSBaselineBusline {
 
         System.out.println("add to skyline running time : " + addtoskyline_rt / 1000000);
         System.out.println("check domination by result time : " + check_dominate_result_rt / 1000000);
-        System.out.println("upperbound calculation time  : " + upperbound_find_rt / 1000000);
-        System.out.println("# of time to add to skyline function : " + number_addtoskyline);
+        System.out.println("upper-bound calculation time  : " + upperbound_find_rt / 1000000);
+        System.out.println("expansion time by using the neo4j object : " + expansion_rt / 1000000);
+        System.out.println("# of times to add to skyline function : " + number_addtoskyline);
 
         return results;
     }

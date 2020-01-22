@@ -22,7 +22,7 @@ public class LandmarkBBS {
      **/
     public HashMap<Long, HashMap<Long, double[]>> landmark_index = new HashMap<>();
 
-
+    //Todo: Add the information of the index and the flat index to help the BBS search function 
     public LandmarkBBS(String db_name) {
         String sub_db_name = db_name;
         neo4j = new Neo4jDB(sub_db_name);
@@ -127,7 +127,7 @@ public class LandmarkBBS {
 
                         //Still can be expand to any of the destination
                         if (!p.p.possible_destination.isEmpty()) {
-                            ArrayList<backbonePath> new_paths = p.expand(neo4j);
+                            ArrayList<backbonePath> new_paths = p.expand(neo4j); //Todo: Change the expand function to get the highest_index information
                             for (backbonePath new_bp : new_paths) {
                                 myNode next_n;
                                 if (tmpStoreNodes.containsKey(new_bp.destination)) {
@@ -158,10 +158,6 @@ public class LandmarkBBS {
             }
             tx.success();
         }
-    }
-
-    public void debugTest(long source_node, Map.Entry<Long, ArrayList<backbonePath>> source_info_list, HashMap<Long, ArrayList<backbonePath>> destination_to_highway_results, ArrayList<backbonePath> result) {
-        System.out.println(System.currentTimeMillis());
     }
 
 
