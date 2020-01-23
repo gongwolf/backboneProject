@@ -144,7 +144,8 @@ public class LandmarkBBS {
                             new_paths.addAll(flat_new_paths);
 
                             for (backbonePath new_bp : new_paths) {
-                                if (new_bp.hasCycle) {
+
+                                if (new_bp.hasCycle || dominatedByResult(new_bp.costs, results)) {
                                     continue;
                                 }
 
@@ -156,12 +157,6 @@ public class LandmarkBBS {
                                     tmpStoreNodes.put(next_n.id, next_n);
                                 }
 
-                                boolean dominatedByResult = dominatedByResult(new_bp.costs, results);
-                                if (dominatedByResult) {
-                                    continue;
-                                }
-
-                                //Todo: check if the new backbone path is dominated by the results
                                 if (all_possible_dest_node_with_skypaths.keySet().contains(next_n.id) && new_bp.p.possible_destination.containsKey(next_n.id)) {
                                     try {
                                         for (backbonePath d_skyline_bp : new_bp.p.possible_destination.get(next_n.id)) {
@@ -236,7 +231,7 @@ public class LandmarkBBS {
                             .dijkstra(PathExpanders.forTypeAndDirection(Line.Linked, Direction.BOTH), property_name);
                     WeightedPath paths = finder.findSinglePath(startNode, destination);
                     if (paths != null) {
-                        bp = new backbonePath(paths);
+                        bp = new backbonePath(paths, this.neo4j);
                         for (backbonePath src_to_bp : src_set.getValue()) {
                             for (backbonePath dest_dp : dest_set.get(dest)) {
                                 backbonePath last_part_dp = new backbonePath(bp, dest_dp, false);
@@ -287,10 +282,10 @@ public class LandmarkBBS {
 
                     backbonePath init_bp = new backbonePath(src_to_bp, upper_bp, false);
 
-                    System.out.println(src_to_bp);
-                    System.out.println(dest_dp);
-                    System.out.println(init_bp);
-                    System.out.println("~~~~~~~~~~~~~~~~~~~~");
+//                    System.out.println(src_to_bp);
+//                    System.out.println(dest_dp);
+//                    System.out.println(init_bp);
+//                    System.out.println("~~~~~~~~~~~~~~~~~~~~");
                     addToSkyline(init_result, init_bp);
                 }
             }

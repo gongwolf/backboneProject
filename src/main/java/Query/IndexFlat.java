@@ -42,9 +42,11 @@ public class IndexFlat {
         for (long id : node_list) {
             HashMap<Long, myBackNode> tmpResult = BBSQueryAtHighlevelGrpah(id, node_list);
             int size = 0;
+            int highway_node_size = 0;
             for (Map.Entry<Long, myBackNode> e : tmpResult.entrySet()) {
                 if (node_list.contains(e.getKey())) {
                     size += e.getValue().skypaths.size();
+                    highway_node_size++;
                     for (backbonePath bp : e.getValue().skypaths) {
                         addElementToIndex(id, e.getKey(), bp.costs, this.highest_index);
                     }
@@ -61,12 +63,12 @@ public class IndexFlat {
 //                }
 //            }
 
+//            System.out.println(id + "    " + highway_node_size + "    " + size);
             overall_size += size;
         }
 
         this.overall_highest_index_size = overall_size;
         System.out.println("Overall size :   " + overall_highest_index_size + "  running in " + (System.currentTimeMillis() - running_time) + "  ms   " + this.highest_index.size());
-
     }
 
     private void addElementToIndex(long source_node_id, long highway_node_id, double[] costs, HashMap<Long, HashMap<Long, ArrayList<double[]>>> index_structure) {

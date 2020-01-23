@@ -186,13 +186,15 @@ public class backbonePath {
 
     }
 
-    public backbonePath(WeightedPath paths) {
+    public backbonePath(WeightedPath paths, Neo4jDB neo4j) {
         this.costs = new double[3];
         this.source = paths.startNode().getId();
         this.destination = paths.endNode().getId();
+        this.setPropertiesName(neo4j);
 
         this.highwayList = new ArrayList<>();
         Iterator<Node> nodes_iter = paths.nodes().iterator();
+
         while (nodes_iter.hasNext()) {
             this.highwayList.add(nodes_iter.next().getId());
         }
@@ -200,7 +202,11 @@ public class backbonePath {
         this.p = new path();
         Iterator<Relationship> rel_iter = paths.relationships().iterator();
         while (rel_iter.hasNext()) {
-            this.p.rels.add(rel_iter.next().getId());
+            Relationship rel = rel_iter.next();
+            this.p.rels.add(rel.getId());
+            costs[0] += (double) rel.getProperty(this.propertiesName.get(0));
+            costs[1] += (double) rel.getProperty(this.propertiesName.get(1));
+            costs[2] += (double) rel.getProperty(this.propertiesName.get(2));
         }
 
         this.p.expanded = false;

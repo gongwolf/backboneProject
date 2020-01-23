@@ -16,6 +16,7 @@ public class myNode {
     public boolean inqueue;
     public Neo4jDB neo4j;
     public long callAddToSkylineFunction = 0;
+    public double degree = 0;
 
 
     /**
@@ -63,9 +64,18 @@ public class myNode {
         try (Transaction tx = neo4j.graphDB.beginTx()) {
             locations[0] = (double) neo4j.graphDB.getNodeById(this.id).getProperty("lat");
             locations[1] = (double) neo4j.graphDB.getNodeById(this.id).getProperty("log");
+            double start_location_lat = (double) neo4j.graphDB.getNodeById(this.source_node_id).getProperty("lat");
+            double start_location_lng = (double) neo4j.graphDB.getNodeById(this.source_node_id).getProperty("log");
             double end_location_lat = (double) neo4j.graphDB.getNodeById(this.dest_node_id).getProperty("lat");
             double end_location_lng = (double) neo4j.graphDB.getNodeById(this.dest_node_id).getProperty("log");
             this.distance_q = Math.sqrt(Math.pow(locations[0] - end_location_lat, 2) + Math.pow(locations[1] - end_location_lng, 2));
+
+            double slopeA = (end_location_lng - start_location_lng) / (end_location_lat - start_location_lat);
+            double slopeB = (locations[1] - start_location_lng) / (locations[0] - start_location_lat);
+
+//            this.degree = (slopeB-slopeA)/(1+slopeA*slopeB); // parallel==0; the small the more same direction
+            this.degree = slopeB;
+
             tx.success();
         }
     }

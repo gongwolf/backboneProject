@@ -29,9 +29,9 @@ public class QueryProcess {
         String sub_db_name = "sub_ny_USA_Level" + this.index_level;
         bbs = new LandmarkBBS(sub_db_name, index.flatindex);
 
-//        index.buildFlatIndex();
-//        index.buildHighestFlatIndex(bbs.node_list);
-        bbs.buildLandmarkIndex(1);
+        index.buildFlatIndex();
+        index.buildHighestFlatIndex(bbs.node_list);
+        bbs.buildLandmarkIndex(3);
 
         this.monitor = new Monitor();
 
@@ -65,7 +65,7 @@ public class QueryProcess {
 
         findAtTheHighestLevelFlat(source_node, destination_node);
         String path_name = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/results";
-        saveToDisk(path_name + "/backbone_3227_8222.txt");
+        saveToDisk(path_name + "/backbone_3227_8222_landmark_init_flat.txt");
     }
 
     private void findTheIndexInTheLayerIndx(long source_node, long destination_node) {
@@ -249,7 +249,8 @@ public class QueryProcess {
                 bbs.landmark_bbs(source_node, dest_node, source_info_list, all_possible_dest_node_with_skypaths, result);
                 System.out.println("number of results sets " + this.result.size());
                 System.out.println("================================================================================");
-//                System.exit(0);
+                String path_name = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/results";
+                saveToDisk(path_name + "/backbone_3227_8222_landmark_init_flat_"+highway_source+".txt");
             }
         }
         bbs.closeDB();
@@ -274,14 +275,14 @@ public class QueryProcess {
             if (bbs.node_list.contains(highway_source)) {
 
                 if (result.isEmpty()) {
-//                    ArrayList<backbonePath> init_dummy_paths = bbs.initResultLandMark(source_info_list, all_possible_dest_node_with_skypaths);
-                    ArrayList<backbonePath> init_dummy_paths = bbs.initResultShortestPath(source_info_list, all_possible_dest_node_with_skypaths);
+                    ArrayList<backbonePath> init_dummy_paths = bbs.initResultLandMark(source_info_list, all_possible_dest_node_with_skypaths);
+//                    ArrayList<backbonePath> init_dummy_paths = bbs.initResultShortestPath(source_info_list, all_possible_dest_node_with_skypaths);
                     this.result.addAll(init_dummy_paths);
                     System.out.println("Init the result set: ==================================================================================");
                     for(backbonePath bp:result){
                         System.out.println(bp);
                     }
-                    System.exit(0);
+                    System.out.println("=======================================================================================================");
                 }
 
 
