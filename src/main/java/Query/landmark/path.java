@@ -61,4 +61,10 @@ public class path {
             possible_destination.put(dest_highway_node, skyline_bps);
         }
     }
+
+    public path() {
+        this.expanded = false;
+        this.rels = new ArrayList<>();
+        possible_destination = new HashMap<>();
+    }
 }

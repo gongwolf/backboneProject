@@ -8,6 +8,7 @@ import java.util.*;
 
 public class myNode {
     public long source_node_id;
+    public long dest_node_id;
     public long id;
     public ArrayList<backbonePath> skyPaths; // destination node --> skyline (from source node to destination node)
     public double distance_q;
@@ -23,8 +24,9 @@ public class myNode {
      * @param destination_highways_results the skyline paths from the destination highways to destination node
      * @param neo4j                        the neo4j object
      */
-    public myNode(long source_node_id, Map.Entry<Long, ArrayList<backbonePath>> source_skyline_paths, HashMap<Long, ArrayList<backbonePath>> destination_highways_results, Neo4jDB neo4j) {
+    public myNode(long source_node_id, long dest_node_id, Map.Entry<Long, ArrayList<backbonePath>> source_skyline_paths, HashMap<Long, ArrayList<backbonePath>> destination_highways_results, Neo4jDB neo4j) {
         this.source_node_id = source_node_id;
+        this.dest_node_id = dest_node_id;
         this.id = source_skyline_paths.getKey();
         this.locations = new double[2];
         this.distance_q = 0;
@@ -37,14 +39,14 @@ public class myNode {
         for (backbonePath bp : source_skyline_paths.getValue()) {
             path dp = new path(bp, destination_highways_results);
             backbonePath high_bp = new backbonePath(bp, dp, neo4j);
-//            System.out.println("0   "+high_bp);
             this.skyPaths.add(high_bp);
         }
     }
 
 
-    public myNode(long source_node_id, long highway_source_id, Neo4jDB neo4j) {
+    public myNode(long source_node_id, long dest_node_id, long highway_source_id, Neo4jDB neo4j) {
         this.source_node_id = source_node_id;
+        this.dest_node_id = dest_node_id;
         this.id = highway_source_id;
         this.locations = new double[2];
         this.distance_q = 0;
@@ -61,9 +63,9 @@ public class myNode {
         try (Transaction tx = neo4j.graphDB.beginTx()) {
             locations[0] = (double) neo4j.graphDB.getNodeById(this.id).getProperty("lat");
             locations[1] = (double) neo4j.graphDB.getNodeById(this.id).getProperty("log");
-            double start_location = (double) neo4j.graphDB.getNodeById(this.source_node_id).getProperty("lat");
-            double end_location = (double) neo4j.graphDB.getNodeById(this.source_node_id).getProperty("log");
-            this.distance_q = Math.sqrt(Math.pow(locations[0] - start_location, 2) + Math.pow(locations[1] - end_location, 2));
+            double end_location_lat = (double) neo4j.graphDB.getNodeById(this.dest_node_id).getProperty("lat");
+            double end_location_lng = (double) neo4j.graphDB.getNodeById(this.dest_node_id).getProperty("log");
+            this.distance_q = Math.sqrt(Math.pow(locations[0] - end_location_lat, 2) + Math.pow(locations[1] - end_location_lng, 2));
             tx.success();
         }
     }

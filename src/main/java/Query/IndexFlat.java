@@ -29,7 +29,6 @@ public class IndexFlat {
                         addElementToIndex(source_node_id, highway_node_id, costs, this.flat_index);
                     }
                 }
-
             }
         }
         System.out.println("Finish the transfer from layer_index to flat_index");
@@ -44,11 +43,24 @@ public class IndexFlat {
             HashMap<Long, myBackNode> tmpResult = BBSQueryAtHighlevelGrpah(id, node_list);
             int size = 0;
             for (Map.Entry<Long, myBackNode> e : tmpResult.entrySet()) {
-                size += e.getValue().skypaths.size();
-                for (backbonePath bp : e.getValue().skypaths) {
-                    addElementToIndex(id, e.getKey(), bp.costs, this.highest_index);
+                if (node_list.contains(e.getKey())) {
+                    size += e.getValue().skypaths.size();
+                    for (backbonePath bp : e.getValue().skypaths) {
+                        addElementToIndex(id, e.getKey(), bp.costs, this.highest_index);
+                    }
                 }
             }
+
+//            if (id == 8376) {
+//                for (Map.Entry<Long, myBackNode> e : tmpResult.entrySet()) {
+//                    if (node_list.contains(e.getKey())) {
+//                        for (backbonePath bp : e.getValue().skypaths) {
+//                            System.out.println(bp);
+//                        }
+//                    }
+//                }
+//            }
+
             overall_size += size;
         }
 
@@ -126,12 +138,10 @@ public class IndexFlat {
             myBackNode v = queue.pop();
             for (int i = 0; i < v.skypaths.size(); i++) {
                 backbonePath p = v.skypaths.get(i);
-//                System.out.println(p);
                 if (!p.expanded) {
                     p.expanded = true;
                     ArrayList<backbonePath> new_paths = getNextHighwaysFlat(p, node_list);
                     for (backbonePath n_bp : new_paths) {
-//                        System.out.println("    " + n_bp);
                         myBackNode next_n;
                         if (tmpStoreNodes.containsKey(n_bp.destination)) {
                             next_n = tmpStoreNodes.get(n_bp.destination);
@@ -160,7 +170,8 @@ public class IndexFlat {
         if (highway_skyline_info != null) {
             for (Map.Entry<Long, ArrayList<double[]>> highways : highway_skyline_info.entrySet()) {
                 long h_node = highways.getKey();
-                if (node_list.contains(h_node) && p.destination != h_node) {
+//                if (node_list.contains(h_node) && p.destination != h_node) {
+                if (p.destination != h_node) {
                     for (double[] c : highways.getValue()) {
                         backbonePath new_bp = new backbonePath(h_node, c, p);
                         result.add(new_bp);

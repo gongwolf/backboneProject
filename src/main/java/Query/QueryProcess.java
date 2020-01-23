@@ -1,10 +1,12 @@
 package Query;
 
+import Baseline.path;
 import DataStructure.Monitor;
 import Query.Queue.MyQueue;
 import Query.Queue.myBackNode;
 import Query.landmark.LandmarkBBS;
 
+import java.io.*;
 import java.util.*;
 
 public class QueryProcess {
@@ -26,14 +28,11 @@ public class QueryProcess {
         this.index_level = index.total_level;
         String sub_db_name = "sub_ny_USA_Level" + this.index_level;
         bbs = new LandmarkBBS(sub_db_name, index.flatindex);
-//        for(long node_id:bbs.node_list){
-//            System.out.println(node_id);
-//        }
 
-        index.buildFlatIndex();
-        index.buildHighestFlatIndex(bbs.node_list);
-
+//        index.buildFlatIndex();
+//        index.buildHighestFlatIndex(bbs.node_list);
         bbs.buildLandmarkIndex(1);
+
         this.monitor = new Monitor();
 
     }
@@ -64,7 +63,9 @@ public class QueryProcess {
 
         System.out.println("~~~~~~~~~~~~~~~~~~~~~ find the highway nodes at the highest level                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
-        findAtTheHighestLevelFlat(source_node);
+        findAtTheHighestLevelFlat(source_node, destination_node);
+        String path_name = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/results";
+        saveToDisk(path_name + "/backbone_3227_8222.txt");
     }
 
     private void findTheIndexInTheLayerIndx(long source_node, long destination_node) {
@@ -221,7 +222,7 @@ public class QueryProcess {
         printResult();
 
         System.out.println("~~~~~~~~~~~~~~~~~~~~~ find the highway nodes at the highest level                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        findAtTheHighestLevel(source_node);
+        findAtTheHighestLevel(source_node, destination_node);
         printResult();
     }
 
@@ -230,7 +231,7 @@ public class QueryProcess {
      *
      * @param source_node
      */
-    private void findAtTheHighestLevel(long source_node) {
+    private void findAtTheHighestLevel(long source_node, long dest_node) {
         printNodeToHighway(source_to_highway_results);
         printNodeToHighway(destination_to_highway_results);
 
@@ -245,7 +246,7 @@ public class QueryProcess {
             long highway_source = source_info_list.getKey();
             if (bbs.node_list.contains(highway_source)) {
                 System.out.println("Process the node " + highway_source);
-                bbs.landmark_bbs(source_node, source_info_list, all_possible_dest_node_with_skypaths, result);
+                bbs.landmark_bbs(source_node, dest_node, source_info_list, all_possible_dest_node_with_skypaths, result);
                 System.out.println("number of results sets " + this.result.size());
                 System.out.println("================================================================================");
 //                System.exit(0);
@@ -260,20 +261,35 @@ public class QueryProcess {
      *
      * @param source_node
      */
-    private void findAtTheHighestLevelFlat(long source_node) {
+    private void findAtTheHighestLevelFlat(long source_node, long dest_node) {
         printNodeToHighway(source_to_highway_results);
         printNodeToHighway(destination_to_highway_results);
 
         HashMap<Long, ArrayList<backbonePath>> all_possible_dest_node_with_skypaths = getPossibleDestinations();
 
         for (Map.Entry<Long, ArrayList<backbonePath>> source_info_list : source_to_highway_results.entrySet()) {
+
             long highway_source = source_info_list.getKey();
+
             if (bbs.node_list.contains(highway_source)) {
+
+                if (result.isEmpty()) {
+//                    ArrayList<backbonePath> init_dummy_paths = bbs.initResultLandMark(source_info_list, all_possible_dest_node_with_skypaths);
+                    ArrayList<backbonePath> init_dummy_paths = bbs.initResultShortestPath(source_info_list, all_possible_dest_node_with_skypaths);
+                    this.result.addAll(init_dummy_paths);
+                    System.out.println("Init the result set: ==================================================================================");
+                    for(backbonePath bp:result){
+                        System.out.println(bp);
+                    }
+                    System.exit(0);
+                }
+
+
+                long bbs_rt = System.currentTimeMillis();
                 System.out.println("Process the node " + highway_source);
-                bbs.landmark_bbs(source_node, source_info_list, all_possible_dest_node_with_skypaths, result);
-                System.out.println("number of results sets " + this.result.size());
+                bbs.landmark_bbs(source_node, dest_node, source_info_list, all_possible_dest_node_with_skypaths, result);
+                System.out.println("number of results sets : " + this.result.size() + "   running time : " + (System.currentTimeMillis() - bbs_rt) + " ms ");
                 System.out.println("================================================================================");
-                break;
             }
         }
 
@@ -414,6 +430,27 @@ public class QueryProcess {
         }
     }
 
+    public void saveToDisk(String target_path) {
+        File file = new File(target_path);
+
+        if (file.exists()) {
+            file.delete();
+        }
+
+        try (FileWriter fw = new FileWriter(target_path, true);
+             BufferedWriter bw = new BufferedWriter(fw);
+             PrintWriter out = new PrintWriter(bw)) {
+
+            for (backbonePath p : this.result) {
+                out.println(p);
+            }
+
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 
     private void combinationResult(ArrayList<backbonePath> src_to_common_highway, ArrayList<backbonePath> dest_to_common_highway) {
 

@@ -3,12 +3,15 @@ package Query;
 import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
 import Query.landmark.path;
+import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 
 public class backbonePath {
@@ -42,7 +45,7 @@ public class backbonePath {
 
         if (old_path.p != null) {
             this.p = new path(old_path.p);
-            this.p.expanded=false;
+            this.p.expanded = false;
             p.rels.add(null);
         }
 
@@ -71,7 +74,7 @@ public class backbonePath {
 
         if (s_t_h_bpath.p != null) {
             this.p = new path(s_t_h_bpath.p);
-            this.p.expanded=false;
+            this.p.expanded = false;
         }
 
         int last_index = this.highwayList.size() - 1;
@@ -79,8 +82,10 @@ public class backbonePath {
         this.highwayList.remove(this.highwayList.size() - 1);
         this.highwayList.addAll(reversed_highway);
 
-        for (int idx = last_index; idx < highwayList.size() - 1; idx++) {
-            p.rels.add(null);
+        if (s_t_h_bpath.p != null) {
+            for (int idx = last_index; idx < highwayList.size() - 1; idx++) {
+                p.rels.add(null);
+            }
         }
 
         if (Collections.frequency(highwayList, destination) >= 2) {
@@ -116,7 +121,13 @@ public class backbonePath {
         this.source = sid;
         this.destination = did;
         this.costs = new double[3];
+        this.highwayList = new ArrayList<>();
+
+        this.highwayList.add(source);
+        this.highwayList.add(destination);
+
         System.arraycopy(costs, 0, this.costs, 0, this.costs.length);
+        this.p = null;
     }
 
     /**
@@ -173,6 +184,68 @@ public class backbonePath {
             this.hasCycle = true;
         }
 
+    }
+
+    public backbonePath(WeightedPath paths) {
+        this.costs = new double[3];
+        this.source = paths.startNode().getId();
+        this.destination = paths.endNode().getId();
+
+        this.highwayList = new ArrayList<>();
+        Iterator<Node> nodes_iter = paths.nodes().iterator();
+        while (nodes_iter.hasNext()) {
+            this.highwayList.add(nodes_iter.next().getId());
+        }
+
+        this.p = new path();
+        Iterator<Relationship> rel_iter = paths.relationships().iterator();
+        while (rel_iter.hasNext()) {
+            this.p.rels.add(rel_iter.next().getId());
+        }
+
+        this.p.expanded = false;
+        this.p.possible_destination = new HashMap<>();
+
+    }
+
+    public backbonePath(backbonePath s_t_h_bpath, backbonePath d_t_h_bpath, boolean reverse_the_second_part) {
+        this.source = s_t_h_bpath.source;
+        this.destination = d_t_h_bpath.source;
+
+        this.highwayList.clear();
+        this.highwayList.addAll(s_t_h_bpath.highwayList);
+
+        ArrayList<Long> reversed_highway = new ArrayList<>(d_t_h_bpath.highwayList);
+        if (reverse_the_second_part) {
+            Collections.reverse(reversed_highway);
+        }
+
+        costs = new double[3];
+        calculatedCosts(s_t_h_bpath.costs, d_t_h_bpath.costs);
+
+        if (highwayList.contains(this.destination)) {
+            this.hasCycle = true;
+        }
+
+        if (s_t_h_bpath.p != null) {
+            this.p = new path(s_t_h_bpath.p);
+            this.p.expanded = false;
+        }
+
+        int last_index = this.highwayList.size() - 1;
+
+        this.highwayList.remove(this.highwayList.size() - 1);
+        this.highwayList.addAll(reversed_highway);
+
+        if (s_t_h_bpath.p != null) {
+            for (int idx = last_index; idx < highwayList.size() - 1; idx++) {
+                p.rels.add(null);
+            }
+        }
+
+        if (Collections.frequency(highwayList, destination) >= 2) {
+            this.hasCycle = true;
+        }
     }
 
 
