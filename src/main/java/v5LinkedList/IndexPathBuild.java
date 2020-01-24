@@ -624,7 +624,7 @@ public class IndexPathBuild {
         long overallIndex = 0;
         int maxlevel = this.deletedEdges_layer.size();
         System.out.println("There " + maxlevel + " layer indexes");
-        for (int l = 0; l < maxlevel; l++) {
+        for (int l = 0; l <= maxlevel; l++) {
 
             int level = l;
 
@@ -647,8 +647,8 @@ public class IndexPathBuild {
 
             boolean have_nodes_last_graph = false;
 
-            if (neo4j_level.getNumberofNodes() == 0 && l == maxlevel) {
-                System.out.println("There is an empty graph at level " + l);
+            if (remind_nodes.size() == 0 && l == maxlevel - 1) {
+                System.out.println("The last graph is empty, current level " + l+" needs to build the index between each pair-wise nodes, but so far does not !!!");
                 neo4j_level.closeDB();
                 return;
             } else if (neo4j_level.getNumberofNodes() != 0 && l == maxlevel) {
@@ -667,6 +667,12 @@ public class IndexPathBuild {
 
             System.out.println(neo4j_level.DB_PATH + "   deleted edges:" + (de == null ? -1 : de.size()) + "     # of edges:" + neo4j_level.getNumberofEdges() + "    # of nodes : " + neo4j_level.getNumberofNodes());
             System.out.println(level + " " + nextlevel + " " + maxlevel + "  size of remind nodes " + remind_nodes.size());
+
+            if (have_nodes_last_graph && l == maxlevel) {
+                System.out.println("The last level has nodes, but do not build index for all-pair-wise nodes !!!!!! ");
+                neo4j_level.closeDB();
+                return;
+            }
 
             long numIndex = 0;
             long sizeOverallSkyline = 0;

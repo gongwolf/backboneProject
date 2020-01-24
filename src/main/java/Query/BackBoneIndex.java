@@ -21,7 +21,7 @@ public class BackBoneIndex {
     }
 
     private void readIndexFromDisk() {
-        this.total_level = getlevel()+1;
+        this.total_level = getlevel();
         System.out.println("there are " + this.total_level + " level indexes");
         for (int i = 0; i < this.total_level; i++) {
             System.out.println("read the level " + i + "'s index ---->  " + i + "  to " + (i + 1));

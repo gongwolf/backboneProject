@@ -35,7 +35,7 @@ public class myNode {
         inqueue = false;
         this.neo4j = neo4j;
 
-        setLocations();
+        setLocations(destination_highways_results);
 
         for (backbonePath bp : source_skyline_paths.getValue()) {
             path dp = new path(bp, destination_highways_results);
@@ -45,7 +45,7 @@ public class myNode {
     }
 
 
-    public myNode(long source_node_id, long dest_node_id, long highway_source_id, Neo4jDB neo4j) {
+    public myNode(long source_node_id, long dest_node_id, long highway_source_id, HashMap<Long, ArrayList<backbonePath>> destination_highways_results, Neo4jDB neo4j) {
         this.source_node_id = source_node_id;
         this.dest_node_id = dest_node_id;
         this.id = highway_source_id;
@@ -54,28 +54,34 @@ public class myNode {
         skyPaths = new ArrayList<>();
         inqueue = false;
         this.neo4j = neo4j;
-        setLocations();
+        setLocations(destination_highways_results);
     }
 
     /**
      * calculate the distance from the query point to current point
+     *
+     * @param destination_highways_results
      */
-    public void setLocations() {
+    public void setLocations(HashMap<Long, ArrayList<backbonePath>> destination_highways_results) {
+        distance_q = Double.POSITIVE_INFINITY;
         try (Transaction tx = neo4j.graphDB.beginTx()) {
-            locations[0] = (double) neo4j.graphDB.getNodeById(this.id).getProperty("lat");
-            locations[1] = (double) neo4j.graphDB.getNodeById(this.id).getProperty("log");
-            double start_location_lat = (double) neo4j.graphDB.getNodeById(this.source_node_id).getProperty("lat");
-            double start_location_lng = (double) neo4j.graphDB.getNodeById(this.source_node_id).getProperty("log");
-            double end_location_lat = (double) neo4j.graphDB.getNodeById(this.dest_node_id).getProperty("lat");
-            double end_location_lng = (double) neo4j.graphDB.getNodeById(this.dest_node_id).getProperty("log");
-            this.distance_q = Math.sqrt(Math.pow(locations[0] - end_location_lat, 2) + Math.pow(locations[1] - end_location_lng, 2));
+            for (long dest_node_id : destination_highways_results.keySet()) {
+                locations[0] = (double) neo4j.graphDB.getNodeById(this.id).getProperty("lat");
+                locations[1] = (double) neo4j.graphDB.getNodeById(this.id).getProperty("log");
+                double end_location_lat = (double) neo4j.graphDB.getNodeById(dest_node_id).getProperty("lat");
+                double end_location_lng = (double) neo4j.graphDB.getNodeById(dest_node_id).getProperty("log");
 
-            double slopeA = (end_location_lng - start_location_lng) / (end_location_lat - start_location_lat);
-            double slopeB = (locations[1] - start_location_lng) / (locations[0] - start_location_lat);
+                double tmp_distance_q = Math.sqrt(Math.pow(locations[0] - end_location_lat, 2) + Math.pow(locations[1] - end_location_lng, 2));
+                if (tmp_distance_q < distance_q) {
+                    this.distance_q = tmp_distance_q;
+                }
 
-//            this.degree = (slopeB-slopeA)/(1+slopeA*slopeB); // parallel==0; the small the more same direction
-            this.degree = slopeB;
+//                double slopeA = (end_location_lng - start_location_lng) / (end_location_lat - start_location_lat);
+//                double slopeB = (locations[1] - start_location_lng) / (locations[0] - start_location_lat);
+//                this.degree = (slopeB-slopeA)/(1+slopeA*slopeB); // parallel==0; the small the more same direction
+//                this.degree = slopeB;
 
+            }
             tx.success();
         }
     }

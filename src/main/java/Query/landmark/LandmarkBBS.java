@@ -153,7 +153,7 @@ public class LandmarkBBS {
                                 if (tmpStoreNodes.containsKey(new_bp.destination)) {
                                     next_n = tmpStoreNodes.get(new_bp.destination);
                                 } else {
-                                    next_n = new myNode(source_node, dest_node, new_bp.destination, neo4j);
+                                    next_n = new myNode(source_node, dest_node, new_bp.destination, all_possible_dest_node_with_skypaths, neo4j);
                                     tmpStoreNodes.put(next_n.id, next_n);
                                 }
 
