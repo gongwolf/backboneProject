@@ -21,7 +21,7 @@ public class BackBoneIndex {
     }
 
     private void readIndexFromDisk() {
-        this.total_level = getlevel();
+        this.total_level = getlevel()+1;
         System.out.println("there are " + this.total_level + " level indexes");
         for (int i = 0; i < this.total_level; i++) {
             System.out.println("read the level " + i + "'s index ---->  " + i + "  to " + (i + 1));
@@ -34,7 +34,6 @@ public class BackBoneIndex {
         int level = 0;
         File index_dir = new File(this.index_folder);
         for (File f : index_dir.listFiles(new IndexQuery.levelFileNameFilter())) {
-
             String fname = f.getName();
             int c_level = Integer.parseInt(fname.substring(fname.indexOf("level") + 5));
             if (c_level > level) {
@@ -126,7 +125,6 @@ public class BackBoneIndex {
             return skyline_costs;
         }
     }
-
 
 
     public void buildFlatIndex() {

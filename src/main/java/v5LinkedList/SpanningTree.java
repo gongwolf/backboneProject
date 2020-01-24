@@ -621,7 +621,7 @@ public class SpanningTree {
                 int c_level = (int) rel.getProperty("level");
                 if (c_level == current_level) {
                     rel.setProperty("level", current_level + 1);
-//                    if (rel.getId() == 169) {
+//                    if (rel.getId() == 10263l) {
 //                        System.out.println("increase the edge " + rel + "  from " + c_level + " to " + (current_level + 1));
 //                    }
                 }

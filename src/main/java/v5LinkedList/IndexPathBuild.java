@@ -5,6 +5,7 @@ import configurations.ProgramProperty;
 import javafx.util.Pair;
 import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.*;
+import org.neo4j.register.Register;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -106,34 +107,28 @@ public class IndexPathBuild {
 
     private void dealwithLastLayer(int lastLevel) {
         String sub_db_name = this.base_db_name + "_Level" + lastLevel;
-
-        String prefix = "/home/gqxwolf/mydata/projectData/BackBone/";
-
         neo4j = new Neo4jDB(sub_db_name);
         neo4j.startDB(false);
         graphdb = neo4j.graphDB;
         long pre_n = neo4j.getNumberofNodes();
         long pre_e = neo4j.getNumberofEdges();
         System.out.println("deal with the last level " + lastLevel + " graph at " + neo4j.DB_PATH + "  " + pre_n + " nodes and " + pre_e + " edges");
-        getDegreePairs();
-//        try (Transaction tx = graphdb.beginTx()) {
-//            for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> dp : this.degree_pairs.entrySet()) {
-//                if (dp.getKey().getKey() != 2 || dp.getKey().getValue() != 2) {
-//                    System.out.println(dp.getKey().getKey() + "  " + dp.getKey().getValue() + "  ================================================");
-//                    for (long rel_id : dp.getValue()) {
-//                        Node start_node = graphdb.getRelationshipById(rel_id).getStartNode();
-//                        Node end_node = graphdb.getRelationshipById(rel_id).getEndNode();
-//                        System.out.println(start_node.getProperty("lat")+" "+start_node.getProperty("log")+" "+end_node.getProperty("lat")+" "+end_node.getProperty("log"));
-//                    }
-//                }
-//            }
-//            tx.success();
-//        }
-
-//        Relationship r = graphdb.getRelationshipById(rel);
-//        boolean flag = deleteEdge(r, deletedNodes);
-
         neo4j.closeDB();
+        System.out.println("**********************************************************************************************************************");
+        int currentlevel = lastLevel;
+        boolean deleted = false;
+        do {
+            if (currentlevel != lastLevel) {
+                int previouslevel = currentlevel;
+                currentlevel = currentlevel + 1;
+                copyToHigherDB(previouslevel, currentlevel);
+            }
+
+            deleted = handleUpperLevelGraphWithGivenThreshold(currentlevel);
+            break;
+        } while (deleted);
+
+
     }
 
 
@@ -232,7 +227,6 @@ public class IndexPathBuild {
      * @param dest_level
      */
     private void copyToHigherDB(int src_level, int dest_level) {
-
         String src_db_name = this.base_db_name + "_Level" + src_level;
         String dest_db_name = this.base_db_name + "_Level" + dest_level;
 
@@ -249,6 +243,69 @@ public class IndexPathBuild {
         }
     }
 
+
+    private boolean handleUpperLevelGraphWithGivenThreshold(int currentLevel) {
+        String sub_db_name = this.base_db_name + "_Level" + currentLevel;
+
+        String prefix = "/home/gqxwolf/mydata/projectData/BackBone/";
+
+        neo4j = new Neo4jDB(sub_db_name);
+        neo4j.startDB(false);
+        graphdb = neo4j.graphDB;
+        long pre_n = neo4j.getNumberofNodes();
+        long pre_e = neo4j.getNumberofEdges();
+        System.out.println("deal with level " + currentLevel + " graph at " + neo4j.DB_PATH + "  " + pre_n + " nodes and " + pre_e + " edges");
+
+
+        // record the nodes that are deleted in this layer.
+        HashSet<Long> deletedNodes = new HashSet<>();
+        // record the edges that are deleted in this layer, the index is build based on it
+        HashSet<Long> deletedEdges = new HashSet<>();
+
+
+        updateNeb4jConnectorInDynamicForests();
+        System.out.println("Updated the neo4j database object ................");
+        getDegreePairs();
+        ArrayList<Pair<Integer, Integer>> threshold_list = new ArrayList<>();
+        Pair<Integer, Integer> threshold = this.degree_pairs.keySet().iterator().next();
+        threshold_list.add(threshold);
+        System.out.println("#####");
+
+
+        boolean deleted = removeLowerDegreePairEdgesByList(threshold_list, deletedNodes, deletedEdges);
+
+        System.out.println("Removing the edges in level " + currentLevel + "  with degree threshold list : " + threshold_list);
+        long post_n = neo4j.getNumberofNodes();
+        long post_e = neo4j.getNumberofEdges();
+        System.out.println("~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
+        String textFilePath = prefix + "busline_sub_graph_NY/non-single/level" + currentLevel + "/";
+        neo4j.saveGraphToTextFormation(textFilePath);
+
+        getDegreePairs();
+        deletedEdges.addAll(removeSingletonEdgesInForests(deletedNodes));
+        long numberOfNodes = neo4j.getNumberofNodes();
+        post_n = neo4j.getNumberofNodes();
+        post_e = neo4j.getNumberofEdges();
+//
+        textFilePath = prefix + "busline_sub_graph_NY/level" + currentLevel + "/";
+        neo4j.saveGraphToTextFormation(textFilePath);
+//
+        System.out.println(" ~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
+        System.out.println("Add the deleted edges of the level " + currentLevel + "  to the deletedEdges_layer structure. ");
+        neo4j.closeDB();
+
+        cn = numberOfNodes;
+
+        if (cn == 0) {
+            deleted = false; //no edge can be removed anymore.
+        }
+
+        if (deleted) {
+            this.deletedEdges_layer.add(deletedEdges);
+        }
+
+        return deleted;
+    }
 
     private boolean handleUpperLevelGraph(int currentLevel, Pair<Integer, Integer> threshold_p, int threshold_t) {
         String sub_db_name = this.base_db_name + "_Level" + currentLevel;
@@ -305,15 +362,18 @@ public class IndexPathBuild {
         neo4j.saveGraphToTextFormation(textFilePath);
 //
         System.out.println(" ~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
-        if (deleted) {
-            this.deletedEdges_layer.add(deletedEdges);
-        }
         System.out.println("Add the deleted edges of the level " + currentLevel + "  to the deletedEdges_layer structure. ");
         neo4j.closeDB();
 
         cn = numberOfNodes;
 
-//        return numberOfNodes;
+        if (cn == 0) {
+            deleted = false;
+        }
+
+        if (deleted) {
+            this.deletedEdges_layer.add(deletedEdges);
+        }
         return deleted;
     }
 
@@ -382,6 +442,36 @@ public class IndexPathBuild {
     }
 
 
+    private boolean removeLowerDegreePairEdgesByList(ArrayList<Pair<Integer, Integer>> threshold_list, HashSet<Long> deletedNodes, HashSet<Long> deletedEdges) {
+        getDegreePairs();
+
+        boolean deleted = false;
+        for (Pair<Integer, Integer> t : threshold_list) {
+            HashSet<Long> deleted_rels = new HashSet<>(this.degree_pairs.get(t));
+            try (Transaction tx = graphdb.beginTx()) {
+                for (long rel : deleted_rels) {
+                    Relationship r = graphdb.getRelationshipById(rel);
+                    boolean flag = deleteEdge(r, deletedNodes);
+//                    System.out.println("remove ...... " + rel + "  " + r + "   " + flag + "       " + dforests.isTreeEdge(10263l));
+//                    dforests.isInTheTree(10263l);
+
+                    if (flag) {
+                        deletedEdges.add(r.getId());
+                        if (!deleted) {
+                            deleted = true;
+                        }
+                    }
+                }
+                tx.success();
+
+            }
+            System.out.println("Finished the remove of the edge by using the threshold " + t + " !!!!!!!!!!!!!!!!!!!!!!");
+        }
+
+
+        return deleted;
+    }
+
     private boolean removeLowerDegreePairEdgesByThreshold(Pair<Integer, Integer> threshold_p, int threshold_t, HashSet<Long> deletedNodes, HashSet<Long> deletedEdges) {
         boolean deleted = false;
         for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> dp : this.degree_pairs.entrySet()) {
@@ -402,7 +492,7 @@ public class IndexPathBuild {
 
             if ((ct < threshold_t) || (threshold_t == ct && sd < threshold_p.getKey()) || (sd == threshold_p.getKey() && ed == threshold_p.getValue()) || (ed == threshold_p.getKey() && sd == threshold_p.getValue())) {
                 try (Transaction tx = graphdb.beginTx()) {
-                    ArrayList<Long> deleted_rels = new ArrayList<>(dp.getValue());
+                    HashSet<Long> deleted_rels = new HashSet<>(dp.getValue());
 //                    Collections.shuffle(deleted_rels); //Shuffle the deleted edges
 
                     for (long rel : deleted_rels) {
@@ -438,7 +528,6 @@ public class IndexPathBuild {
             deleteRelationshipFromDB(r, deletedNodes);
             canBeDeleted = true;
         }
-
 
         return canBeDeleted;
     }
@@ -531,10 +620,11 @@ public class IndexPathBuild {
      * 2) The max level graph is non-empty. the max level graph only contains the edges that degree pair either <2,x> or <2,x>
      */
     private void indexBuild() {
-        System.out.println("============== index building process");
+        System.out.println("============== index building process  ==========================");
         long overallIndex = 0;
         int maxlevel = this.deletedEdges_layer.size();
-        for (int l = 0; l <= maxlevel; l++) {
+        System.out.println("There " + maxlevel + " layer indexes");
+        for (int l = 0; l < maxlevel; l++) {
 
             int level = l;
 

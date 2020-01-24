@@ -249,8 +249,6 @@ public class QueryProcess {
                 bbs.landmark_bbs(source_node, dest_node, source_info_list, all_possible_dest_node_with_skypaths, result);
                 System.out.println("number of results sets " + this.result.size());
                 System.out.println("================================================================================");
-                String path_name = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/results";
-                saveToDisk(path_name + "/backbone_3227_8222_landmark_init_flat_"+highway_source+".txt");
             }
         }
         bbs.closeDB();
@@ -290,6 +288,9 @@ public class QueryProcess {
                 System.out.println("Process the node " + highway_source);
                 bbs.landmark_bbs(source_node, dest_node, source_info_list, all_possible_dest_node_with_skypaths, result);
                 System.out.println("number of results sets : " + this.result.size() + "   running time : " + (System.currentTimeMillis() - bbs_rt) + " ms ");
+                String path_name = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/results";
+                saveToDisk(path_name + "/backbone_3227_8222_landmark_init_flat_"+highway_source+".txt");
+                System.out.println("Write the results to :::>>>> "+path_name);
                 System.out.println("================================================================================");
             }
         }
