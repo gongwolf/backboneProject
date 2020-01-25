@@ -2,6 +2,7 @@ package Query;
 
 import Index.Index;
 import Query.Queue.myBackNode;
+import org.apache.commons.io.FileUtils;
 
 import java.io.*;
 import java.util.*;
@@ -131,8 +132,41 @@ public class BackBoneIndex {
         flatindex.transIndexToFlat(true, index);
     }
 
-    public void buildHighestFlatIndex(HashSet<Long> node_list) {
-        this.flatindex.buildHighestFlatIndex(node_list);
+    /**
+     * @param node_list
+     * @param deleted_existed deleted the index file if it exists. means create a new index file
+     */
+    public void buildHighestFlatIndex(HashSet<Long> node_list, boolean deleted_existed) {
+        String highest_level_index_folder = this.index_folder + "/highest_index/";
+        File idx_folder = new File(highest_level_index_folder);
+        File idx_file = new File(highest_level_index_folder + "highest_level.idx");
+        try {
+            if (!idx_folder.exists()) {
+                System.out.println("create the highest level folder : " + idx_folder);
+                FileUtils.forceMkdir(idx_folder);
+            }
+
+            if (deleted_existed) {
+                if (idx_file.exists()) {
+                    idx_file.delete();
+                    System.out.println("Delete the highest index file ---->>>  " + idx_file.getName());
+                    this.flatindex.buildHighestFlatIndex(node_list);
+                    this.flatindex.writeHighestFlatIndexToDisk(idx_file.getAbsolutePath());
+                    System.out.println("Create the highest index file ---->>>  " + idx_file.getName());
+                }
+            } else {
+                if (idx_file.exists()) {
+                    System.out.println("Read the highest index file ---->>>  " + idx_file.getName());
+                    this.flatindex.readHighestFlatIndexToDisk(idx_file.getAbsolutePath());
+                } else {
+                    this.flatindex.buildHighestFlatIndex(node_list);
+                    this.flatindex.writeHighestFlatIndexToDisk(idx_file.getAbsolutePath());
+                    System.out.println("Create the highest index file ---->>>  " + idx_file.getName());
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 

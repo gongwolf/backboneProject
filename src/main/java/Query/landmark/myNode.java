@@ -75,7 +75,6 @@ public class myNode {
                 if (tmp_distance_q < distance_q) {
                     this.distance_q = tmp_distance_q;
                 }
-
 //                double slopeA = (end_location_lng - start_location_lng) / (end_location_lat - start_location_lat);
 //                double slopeB = (locations[1] - start_location_lng) / (locations[0] - start_location_lat);
 //                this.degree = (slopeB-slopeA)/(1+slopeA*slopeB); // parallel==0; the small the more same direction

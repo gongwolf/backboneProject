@@ -3,6 +3,7 @@ package Query;
 import Query.Queue.MyQueue;
 import Query.Queue.myBackNode;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -197,5 +198,66 @@ public class IndexFlat {
             }
         }
         return result;
+    }
+
+    public void writeHighestFlatIndexToDisk(String idx_file_name) {
+        FileWriter fileWriter = null;
+        try {
+            fileWriter = new FileWriter(idx_file_name);
+            PrintWriter printWriter = new PrintWriter(fileWriter);
+            for (Map.Entry<Long, HashMap<Long, ArrayList<double[]>>> source_element : this.highest_index.entrySet()) {
+                long source_node_id = source_element.getKey();
+                for (Map.Entry<Long, ArrayList<double[]>> shortcut_information : source_element.getValue().entrySet()) {
+                    long highway_node_id = shortcut_information.getKey();
+                    for (double[] costs : shortcut_information.getValue()) {
+                        printWriter.println(source_node_id + " " + highway_node_id + " " + costs[0] + " " + costs[2] + " " + costs[2]);
+                    }
+                }
+            }
+            printWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void readHighestFlatIndexToDisk(String idx_file_name) {
+        this.highest_index.clear();
+        BufferedReader br;
+        try {
+            br = new BufferedReader(new FileReader(idx_file_name));
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] infos = line.split(" ");
+                long source_id = Long.parseLong(infos[0]);
+                long highway_id = Long.parseLong(infos[1]);
+
+                double cost[] = new double[3];
+                cost[0] = Double.parseDouble(infos[2]);
+                cost[1] = Double.parseDouble(infos[3]);
+                cost[2] = Double.parseDouble(infos[4]);
+                putElementToHighestIndex(source_id, highway_id, cost);
+            }
+            br.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void putElementToHighestIndex(long source_id, long highway_id, double[] cost) {
+        HashMap<Long, ArrayList<double[]>> highway_infos_list = this.highest_index.get(source_id);
+
+        if (highway_infos_list == null) {
+            highway_infos_list = new HashMap<>();
+        }
+
+        ArrayList<double[]> costs_list = highway_infos_list.get(highway_id);
+        if (costs_list == null) {
+            costs_list = new ArrayList<>();
+        }
+
+        costs_list.add(cost);
+        highway_infos_list.put(highway_id, costs_list);
+        this.highest_index.put(source_id, highway_infos_list);
     }
 }

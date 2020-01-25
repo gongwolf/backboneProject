@@ -45,7 +45,6 @@ public class backbonePath {
 
         if (old_path.p != null) {
             this.p = new path(old_path.p);
-            this.p.expanded = false;
             p.rels.add(null);
         }
 
@@ -150,7 +149,7 @@ public class backbonePath {
         System.arraycopy(bp.costs, 0, this.costs, 0, this.costs.length);
 
         this.setPropertiesName(neo4j);
-        this.p = dp;
+        this.p = new path(dp);
 
         if (Collections.frequency(highwayList, destination) >= 2) {
             this.hasCycle = true;
@@ -178,7 +177,7 @@ public class backbonePath {
         this.setPropertiesName(neo4j);
         System.arraycopy(old_bp.costs, 0, this.costs, 0, this.costs.length);
         calculateCosts(rel, neo4j);
-        this.p = np;
+        this.p = new path(np);
 
         if (Collections.frequency(highwayList, destination) >= 2) {
             this.hasCycle = true;
@@ -216,8 +215,11 @@ public class backbonePath {
 
     public backbonePath(backbonePath s_t_h_bpath, backbonePath d_t_h_bpath, boolean reverse_the_second_part) {
         this.source = s_t_h_bpath.source;
-        this.destination = d_t_h_bpath.source;
-
+        if (reverse_the_second_part) {
+            this.destination = d_t_h_bpath.source;
+        }else {
+            this.destination = d_t_h_bpath.destination;
+        }
         this.highwayList.clear();
         this.highwayList.addAll(s_t_h_bpath.highwayList);
 

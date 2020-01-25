@@ -4,6 +4,7 @@ import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
 import Query.IndexFlat;
 import Query.backbonePath;
+import Query.tools.SortByNodeId;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
@@ -44,7 +45,7 @@ public class LandmarkBBS {
         this.node_list = this.neo4j.getNodes();
     }
 
-    public void buildLandmarkIndex(int num_landmarks) {
+    public void buildLandmarkIndex(int num_landmarks, ArrayList<Long> landmark_list_ids) {
         this.landmark_index.clear();
 
         try (Transaction tx = this.neo4j.graphDB.beginTx()) {
@@ -58,14 +59,7 @@ public class LandmarkBBS {
                 nodelist.add(node);
             }
 
-            ArrayList<Node> landmarks = new ArrayList<>();
-
-            while (landmarks.size() < num_landmarks) {
-                Node landmarks_node = getRandomNodes(nodelist);
-                if (!landmarks.contains(landmarks_node)) {
-                    landmarks.add(landmarks_node);
-                }
-            }
+            ArrayList<Node> landmarks = getLandMarkNodeList(num_landmarks, landmark_list_ids, nodelist);
 
             for (Node lnode : landmarks) {
                 HashMap<Long, double[]> index_from_landmark_to_dest = new HashMap<>();
@@ -86,6 +80,9 @@ public class LandmarkBBS {
                         if (paths != null) {
                             min_costs[i] = paths.weight();
                             i++;
+                        } else {
+                            System.out.println("Can not find a shortest path from " + lnode + " to " + destination);
+                            System.exit(0);
                         }
                     }
 
@@ -98,6 +95,30 @@ public class LandmarkBBS {
             tx.success();
         }
 
+    }
+
+    private ArrayList<Node> getLandMarkNodeList(int num_landmarks, ArrayList<Long> landmark_list_ids, ArrayList<Node> nodelist) {
+        ArrayList<Node> result_list = new ArrayList<>();
+
+        HashMap<Long, Node> node_mapping = new HashMap<>();
+        for (Node n : nodelist) {
+            node_mapping.put(n.getId(), n);
+        }
+
+        if (landmark_list_ids == null || landmark_list_ids.size() == 0) {
+            while (result_list.size() < num_landmarks) {
+                Node landmarks_node = getRandomNodes(nodelist);
+                if (!result_list.contains(landmarks_node)) {
+                    result_list.add(landmarks_node);
+                }
+            }
+        } else {
+            for (long ldm_id : landmark_list_ids) {
+                result_list.add(node_mapping.get(ldm_id));
+            }
+        }
+
+        return result_list;
     }
 
 
@@ -113,15 +134,19 @@ public class LandmarkBBS {
         return nodelist.get(idx);
     }
 
-    public void landmark_bbs(long source_node, long dest_node, Map.Entry<Long, ArrayList<backbonePath>> source_skyline_paths_costs, HashMap<Long, ArrayList<backbonePath>> all_possible_dest_node_with_skypaths, ArrayList<backbonePath> results) {
+    public void landmark_bbs(long source_node, long dest_node, HashMap<Long, ArrayList<backbonePath>> source_nodes_list, HashMap<Long, ArrayList<backbonePath>> all_possible_dest_node_with_skypaths, ArrayList<backbonePath> results) {
         HashMap<Long, myNode> tmpStoreNodes = new HashMap();
 
         try (Transaction tx = this.graphdb.beginTx()) {
-            myNode snode = new myNode(source_node, dest_node, source_skyline_paths_costs, all_possible_dest_node_with_skypaths, neo4j);
             myNodePriorityQueue mqueue = new myNodePriorityQueue();
-            mqueue.add(snode);
-            tmpStoreNodes.put(snode.id, snode);
-            snode.inqueue = true;
+            for (Map.Entry<Long, ArrayList<backbonePath>> source_e : source_nodes_list.entrySet()) {
+                myNode snode = new myNode(source_node, dest_node, source_e, all_possible_dest_node_with_skypaths, neo4j);
+                mqueue.add(snode);
+                tmpStoreNodes.put(snode.id, snode);
+                System.out.println("Add the source node to the queue ::::::>>>>>>>   " + snode.id + "   ");
+            }
+            System.out.println("[Init] there are " + mqueue.size() + "  in the queue at the beginning !!!!!!!!");
+
 
             while (!mqueue.isEmpty()) {
                 myNode v = mqueue.pop();
@@ -158,17 +183,9 @@ public class LandmarkBBS {
                                 }
 
                                 if (all_possible_dest_node_with_skypaths.keySet().contains(next_n.id) && new_bp.p.possible_destination.containsKey(next_n.id)) {
-                                    try {
-                                        for (backbonePath d_skyline_bp : new_bp.p.possible_destination.get(next_n.id)) {
-                                            backbonePath final_bp = new backbonePath(new_bp, d_skyline_bp);
-                                            addToSkyline(results, final_bp);
-                                        }
-                                    } catch (Exception e) {
-                                        System.out.println("Error !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                                        System.out.println(new_bp);
-                                        System.out.println("---------------------------------------------------------------");
-                                        e.printStackTrace();
-                                        System.exit(0);
+                                    for (backbonePath d_skyline_bp : new_bp.p.possible_destination.get(next_n.id)) {
+                                        backbonePath final_bp = new backbonePath(new_bp, d_skyline_bp);
+                                        addToSkyline(results, final_bp);
                                     }
                                 } else if (next_n.addToSkyline(new_bp) && !next_n.inqueue) {
                                     mqueue.add(next_n);
@@ -278,8 +295,6 @@ public class LandmarkBBS {
                     }
 
                     backbonePath upper_bp = new backbonePath(src, dest, to_dest_cost);
-                    System.out.println(upper_bp);
-
                     backbonePath init_bp = new backbonePath(src_to_bp, upper_bp, false);
 
 //                    System.out.println(src_to_bp);

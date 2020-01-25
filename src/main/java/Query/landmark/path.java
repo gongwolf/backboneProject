@@ -24,9 +24,11 @@ public class path {
     public path(backbonePath bp, HashMap<Long, ArrayList<backbonePath>> destination_highways_results) {
         this.expanded = false;
         this.rels = new ArrayList<>();
+
         for (int i = 0; i < bp.highwayList.size() - 1; i++) {
             rels.add(null);
         }
+
         possible_destination = new HashMap<>();
         for (Map.Entry<Long, ArrayList<backbonePath>> e : destination_highways_results.entrySet()) {
             ArrayList<backbonePath> skyline_bps = new ArrayList<>(e.getValue());
@@ -53,7 +55,7 @@ public class path {
 
     public path(path p) {
         this.rels = new ArrayList<>(p.rels);
-        this.expanded = p.expanded;
+        this.expanded = false;
         possible_destination = new HashMap<>();
         for (Map.Entry<Long, ArrayList<backbonePath>> e : p.possible_destination.entrySet()) {
             ArrayList<backbonePath> skyline_bps = new ArrayList<>(e.getValue());

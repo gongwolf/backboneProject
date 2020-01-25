@@ -30,8 +30,14 @@ public class QueryProcess {
         bbs = new LandmarkBBS(sub_db_name, index.flatindex);
 
         index.buildFlatIndex();
-        index.buildHighestFlatIndex(bbs.node_list);
-        bbs.buildLandmarkIndex(3);
+        index.buildHighestFlatIndex(bbs.node_list, false);
+
+        ArrayList<Long> ldms = new ArrayList<>();
+        ldms.add(131l);
+        ldms.add(9165l);
+        ldms.add(2540l);
+
+        bbs.buildLandmarkIndex(3, null);
 
         this.monitor = new Monitor();
 
@@ -235,22 +241,12 @@ public class QueryProcess {
         printNodeToHighway(source_to_highway_results);
         printNodeToHighway(destination_to_highway_results);
 
-        HashMap<Long, ArrayList<backbonePath>> all_possible_dest_node_with_skypaths = new HashMap<>();
-        for (Map.Entry<Long, ArrayList<backbonePath>> e : destination_to_highway_results.entrySet()) {
-            if (this.bbs.node_list.contains(e.getKey())) {
-                all_possible_dest_node_with_skypaths.put(e.getKey(), e.getValue());
-            }
-        }
+        HashMap<Long, ArrayList<backbonePath>> all_possible_dest_node_with_skypaths = filterPossibleNodeInList(destination_to_highway_results);
+        HashMap<Long, ArrayList<backbonePath>> source_list = filterPossibleNodeInList(source_to_highway_results);
 
-        for (Map.Entry<Long, ArrayList<backbonePath>> source_info_list : source_to_highway_results.entrySet()) {
-            long highway_source = source_info_list.getKey();
-            if (bbs.node_list.contains(highway_source)) {
-                System.out.println("Process the node " + highway_source);
-                bbs.landmark_bbs(source_node, dest_node, source_info_list, all_possible_dest_node_with_skypaths, result);
-                System.out.println("number of results sets " + this.result.size());
-                System.out.println("================================================================================");
-            }
-        }
+        bbs.landmark_bbs(source_node, dest_node, source_list, all_possible_dest_node_with_skypaths, result);
+        System.out.println("number of results sets " + this.result.size());
+        System.out.println("================================================================================");
         bbs.closeDB();
     }
 
@@ -264,42 +260,53 @@ public class QueryProcess {
         printNodeToHighway(source_to_highway_results);
         printNodeToHighway(destination_to_highway_results);
 
-        HashMap<Long, ArrayList<backbonePath>> all_possible_dest_node_with_skypaths = getPossibleDestinations();
+        HashMap<Long, ArrayList<backbonePath>> all_possible_dest_node_with_skypaths = filterPossibleNodeInList(destination_to_highway_results);
+        HashMap<Long, ArrayList<backbonePath>> source_list = filterPossibleNodeInList(source_to_highway_results);
 
-        for (Map.Entry<Long, ArrayList<backbonePath>> source_info_list : source_to_highway_results.entrySet()) {
+        if (result.isEmpty()) {
+            System.out.println("Init the result set: ==================================================================================");
 
-            long highway_source = source_info_list.getKey();
-
-            if (bbs.node_list.contains(highway_source)) {
-
-                if (result.isEmpty()) {
-                    ArrayList<backbonePath> init_dummy_paths = bbs.initResultLandMark(source_info_list, all_possible_dest_node_with_skypaths);
-//                    ArrayList<backbonePath> init_dummy_paths = bbs.initResultShortestPath(source_info_list, all_possible_dest_node_with_skypaths);
-                    this.result.addAll(init_dummy_paths);
-                    System.out.println("Init the result set: ==================================================================================");
-                    for(backbonePath bp:result){
-                        System.out.println(bp);
-                    }
-                    System.out.println("=======================================================================================================");
-                }
-
-
-                long bbs_rt = System.currentTimeMillis();
-                System.out.println("Process the node " + highway_source);
-                bbs.landmark_bbs(source_node, dest_node, source_info_list, all_possible_dest_node_with_skypaths, result);
-                System.out.println("number of results sets : " + this.result.size() + "   running time : " + (System.currentTimeMillis() - bbs_rt) + " ms ");
-                String path_name = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/results";
-                saveToDisk(path_name + "/backbone_3227_8222_landmark_init_flat_"+highway_source+".txt");
-                System.out.println("Write the results to :::>>>> "+path_name);
-                System.out.println("================================================================================");
+            ArrayList<Long> sorted_source_list = new ArrayList<>(source_list.keySet());
+            Random random = new Random();
+            int random_source_idx = random.nextInt(sorted_source_list.size());
+            random_source_idx = 12;
+            Set<Map.Entry<Long, ArrayList<backbonePath>>> entrySet = source_list.entrySet();
+            ArrayList<Map.Entry<Long, ArrayList<backbonePath>>> listOfSources = new ArrayList<>(entrySet);
+            System.out.println("Choose the index with " + random_source_idx + "  ====>>>>  " + listOfSources.get(random_source_idx).getKey());
+//            ArrayList<backbonePath> init_dummy_paths = bbs.initResultLandMark(listOfSources.get(random_source_idx), all_possible_dest_node_with_skypaths);
+            ArrayList<backbonePath> init_dummy_paths = bbs.initResultShortestPath(listOfSources.get(random_source_idx), all_possible_dest_node_with_skypaths);
+            for (backbonePath fake_path : init_dummy_paths) {
+                addToSkyline(this.result, fake_path);
             }
+
+
+//            for (Map.Entry<Long, ArrayList<backbonePath>> source_info_list : source_list.entrySet()) {
+//                ArrayList<backbonePath> init_dummy_paths = bbs.initResultLandMark(source_info_list, all_possible_dest_node_with_skypaths);
+////                    ArrayList<backbonePath> init_dummy_paths = bbs.initResultShortestPath(source_info_list, all_possible_dest_node_with_skypaths);
+//
+//                for (backbonePath fake_path : init_dummy_paths) {
+//                    addToSkyline(this.result, fake_path);
+//                }
+//                break;
+//
+//            }
+            for (backbonePath bp : result) {
+                System.out.println(bp);
+            }
+            System.out.println("=======================================================================================================");
+
         }
+
+        long bbs_rt = System.currentTimeMillis();
+        bbs.landmark_bbs(source_node, dest_node, source_list, all_possible_dest_node_with_skypaths, result);
+        System.out.println("number of results sets : " + this.result.size() + "   running time : " + (System.currentTimeMillis() - bbs_rt) + " ms ");
+        System.out.println("================================================================================");
 
     }
 
-    private HashMap<Long, ArrayList<backbonePath>> getPossibleDestinations() {
+    private HashMap<Long, ArrayList<backbonePath>> filterPossibleNodeInList(HashMap<Long, ArrayList<backbonePath>> original_list) {
         HashMap<Long, ArrayList<backbonePath>> result = new HashMap<>();
-        for (Map.Entry<Long, ArrayList<backbonePath>> e : destination_to_highway_results.entrySet()) {
+        for (Map.Entry<Long, ArrayList<backbonePath>> e : original_list.entrySet()) {
             if (this.bbs.node_list.contains(e.getKey())) {
                 result.put(e.getKey(), e.getValue());
             }
