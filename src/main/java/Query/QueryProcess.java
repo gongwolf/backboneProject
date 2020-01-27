@@ -33,21 +33,37 @@ public class QueryProcess {
         index.buildHighestFlatIndex(bbs.node_list, false);
 
         ArrayList<Long> ldms = new ArrayList<>();
-        ldms.add(131l);
-        ldms.add(9165l);
-        ldms.add(2540l);
+//        ldms.add(131l);
+//        ldms.add(9165l);
+//        ldms.add(2540l);
+        ldms.add(455l);
+        ldms.add(4559l);
+        ldms.add(5901l);
 
-        bbs.buildLandmarkIndex(3, null);
+//
+        bbs.buildLandmarkIndex(3, ldms);
 
         this.monitor = new Monitor();
 
     }
 
     public static void main(String args[]) {
-        QueryProcess query = new QueryProcess();
-        long running_time = System.nanoTime();
-        query.flat_query(3227, 8222);
-        System.out.println("Total Runningt time is " + (System.nanoTime() - running_time) / 1000000 + " ms ");
+
+        ArrayList<Integer> resultset_number = new ArrayList<>();
+        for (int i = 0; i < 1; i++) {
+            QueryProcess query = new QueryProcess();
+            long running_time = System.nanoTime();
+            query.flat_query(3227, 8222);
+            System.out.println("Total Runningt time is " + (System.nanoTime() - running_time) / 1000000 + " ms ");
+            resultset_number.add(query.result.size());
+            query.bbs.closeDB();
+        }
+
+        System.out.println("===========================================================================================");
+        for (int size : resultset_number) {
+            System.out.print(size + "  ");
+        }
+
     }
 
     public void flat_query(long source_node, long destination_node) {
@@ -290,6 +306,7 @@ public class QueryProcess {
 //                break;
 //
 //            }
+
             for (backbonePath bp : result) {
                 System.out.println(bp);
             }
@@ -317,8 +334,10 @@ public class QueryProcess {
     private void printNodeToHighway(HashMap<Long, ArrayList<backbonePath>> source_to_highway_results) {
         System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ " + source_to_highway_results.size());
         for (Map.Entry<Long, ArrayList<backbonePath>> e : source_to_highway_results.entrySet()) {
-            for (backbonePath bp : e.getValue()) {
-                System.out.println(e.getKey() + " ############  " + bp + "  " + bbs.node_list.contains(e.getKey()));
+            if (bbs.node_list.contains(e.getKey())) {
+                for (backbonePath bp : e.getValue()) {
+                    System.out.println(e.getKey() + " ############  " + bp + "  " + bbs.node_list.contains(e.getKey()));
+                }
             }
         }
         System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
@@ -388,13 +407,20 @@ public class QueryProcess {
     }
 
     private boolean checkDominated(double[] costs, double[] estimatedCosts) {
-
+        int numberNotEqual = 0;
         for (int i = 0; i < costs.length; i++) {
-            if (costs[i] * (1) > estimatedCosts[i]) {
+            if (costs[i] > estimatedCosts[i]) {
                 return false;
+            } else if (costs[i] < estimatedCosts[i] && numberNotEqual == 0) {
+                numberNotEqual++;
             }
         }
-        return true;
+
+        if (numberNotEqual != 0) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private boolean dominatedByResult(backbonePath np) {
@@ -468,7 +494,7 @@ public class QueryProcess {
         for (backbonePath s_t_h_bpath : src_to_common_highway) {
             for (backbonePath d_t_h_bpath : dest_to_common_highway) {
                 long s_combination_new_path_c_rt = System.nanoTime();
-                backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath);
+                backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath, true);
                 long e_combination_new_path_c_rt = System.nanoTime();
 
 

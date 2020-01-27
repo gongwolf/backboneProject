@@ -140,6 +140,7 @@ public class BackBoneIndex {
         String highest_level_index_folder = this.index_folder + "/highest_index/";
         File idx_folder = new File(highest_level_index_folder);
         File idx_file = new File(highest_level_index_folder + "highest_level.idx");
+
         try {
             if (!idx_folder.exists()) {
                 System.out.println("create the highest level folder : " + idx_folder);
@@ -150,10 +151,11 @@ public class BackBoneIndex {
                 if (idx_file.exists()) {
                     idx_file.delete();
                     System.out.println("Delete the highest index file ---->>>  " + idx_file.getName());
-                    this.flatindex.buildHighestFlatIndex(node_list);
-                    this.flatindex.writeHighestFlatIndexToDisk(idx_file.getAbsolutePath());
-                    System.out.println("Create the highest index file ---->>>  " + idx_file.getName());
                 }
+
+                this.flatindex.buildHighestFlatIndex(node_list);
+                this.flatindex.writeHighestFlatIndexToDisk(idx_file.getAbsolutePath());
+                System.out.println("Create the highest index file ---->>>  " + idx_file.getName());
             } else {
                 if (idx_file.exists()) {
                     System.out.println("Read the highest index file ---->>>  " + idx_file.getName());

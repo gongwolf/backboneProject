@@ -34,6 +34,8 @@ public class backbonePath {
 
     //used in lower level index construction (except the highest lvevel), the attribute p is null.
     public backbonePath(long h_node, double[] costs, backbonePath old_path) {
+        this.costs = new double[3];
+
         this.source = old_path.source;
         this.destination = h_node;
 
@@ -53,46 +55,46 @@ public class backbonePath {
         }
     }
 
-    public backbonePath(backbonePath s_t_h_bpath, backbonePath d_t_h_bpath) {
-        this.source = s_t_h_bpath.source;
-        this.destination = d_t_h_bpath.source;
+//    public backbonePath(backbonePath s_t_h_bpath, backbonePath d_t_h_bpath) {
+//        this.source = s_t_h_bpath.source;
+//        this.destination = d_t_h_bpath.source;
+//
+//        this.highwayList.clear();
+//        this.highwayList.addAll(s_t_h_bpath.highwayList);
+//
+//        ArrayList<Long> reversed_highway = new ArrayList<>(d_t_h_bpath.highwayList);
+//        Collections.reverse(reversed_highway);
+//
+//
+//        calculatedCosts(s_t_h_bpath.costs, d_t_h_bpath.costs);
+//
+//        if (highwayList.contains(this.destination)) {
+//            this.hasCycle = true;
+//        }
+//
+//        if (s_t_h_bpath.p != null) {
+//            this.p = new path(s_t_h_bpath.p);
+//            this.p.expanded = false;
+//        }
+//
+//        int last_index = this.highwayList.size() - 1;
+//
+//        this.highwayList.remove(this.highwayList.size() - 1);
+//        this.highwayList.addAll(reversed_highway);
+//
+//        if (s_t_h_bpath.p != null) {
+//            for (int idx = last_index; idx < highwayList.size() - 1; idx++) {
+//                p.rels.add(null);
+//            }
+//        }
+//
+//        if (Collections.frequency(highwayList, destination) >= 2) {
+//            this.hasCycle = true;
+//        }
+//
+//    }
 
-        this.highwayList.clear();
-        this.highwayList.addAll(s_t_h_bpath.highwayList);
-
-        ArrayList<Long> reversed_highway = new ArrayList<>(d_t_h_bpath.highwayList);
-        Collections.reverse(reversed_highway);
-
-
-        costs = new double[3];
-        calculatedCosts(s_t_h_bpath.costs, d_t_h_bpath.costs);
-
-        if (highwayList.contains(this.destination)) {
-            this.hasCycle = true;
-        }
-
-        if (s_t_h_bpath.p != null) {
-            this.p = new path(s_t_h_bpath.p);
-            this.p.expanded = false;
-        }
-
-        int last_index = this.highwayList.size() - 1;
-
-        this.highwayList.remove(this.highwayList.size() - 1);
-        this.highwayList.addAll(reversed_highway);
-
-        if (s_t_h_bpath.p != null) {
-            for (int idx = last_index; idx < highwayList.size() - 1; idx++) {
-                p.rels.add(null);
-            }
-        }
-
-        if (Collections.frequency(highwayList, destination) >= 2) {
-            this.hasCycle = true;
-        }
-
-    }
-
+    //not used in the query process
     public backbonePath(backbonePath s_t_h_bpath, backbonePath d_t_h_bpath, double[] costsInHighestLevel) {
         this.source = s_t_h_bpath.source;
         this.destination = d_t_h_bpath.source;
@@ -214,26 +216,25 @@ public class backbonePath {
     }
 
     public backbonePath(backbonePath s_t_h_bpath, backbonePath d_t_h_bpath, boolean reverse_the_second_part) {
+        this.costs = new double[3];
+
         this.source = s_t_h_bpath.source;
         if (reverse_the_second_part) {
             this.destination = d_t_h_bpath.source;
-        }else {
+        } else {
             this.destination = d_t_h_bpath.destination;
         }
+
         this.highwayList.clear();
         this.highwayList.addAll(s_t_h_bpath.highwayList);
 
         ArrayList<Long> reversed_highway = new ArrayList<>(d_t_h_bpath.highwayList);
+
         if (reverse_the_second_part) {
             Collections.reverse(reversed_highway);
         }
 
-        costs = new double[3];
         calculatedCosts(s_t_h_bpath.costs, d_t_h_bpath.costs);
-
-        if (highwayList.contains(this.destination)) {
-            this.hasCycle = true;
-        }
 
         if (s_t_h_bpath.p != null) {
             this.p = new path(s_t_h_bpath.p);
@@ -274,7 +275,6 @@ public class backbonePath {
     }
 
     private void calculatedCosts(double[] new_costs, double[] old_costs) {
-        this.costs = new double[3];
         for (int i = 0; i < this.costs.length; i++) {
             this.costs[i] = old_costs[i] + new_costs[i];
         }
@@ -289,12 +289,10 @@ public class backbonePath {
 
     private void calculateCosts(Relationship rel, Neo4jDB neo4j) {
         try (Transaction tx = neo4j.graphDB.beginTx()) {
-            if (this.source != this.destination) {
-                int i = 0;
-                for (String pname : this.propertiesName) {
-                    this.costs[i] = this.costs[i] + (double) rel.getProperty(pname);
-                    i++;
-                }
+            int i = 0;
+            for (String pname : this.propertiesName) {
+                this.costs[i] = this.costs[i] + (double) rel.getProperty(pname);
+                i++;
             }
             tx.success();
         }

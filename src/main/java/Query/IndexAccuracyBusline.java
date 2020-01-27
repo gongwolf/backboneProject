@@ -394,7 +394,7 @@ public class IndexAccuracyBusline {
         for (backbonePath s_t_h_bpath : src_to_common_highway) {
             for (backbonePath d_t_h_bpath : dest_to_common_highway) {
                 long s_combination_new_path_c_rt = System.nanoTime();
-                backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath);
+                backbonePath result_backbone = new backbonePath(s_t_h_bpath, d_t_h_bpath,true);
                 long e_combination_new_path_c_rt = System.nanoTime();
 //                System.out.println("======  " + result_backbone);
 

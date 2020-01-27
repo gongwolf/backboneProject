@@ -74,8 +74,7 @@ public class LandmarkBBS {
                     int i = 0;
                     double[] min_costs = new double[3];
                     for (String property_name : Neo4jDB.propertiesName) {
-                        PathFinder<WeightedPath> finder = GraphAlgoFactory
-                                .dijkstra(PathExpanders.forTypeAndDirection(Line.Linked, Direction.BOTH), property_name);
+                        PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(PathExpanders.forTypeAndDirection(Line.Linked, Direction.BOTH), property_name);
                         WeightedPath paths = finder.findSinglePath(lnode, destination);
                         if (paths != null) {
                             min_costs[i] = paths.weight();
@@ -164,6 +163,7 @@ public class LandmarkBBS {
 
                         //Still can be expand to any of the destination
                         if (!p.p.possible_destination.isEmpty()) {
+
                             ArrayList<backbonePath> new_paths = p.expand(neo4j);
                             ArrayList<backbonePath> flat_new_paths = flatindex.expand(p);
                             new_paths.addAll(flat_new_paths);
@@ -182,14 +182,21 @@ public class LandmarkBBS {
                                     tmpStoreNodes.put(next_n.id, next_n);
                                 }
 
-                                if (all_possible_dest_node_with_skypaths.keySet().contains(next_n.id) && new_bp.p.possible_destination.containsKey(next_n.id)) {
+                                if (new_bp.p.possible_destination.containsKey(next_n.id)) {
                                     for (backbonePath d_skyline_bp : new_bp.p.possible_destination.get(next_n.id)) {
-                                        backbonePath final_bp = new backbonePath(new_bp, d_skyline_bp);
+                                        backbonePath final_bp = new backbonePath(new_bp, d_skyline_bp, true);
                                         addToSkyline(results, final_bp);
+                                    }
+
+                                    new_bp.p.possible_destination.remove(next_n.id);
+
+                                    if (new_bp.p.possible_destination.size() != 0) {
+                                        if (next_n.addToSkyline(new_bp) && !next_n.inqueue) {
+                                            mqueue.add(next_n);
+                                        }
                                     }
                                 } else if (next_n.addToSkyline(new_bp) && !next_n.inqueue) {
                                     mqueue.add(next_n);
-                                    next_n.inqueue = true;
                                 }
                             }
                         }
@@ -232,7 +239,8 @@ public class LandmarkBBS {
     }
 
 
-    public ArrayList<backbonePath> initResultShortestPath(Map.Entry<Long, ArrayList<backbonePath>> src_set, HashMap<Long, ArrayList<backbonePath>> dest_set) {
+    public ArrayList<backbonePath> initResultShortestPath
+            (Map.Entry<Long, ArrayList<backbonePath>> src_set, HashMap<Long, ArrayList<backbonePath>> dest_set) {
         ArrayList<backbonePath> init_result = new ArrayList<>();
         long src = src_set.getKey();
 
@@ -250,8 +258,8 @@ public class LandmarkBBS {
                     if (paths != null) {
                         bp = new backbonePath(paths, this.neo4j);
                         for (backbonePath src_to_bp : src_set.getValue()) {
-                            for (backbonePath dest_dp : dest_set.get(dest)) {
-                                backbonePath last_part_dp = new backbonePath(bp, dest_dp, false);
+                            for (backbonePath to_dest_dp : dest_set.get(dest)) {
+                                backbonePath last_part_dp = new backbonePath(bp, to_dest_dp, false);
                                 backbonePath init_dp = new backbonePath(src_to_bp, last_part_dp, false);
                                 addToSkyline(init_result, init_dp);
                             }
@@ -265,7 +273,8 @@ public class LandmarkBBS {
     }
 
 
-    public ArrayList<backbonePath> initResultLandMark(Map.Entry<Long, ArrayList<backbonePath>> src_set, HashMap<Long, ArrayList<backbonePath>> dest_set) {
+    public ArrayList<backbonePath> initResultLandMark
+            (Map.Entry<Long, ArrayList<backbonePath>> src_set, HashMap<Long, ArrayList<backbonePath>> dest_set) {
         ArrayList<backbonePath> init_result = new ArrayList<>();
         long src = src_set.getKey();
 
@@ -373,12 +382,19 @@ public class LandmarkBBS {
     }
 
     private boolean checkDominated(double[] costs, double[] estimatedCosts) {
+        int numberNotEqual = 0;
         for (int i = 0; i < costs.length; i++) {
-            if (costs[i] * (1) > estimatedCosts[i]) {
+            if (costs[i] > estimatedCosts[i]) {
                 return false;
+            } else if (costs[i] < estimatedCosts[i] && numberNotEqual == 0) {
+                numberNotEqual++;
             }
         }
-        return true;
-    }
 
+        if (numberNotEqual != 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

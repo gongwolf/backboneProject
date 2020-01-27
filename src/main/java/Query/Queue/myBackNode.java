@@ -65,4 +65,21 @@ public class myBackNode {
         }
         return true;
     }
+
+//    private boolean checkDominated(double[] costs, double[] estimatedCosts) {
+//        int numberNotEqual = 0;
+//        for (int i = 0; i < costs.length; i++) {
+//            if (costs[i] > estimatedCosts[i]) {
+//                return false;
+//            } else if (costs[i] < estimatedCosts[i] && numberNotEqual == 0) {
+//                numberNotEqual++;
+//            }
+//        }
+//
+//        if (numberNotEqual != 0) {
+//            return true;
+//        } else {
+//            return false;
+//        }
+//    }
 }
