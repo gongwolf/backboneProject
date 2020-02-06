@@ -14,6 +14,7 @@ public class SpanningTree {
     public Neo4jDB neo4j = null;
     public HashSet<Long> SpTree; // the id of the edges that belongs to the Spanning tree
     public HashSet<Long> N_nodes; // the id of the nodes in the spanning tree, its same as the nodes of the graph
+    public boolean needToScanETTree = false;
     int E = 0; // number of edges
     int N = 0; // number of nodes
     String DBPath;
@@ -29,7 +30,7 @@ public class SpanningTree {
     HashMap<Long, ListNode<RelationshipExt>> lastOccurrences = new HashMap();
 
     HashMap<Long, ListNode<RelationshipExt>> nodeFirstOccurrences = new HashMap<>();
-    HashMap<Long, ListNode<RelationshipExt>> nodeLastOccurrences = new HashMap<>();
+//    HashMap<Long, ListNode<RelationshipExt>> nodeLastOccurrences = new HashMap<>();
 
     HashSet<Relationship> hash_rel = new HashSet<>();
 
@@ -73,7 +74,7 @@ public class SpanningTree {
         } else if (N == 0) {
             this.isSingle = false;
             this.isEmpty = true;
-        }else {
+        } else {
             this.isSingle = false;
             this.isEmpty = false;
         }
@@ -97,7 +98,7 @@ public class SpanningTree {
         } else if (N == 0) {
             this.isSingle = false;
             this.isEmpty = true;
-        }else {
+        } else {
             this.isSingle = false;
             this.isEmpty = false;
         }
@@ -119,9 +120,9 @@ public class SpanningTree {
                     this.firstOccurrences.put(edge_id, node);
                 }
 
-                if (this.nodeFirstOccurrences.containsKey(start_node_id)) {
-                    this.nodeLastOccurrences.put(start_node_id, node);
-                } else {
+                if (!this.nodeFirstOccurrences.containsKey(start_node_id)) {
+//                    this.nodeLastOccurrences.put(start_node_id, node);
+//                } else {
                     this.nodeFirstOccurrences.put(start_node_id, node);
                 }
 
@@ -138,9 +139,9 @@ public class SpanningTree {
                 this.firstOccurrences.put(edge_id, node);
             }
 
-            if (this.nodeFirstOccurrences.containsKey(start_node_id)) {
-                this.nodeLastOccurrences.put(start_node_id, node);
-            } else {
+            if (!this.nodeFirstOccurrences.containsKey(start_node_id)) {
+//                this.nodeLastOccurrences.put(start_node_id, node);
+//            } else {
                 this.nodeFirstOccurrences.put(start_node_id, node);
             }
             this.ettree.append(node);
@@ -356,9 +357,9 @@ public class SpanningTree {
                     this.firstOccurrences.put(rel.getId(), node);
                 }
 
-                if (this.nodeFirstOccurrences.containsKey(currentEdge.getKey())) {
-                    this.nodeLastOccurrences.put(currentEdge.getKey(), node);
-                } else {
+                if (!this.nodeFirstOccurrences.containsKey(currentEdge.getKey())) {
+//                    this.nodeLastOccurrences.put(currentEdge.getKey(), node);
+//                } else {
                     this.nodeFirstOccurrences.put(currentEdge.getKey(), node);
                 }
 
@@ -496,22 +497,20 @@ public class SpanningTree {
             ListNode<RelationshipExt> current = ettree.head;
             while (current != ettree.tail) {
 
-                long edge_id = current.data.relationship.getId();
+                long edge_id = current.data.rel_id;
                 long start_node_id = current.data.start_id;
 
                 this.SpTree.add(edge_id);
                 this.N_nodes.add(current.data.start_id);
                 this.N_nodes.add(current.data.end_id);
 
-                if (this.firstOccurrences.containsKey(current.data.relationship.getId())) {
+                if (this.firstOccurrences.containsKey(current.data.rel_id)) {
                     this.lastOccurrences.put(edge_id, current);
                 } else {
                     this.firstOccurrences.put(edge_id, current);
                 }
 
-                if (this.nodeFirstOccurrences.containsKey(start_node_id)) {
-                    this.nodeLastOccurrences.put(start_node_id, current);
-                } else {
+                if (!this.nodeFirstOccurrences.containsKey(start_node_id)) {
                     this.nodeFirstOccurrences.put(start_node_id, current);
                 }
 
@@ -536,9 +535,7 @@ public class SpanningTree {
                 this.firstOccurrences.put(edge_id, current);
             }
 
-            if (this.nodeFirstOccurrences.containsKey(start_node_id)) {
-                this.nodeLastOccurrences.put(start_node_id, current);
-            } else {
+            if (!this.nodeFirstOccurrences.containsKey(start_node_id)) {
                 this.nodeFirstOccurrences.put(start_node_id, current);
             }
         }
@@ -548,7 +545,7 @@ public class SpanningTree {
 
     private void clearData() {
         this.nodeFirstOccurrences.clear();
-        this.nodeLastOccurrences.clear();
+//        this.nodeLastOccurrences.clear();
         this.firstOccurrences.clear();
         this.lastOccurrences.clear();
         this.SpTree.clear();
@@ -601,7 +598,7 @@ public class SpanningTree {
         firstOccurrences.put(next_level_rel.getId(), node);
         lastOccurrences.put(next_level_rel.getId(), back_node);
         nodeFirstOccurrences.put((long) start_id, node);
-        nodeLastOccurrences.put((long) start_id, back_node);
+//        nodeLastOccurrences.put((long) start_id, back_node);
 
     }
 
@@ -621,9 +618,6 @@ public class SpanningTree {
                 int c_level = (int) rel.getProperty("level");
                 if (c_level == current_level) {
                     rel.setProperty("level", current_level + 1);
-//                    if (rel.getId() == 10263l) {
-//                        System.out.println("increase the edge " + rel + "  from " + c_level + " to " + (current_level + 1));
-//                    }
                 }
             }
             tx.success();
@@ -725,7 +719,7 @@ public class SpanningTree {
                 }
             }
 
-            this.etTreeUpdateInformation();
+            etTreeUpdateInformation();
 
         } catch (Exception e) {
             System.out.println("error when remove the single edges " + id + "    " + remove_case);

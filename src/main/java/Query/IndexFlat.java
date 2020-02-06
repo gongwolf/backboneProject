@@ -36,12 +36,12 @@ public class IndexFlat {
     }
 
     public void buildHighestFlatIndex(HashSet<Long> node_list) {
-        System.out.println("There are "+node_list.size()+"  nodes .");
+        System.out.println("There are " + node_list.size() + "  nodes .");
         long running_time = System.currentTimeMillis();
         this.overall_highest_index_size = 0;
         int overall_size = 0;
         for (long id : node_list) {
-//            System.out.print("Process the node ::::>>>>>>>>  " + id );
+            System.out.print("Process the node ::::>>>>>>>>  " + id );
             long rt = System.currentTimeMillis();
             HashMap<Long, myBackNode> tmpResult = BBSQueryAtHighlevelGrpah(id, node_list);
             int size = 0;
@@ -56,8 +56,7 @@ public class IndexFlat {
                 }
             }
             overall_size += size;
-//            System.out.println("  in " + (System.currentTimeMillis() - rt) + "  ms");
-
+            System.out.println("  in " + (System.currentTimeMillis() - rt) + "  ms");
         }
 
         this.overall_highest_index_size = overall_size;
@@ -114,6 +113,13 @@ public class IndexFlat {
     }
 
     private boolean checkDominated(double[] costs, double[] estimatedCosts) {
+//        for (int i = 0; i < costs.length; i++) {
+//            if (costs[i] > estimatedCosts[i]) {
+//                return false;
+//            }
+//        }
+//        return true;
+
         int numberNotEqual = 0;
         for (int i = 0; i < costs.length; i++) {
             if (costs[i] > estimatedCosts[i]) {

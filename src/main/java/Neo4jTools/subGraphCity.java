@@ -1,15 +1,19 @@
 package Neo4jTools;
 
 import javafx.util.Pair;
+import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.*;
 
 import java.io.*;
 import java.util.*;
 
 public class subGraphCity {
+    int numberofK = 100;
     String sub_db_name = "ny_USA_Level0";
-    String EdgesPath = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/sub_graph/5k/sub_level0_ny_SegInfo_5k.txt";
-    String NodePath = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/sub_graph/5k/sub_level0_ny_NodeInfo_5k.txt";
+    String base_dir = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/sub_graph/" + numberofK + "K/";
+    String EdgesPath = base_dir + "sub_level0_ny_SegInfo_" + numberofK + "K.txt";
+    String NodePath = base_dir + "/sub_level0_ny_NodeInfo_" + numberofK + "K.txt";
+    String temp_resource_folder = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY_" + numberofK + "K/";
 
     public static void main(String args[]) {
         subGraphCity sgc = new subGraphCity();
@@ -18,6 +22,21 @@ public class subGraphCity {
     }
 
     private void selectSubGraph() {
+
+        try {
+            if (!new File(this.base_dir).exists()) {
+                File sub_graph_folder = new File(this.base_dir);
+                File temp_resource_folder = new File(this.temp_resource_folder);
+                FileUtils.forceMkdir(sub_graph_folder);
+                FileUtils.forceMkdir(temp_resource_folder);
+                System.out.println("Create the new Folder " + sub_graph_folder);
+                System.out.println("Create the new Folder " + temp_resource_folder);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);
         System.out.println("====================================================================");
         neo4j.startDB(true);
@@ -29,7 +48,7 @@ public class subGraphCity {
         HashSet<Relationship> edges = new HashSet<>();
         HashSet<Long> nodes = new HashSet<>();
 
-        int target_graph_size = 50000;
+        int target_graph_size = numberofK * 1000;
 
         try (Transaction tx = neo4j.graphDB.beginTx()) {
 
@@ -103,7 +122,7 @@ public class subGraphCity {
             long mapped_id = 0;
             for (long node_id : tm) {
 
-                node_id_mapping.put(node_id,mapped_id++);
+                node_id_mapping.put(node_id, mapped_id++);
 
                 StringBuffer sb = new StringBuffer();
                 Node node = neo4j.graphDB.getNodeById(node_id);

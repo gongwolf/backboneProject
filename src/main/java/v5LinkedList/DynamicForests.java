@@ -274,10 +274,6 @@ public class DynamicForests {
                     } else {
                         next_rel.setProperty("level", edge_level + 1); //Increase the edge level by 1
 
-//                        if (next_rel.getId() == 10263) {
-//                            System.out.println("increase (replace) the edge " + next_rel + "  from " + edge_level + " to " + (edge_level + 1) + " ");
-//                        }
-
                         if (this.isTreeEdge(next_rel.getId(), edge_level)) {
                             upper_forests.pushEdgeToHigherLevelForest(next_rel, neo4j);
                         }

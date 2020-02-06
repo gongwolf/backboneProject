@@ -72,11 +72,11 @@ public class myBackNode {
 //            if (costs[i] > estimatedCosts[i]) {
 //                return false;
 //            } else if (costs[i] < estimatedCosts[i] && numberNotEqual == 0) {
-//                numberNotEqual++;
+//                numberNotEqual = 1;
 //            }
 //        }
 //
-//        if (numberNotEqual != 0) {
+//        if (numberNotEqual == 1) {
 //            return true;
 //        } else {
 //            return false;

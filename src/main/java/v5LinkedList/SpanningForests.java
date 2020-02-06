@@ -55,7 +55,7 @@ public class SpanningForests {
     /**
      * because i is always less than j, i is deleted before j.
      * After deletion of tree i, the index of tree j needs to decrease 1.
-     * **/
+     **/
     public boolean putNewSpanningTree(SpanningTree sub_tree) {
         this.trees.add(sub_tree);
         if (trees.size() == 1) {
@@ -68,9 +68,20 @@ public class SpanningForests {
             int j = tree_idx.getValue();
 
             SpanningTree new_tree = mergeTree(trees.get(i), trees.get(j));
+            new_tree.needToScanETTree = true;
             trees.remove(i);
             trees.remove(j - 1);
             trees.add(new_tree);
+        }
+
+
+        for (SpanningTree tree : this.trees) {
+            if (tree.needToScanETTree) {
+                if (!tree.isSingle && !tree.isEmpty) {
+                    tree.FindEulerTourStringWiki();
+                }
+                tree.needToScanETTree = false;
+            }
         }
         return true;
     }
@@ -83,7 +94,7 @@ public class SpanningForests {
         new_tree.SpTree.addAll(anothertree.SpTree);
         new_tree.N = new_tree.N_nodes.size();
         new_tree.E = new_tree.SpTree.size();
-        new_tree.FindEulerTourStringWiki();
+//        new_tree.FindEulerTourStringWiki();
         return new_tree;
 
     }

@@ -45,6 +45,16 @@ public class LandmarkBBS {
         this.node_list = this.neo4j.getNodes();
     }
 
+    public LandmarkBBS(String sub_db_name, HashMap<Long, HashMap<Long,double[]>> landmark_index) {
+        neo4j = new Neo4jDB(sub_db_name);
+        neo4j.startDB(true);
+        graphdb = neo4j.graphDB;
+        System.out.println(neo4j.DB_PATH + "  number of nodes:" + neo4j.getNumberofNodes() + "   number of edges : " + neo4j.getNumberofEdges());
+        this.node_list = this.neo4j.getNodes();
+
+        this.landmark_index = new HashMap<>(landmark_index);
+    }
+
     public void buildLandmarkIndex(int num_landmarks, ArrayList<Long> landmark_list_ids) {
         this.landmark_index.clear();
 
@@ -65,6 +75,10 @@ public class LandmarkBBS {
                 HashMap<Long, double[]> index_from_landmark_to_dest = new HashMap<>();
                 System.out.println("Build the index for the node " + lnode);
                 int index = 0;
+
+//                for (String property_name : Neo4jDB.propertiesName) {
+//                    System.out.println("Attribute :  " + property_name);
+//                }
 
                 for (Node destination : nodelist) {
                     if ((++index) % 500 == 0) {
@@ -165,8 +179,8 @@ public class LandmarkBBS {
                         if (!p.p.possible_destination.isEmpty()) {
 
                             ArrayList<backbonePath> new_paths = p.expand(neo4j);
-                            ArrayList<backbonePath> flat_new_paths = flatindex.expand(p);
-                            new_paths.addAll(flat_new_paths);
+//                            ArrayList<backbonePath> flat_new_paths = flatindex.expand(p);
+//                            new_paths.addAll(flat_new_paths);
 
                             for (backbonePath new_bp : new_paths) {
 
@@ -382,19 +396,25 @@ public class LandmarkBBS {
     }
 
     private boolean checkDominated(double[] costs, double[] estimatedCosts) {
-        int numberNotEqual = 0;
         for (int i = 0; i < costs.length; i++) {
             if (costs[i] > estimatedCosts[i]) {
                 return false;
-            } else if (costs[i] < estimatedCosts[i] && numberNotEqual == 0) {
-                numberNotEqual++;
             }
         }
-
-        if (numberNotEqual != 0) {
-            return true;
-        } else {
-            return false;
-        }
+        return true;
+//        int numberNotEqual = 0;
+//        for (int i = 0; i < costs.length; i++) {
+//            if (costs[i] > estimatedCosts[i]) {
+//                return false;
+//            } else if (costs[i] < estimatedCosts[i] && numberNotEqual == 0) {
+//                numberNotEqual++;
+//            }
+//        }
+//
+//        if (numberNotEqual != 0) {
+//            return true;
+//        } else {
+//            return false;
+//        }
     }
 }

@@ -55,44 +55,6 @@ public class backbonePath {
         }
     }
 
-//    public backbonePath(backbonePath s_t_h_bpath, backbonePath d_t_h_bpath) {
-//        this.source = s_t_h_bpath.source;
-//        this.destination = d_t_h_bpath.source;
-//
-//        this.highwayList.clear();
-//        this.highwayList.addAll(s_t_h_bpath.highwayList);
-//
-//        ArrayList<Long> reversed_highway = new ArrayList<>(d_t_h_bpath.highwayList);
-//        Collections.reverse(reversed_highway);
-//
-//
-//        calculatedCosts(s_t_h_bpath.costs, d_t_h_bpath.costs);
-//
-//        if (highwayList.contains(this.destination)) {
-//            this.hasCycle = true;
-//        }
-//
-//        if (s_t_h_bpath.p != null) {
-//            this.p = new path(s_t_h_bpath.p);
-//            this.p.expanded = false;
-//        }
-//
-//        int last_index = this.highwayList.size() - 1;
-//
-//        this.highwayList.remove(this.highwayList.size() - 1);
-//        this.highwayList.addAll(reversed_highway);
-//
-//        if (s_t_h_bpath.p != null) {
-//            for (int idx = last_index; idx < highwayList.size() - 1; idx++) {
-//                p.rels.add(null);
-//            }
-//        }
-//
-//        if (Collections.frequency(highwayList, destination) >= 2) {
-//            this.hasCycle = true;
-//        }
-//
-//    }
 
     //not used in the query process
     public backbonePath(backbonePath s_t_h_bpath, backbonePath d_t_h_bpath, double[] costsInHighestLevel) {

@@ -3,15 +3,16 @@ package Neo4jTools;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 public class convertNeo4jDBtoTextfile {
-    public static void main(String args[]){
+    public static void main(String args[]) {
         convertNeo4jDBtoTextfile cnt = new convertNeo4jDBtoTextfile();
         cnt.convert();
     }
 
     private void convert() {
 
+        String number_of_node_str = 40 + "K";
 
-        String sub_db_name = "sub_ny_USA_Level0";
+        String sub_db_name = "sub_ny_USA_" + number_of_node_str + "_Level0";
 
         String prefix = "/home/gqxwolf/mydata/projectData/BackBone/";
 
@@ -22,7 +23,7 @@ public class convertNeo4jDBtoTextfile {
         long pre_e = neo4j.getNumberofEdges();
         System.out.println("deal with the database (" + sub_db_name + ") graph at " + neo4j.DB_PATH + "  " + pre_n + " nodes and " + pre_e + " edges");
 
-        String textFilePath = prefix + "busline_sub_graph_NY/level0/";
+        String textFilePath = prefix + "busline_sub_graph_NY_" + number_of_node_str + "/level0/";
         neo4j.saveGraphToTextFormation(textFilePath);
         neo4j.closeDB();
     }

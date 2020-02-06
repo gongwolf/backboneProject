@@ -26,9 +26,10 @@ public class IndexPathBuild {
     private double percentage;
     public ProgramProperty prop = new ProgramProperty();
     public String city_name;
-    public String base_db_name = "sub_ny_USA";
+    //    public String base_db_name = "sub_ny_USA";
 //    public String base_db_name = "col_USA";
-
+    public String base_db_name = "sub_ny_USA_100K";
+    public String folder_name = "busline_sub_graph_NY_100K";
 
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
@@ -56,7 +57,8 @@ public class IndexPathBuild {
 
     private void initLevel() {
 //        String sub_db_name = "col_USA_Level0";
-        String sub_db_name = "sub_ny_USA_Level0";
+//        String sub_db_name = "sub_ny_USA_Level0";
+        String sub_db_name = this.base_db_name + "_Level0";
         neo4j = new Neo4jDB(sub_db_name);
         System.out.println(neo4j.DB_PATH);
         neo4j.startDB(false);
@@ -72,7 +74,7 @@ public class IndexPathBuild {
     }
 
 
-    private void construction() throws CloneNotSupportedException {
+    private void construction() {
         int currentLevel = 0;
         Pair<Integer, Integer> threshold = updateThreshold(percentage);
         int t_threshold = threshold.getKey() + threshold.getValue();
@@ -100,9 +102,9 @@ public class IndexPathBuild {
 //        } while (cn != 0 && threshold != null);
 
         System.out.println("finish the index finding, the current level is " + currentLevel + "  with number of nodes :" + cn);
-
-        int lastLevel = currentLevel;
-        dealwithLastLayer(lastLevel);
+//
+//        int lastLevel = currentLevel;
+//        dealwithLastLayer(lastLevel);
     }
 
     private void dealwithLastLayer(int lastLevel) {
@@ -278,7 +280,7 @@ public class IndexPathBuild {
         long post_n = neo4j.getNumberofNodes();
         long post_e = neo4j.getNumberofEdges();
         System.out.println("~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
-        String textFilePath = prefix + "busline_sub_graph_NY/non-single/level" + currentLevel + "/";
+        String textFilePath = prefix + folder_name + "/non-single/level" + currentLevel + "/";
         neo4j.saveGraphToTextFormation(textFilePath);
 
         getDegreePairs();
@@ -287,7 +289,7 @@ public class IndexPathBuild {
         post_n = neo4j.getNumberofNodes();
         post_e = neo4j.getNumberofEdges();
 //
-        textFilePath = prefix + "busline_sub_graph_NY/level" + currentLevel + "/";
+        textFilePath = prefix + folder_name + "/level" + currentLevel + "/";
         neo4j.saveGraphToTextFormation(textFilePath);
 //
         System.out.println(" ~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
@@ -349,7 +351,7 @@ public class IndexPathBuild {
         long post_n = neo4j.getNumberofNodes();
         long post_e = neo4j.getNumberofEdges();
         System.out.println("~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
-        String textFilePath = prefix + "busline_sub_graph_NY/non-single/level" + currentLevel + "/";
+        String textFilePath = prefix + folder_name + "/non-single/level" + currentLevel + "/";
         neo4j.saveGraphToTextFormation(textFilePath);
 
         getDegreePairs();
@@ -358,7 +360,7 @@ public class IndexPathBuild {
         post_n = neo4j.getNumberofNodes();
         post_e = neo4j.getNumberofEdges();
 //
-        textFilePath = prefix + "busline_sub_graph_NY/level" + currentLevel + "/";
+        textFilePath = prefix + folder_name + "/level" + currentLevel + "/";
         neo4j.saveGraphToTextFormation(textFilePath);
 //
         System.out.println(" ~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
@@ -474,6 +476,7 @@ public class IndexPathBuild {
 
     private boolean removeLowerDegreePairEdgesByThreshold(Pair<Integer, Integer> threshold_p, int threshold_t, HashSet<Long> deletedNodes, HashSet<Long> deletedEdges) {
         boolean deleted = false;
+        int i = 1;
         for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> dp : this.degree_pairs.entrySet()) {
             int sd = dp.getKey().getKey(); // the first number of the degree pair
             int ed = dp.getKey().getValue(); // the second number of the degree pair
@@ -497,8 +500,9 @@ public class IndexPathBuild {
 
                     for (long rel : deleted_rels) {
                         Relationship r = graphdb.getRelationshipById(rel);
-
+                        long rt = System.currentTimeMillis();
                         boolean flag = deleteEdge(r, deletedNodes);
+                        System.out.println("remove the edge [ " + (i++) + "]  " + r + "    deleted (" + flag + ") in " + (System.currentTimeMillis() - rt) + " ms");
 
 
                         if (flag) {
@@ -528,6 +532,7 @@ public class IndexPathBuild {
             deleteRelationshipFromDB(r, deletedNodes);
             canBeDeleted = true;
         }
+
 
         return canBeDeleted;
     }
@@ -591,7 +596,7 @@ public class IndexPathBuild {
 
 
     private void createIndexFolder() {
-        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/busline_sub_graph_NY/";
+        String folder = "/home/gqxwolf/mydata/projectData/BackBone/indexes/" + this.folder_name + "/";
 
         File idx_folder = new File(folder);
         try {
@@ -648,7 +653,7 @@ public class IndexPathBuild {
             boolean have_nodes_last_graph = false;
 
             if (remind_nodes.size() == 0 && l == maxlevel - 1) {
-                System.out.println("The last graph is empty, current level " + l+" needs to build the index between each pair-wise nodes, but so far does not !!!");
+                System.out.println("The last graph is empty, current level " + l + " needs to build the index between each pair-wise nodes, but so far does not !!!");
                 neo4j_level.closeDB();
                 return;
             } else if (neo4j_level.getNumberofNodes() != 0 && l == maxlevel) {
@@ -657,7 +662,7 @@ public class IndexPathBuild {
 
 
             //the folder of the indexes of level l
-            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/busline_sub_graph_NY/level" + level;
+            String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/" + this.folder_name + "/level" + level;
 
             File sub_folder_f = new File(sub_folder_str);
             if (sub_folder_f.exists()) {
@@ -745,11 +750,7 @@ public class IndexPathBuild {
                         }
                     }
 
-//                    if (level == maxlevel - 2 || level == maxlevel - 1 || level == maxlevel) {
-//                        long one_iter_rt = System.nanoTime() - one_iter_start;
-//                        System.out.println(counter + "   " + nodeID + "    ......... (" + one_iter_rt / 1000000.0 + " ms )" + "  size of the skylines " + sum + "   (" + (l != maxlevel) + "  " + (remind_nodes.size() != 0) + ")");
-//                        counter++;
-//                    }
+                    System.out.println(counter++ + "   " + nodeID + "    ......... (" + ((System.nanoTime() - one_iter_start) / 1000000.0) + " ms )" + "     size of the skylines " + sum);
 
                     sizeOverallSkyline += sum;
 
