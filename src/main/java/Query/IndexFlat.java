@@ -223,7 +223,6 @@ public class IndexFlat {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     public void readHighestFlatIndexToDisk(String idx_file_name) {

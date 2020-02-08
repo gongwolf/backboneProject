@@ -13,11 +13,15 @@ public class QueryProcess {
     private final int index_level;
     private final Monitor monitor;
 
+
     String system_home_folder = System.getProperty("user.home");
     String str_number_of_nodes = "50K";
-    String source_file_folder = "busline_sub_graph_NY_" + str_number_of_nodes;
-    String index_files_folder = system_home_folder + "/mydata/projectData/BackBone/indexes/" + source_file_folder;
+//    String source_file_folder = "busline_sub_graph_NY_" + str_number_of_nodes;
+//    String index_files_folder = system_home_folder + "/mydata/projectData/BackBone/indexes/" + source_file_folder;
+    String source_file_folder = "busline_sub_graph_NY";
+    String index_files_folder = system_home_folder + "/mydata/projectData/BackBone/indexes/busline_sub_graph_NY";
     BackBoneIndex index;
+    private long surfix = 0;
 
     HashMap<Long, ArrayList<backbonePath>> source_to_highway_results = new HashMap<>(); //the temporary results from source node to highways
     HashMap<Long, ArrayList<backbonePath>> destination_to_highway_results = new HashMap<>(); //the temporary results from destination node to highways
@@ -28,12 +32,12 @@ public class QueryProcess {
     public QueryProcess() {
         index = new BackBoneIndex(index_files_folder);
         this.index_level = index.total_level;
-//        String sub_db_name = "sub_ny_USA_Level" + this.index_level;
-        String sub_db_name = "sub_ny_USA_" + this.str_number_of_nodes + "_Level" + this.index_level;
+        String sub_db_name = "sub_ny_USA_Level" + this.index_level;
+//        String sub_db_name = "sub_ny_USA_" + this.str_number_of_nodes + "_Level" + this.index_level;
         bbs = new LandmarkBBS(sub_db_name, index.flatindex);
 
         index.buildFlatIndex();
-        index.buildHighestFlatIndex(bbs.node_list, false);
+        index.buildHighestFlatIndex(bbs.node_list, true);
 
         ArrayList<Long> ldms = new ArrayList<>();
 //        ldms.add(131l);
@@ -48,6 +52,9 @@ public class QueryProcess {
 
         this.monitor = new Monitor();
 
+        Date date = new Date();
+        this.surfix = date.getTime();
+
     }
 
     public static void main(String args[]) {
@@ -56,7 +63,7 @@ public class QueryProcess {
         for (int i = 0; i < 1; i++) {
             QueryProcess query = new QueryProcess();
             long running_time = System.nanoTime();
-            query.query(3227, 8222, false);
+            query.query(3227, 8222, true);
             System.out.println("Total Runningt time is " + (System.nanoTime() - running_time) / 1000000 + " ms ");
             resultset_number.add(query.result.size());
             query.bbs.closeDB();
@@ -123,10 +130,10 @@ public class QueryProcess {
                 HashMap<Long, ArrayList<backbonePath>> source_list = filterPossibleNodeInList(source_to_highway_results);
                 String sub_db_name = "sub_ny_USA_Level" + l;
                 LandmarkBBS layer_bbs = new LandmarkBBS(sub_db_name);
-                layer_bbs.buildLandmarkIndex(3, null);
                 System.out.println("BBS query on the graph " + layer_bbs.neo4j.graphDB);
                 System.out.println("source list : " + source_list.keySet());
                 System.out.println("destination list : " + all_possible_dest_node_with_skypaths.keySet());
+                layer_bbs.buildLandmarkIndex(3, null);
 
                 ArrayList<Long> sorted_source_list = new ArrayList<>(source_list.keySet());
                 Random random = new Random();
@@ -142,7 +149,7 @@ public class QueryProcess {
                 long rt = System.currentTimeMillis();
                 layer_bbs.landmark_bbs(source_node, destination_node, source_list, all_possible_dest_node_with_skypaths, temp_result);
                 String path_name = "/home/gqxwolf/mydata/projectData/BackBone/" + source_file_folder + "/results";
-                saveToDisk(temp_result, path_name + "/backbone_" + source_node + "_" + destination_node + "_query_on_level" + l + ".txt");
+                saveToDisk(temp_result, path_name + "/backbone_" + source_node + "_" + destination_node + "_query_on_level" + l +"_"+this.surfix+".txt");
                 layer_bbs.closeDB();
                 System.out.println("The BBS query at level " + l + " found " + temp_result.size() + "  skyline paths  in " + (System.currentTimeMillis() - rt) + "ms");
                 System.out.println("==================================================================================");
@@ -280,6 +287,8 @@ public class QueryProcess {
         System.out.println("~~~~~~~~~~~~~~~~~~~~~ find the highway nodes at the highest level                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         findAtTheHighestLevel(source_node, destination_node);
         printResult(result);
+        String path_name = "/home/gqxwolf/mydata/projectData/BackBone/" + source_file_folder + "/results";
+        saveToDisk(path_name + "/backbone_"+source_node+"_"+destination_node+"_final_"+this.surfix+".txt");
     }
 
     /**

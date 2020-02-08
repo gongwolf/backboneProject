@@ -5,11 +5,16 @@ import Neo4jTools.Neo4jDB;
 import Query.IndexFlat;
 import Query.backbonePath;
 import Query.tools.SortByNodeId;
+import Query.tools.myFileFilter;
+import org.apache.commons.io.FileUtils;
+import org.neo4j.cypher.internal.v3_4.functions.Rand;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphdb.*;
+import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Arabic;
 
+import java.io.*;
 import java.util.*;
 
 public class LandmarkBBS {
@@ -45,7 +50,7 @@ public class LandmarkBBS {
         this.node_list = this.neo4j.getNodes();
     }
 
-    public LandmarkBBS(String sub_db_name, HashMap<Long, HashMap<Long,double[]>> landmark_index) {
+    public LandmarkBBS(String sub_db_name, HashMap<Long, HashMap<Long, double[]>> landmark_index) {
         neo4j = new Neo4jDB(sub_db_name);
         neo4j.startDB(true);
         graphdb = neo4j.graphDB;
@@ -107,8 +112,132 @@ public class LandmarkBBS {
 
             tx.success();
         }
-
     }
+
+    public void readLandmarkIndex(int num_landmarks, ArrayList<Long> landmark_list_ids, boolean createNew) {
+        String landmark_index_folder_base = "/home/gqxwolf/mydata/projectData/BackBone/indexes/landmarks/";
+
+        String landmark_index_folder = landmark_index_folder_base + this.neo4j.dbname;
+        File landmark_index_fl = new File(landmark_index_folder);
+        System.out.println("Read the landmark index from the foler ====>> " + landmark_index_folder);
+
+        boolean null_landmark_list = false;
+        if (landmark_list_ids == null || landmark_list_ids.size() == 0) {
+            null_landmark_list = true;
+        }
+
+        try {
+            if (!landmark_index_fl.exists()) {
+                FileUtils.forceMkdir(landmark_index_fl);
+            }
+
+            File[] idx_files = landmark_index_fl.listFiles(new myFileFilter());
+            HashMap<Long, Boolean> readed_idx_file = new HashMap<>();
+            HashMap<Long, File> lamdmark_idx_file_mapping = new HashMap<>();
+
+            for (File idx_f : idx_files) {
+                long landmark = Long.parseLong(idx_f.getName().substring(0, idx_f.getName().lastIndexOf(".")));
+                //Read the specific landmark index file if the landmark nodes are given by landmark_list_ids
+                if (!null_landmark_list && landmark_list_ids.contains(landmark)) {
+                    BufferedReader b = new BufferedReader(new FileReader(idx_f));
+                    String readLine = "";
+                    HashMap<Long, double[]> landmark_contents = new HashMap<>();
+                    while ((readLine = b.readLine()) != null) {
+                        String[] infos = readLine.split(" ");
+                        double[] costs = new double[infos.length - 1];
+
+                        long target_node = Long.parseLong(infos[0]);
+                        costs[0] = Double.parseDouble(infos[1]);
+                        costs[1] = Double.parseDouble(infos[2]);
+                        costs[2] = Double.parseDouble(infos[3]);
+
+                        landmark_contents.put(target_node, costs);
+                    }
+
+                    this.landmark_index.put(landmark, landmark_contents);
+                    readed_idx_file.put(landmark, true);
+                    System.out.println("Finished the reading of landmark index for node [" + landmark + "]");
+
+                } else {
+                    readed_idx_file.put(landmark, false);
+                }
+                lamdmark_idx_file_mapping.put(landmark, idx_f);
+            }
+
+            //random read the landmark index
+            if (!createNew && idx_files.length >= num_landmarks) {
+                System.out.println("Begin to read the landmark index ........................................");
+                while (this.landmark_index.size() < num_landmarks) {
+                    Random r = new Random(System.currentTimeMillis());
+
+                    //Keep the unread landmark node list, that is used to random pick
+                    ArrayList<Long> unreaded_landmark = new ArrayList<>();
+                    for (long landmark : readed_idx_file.keySet()) {
+                        if (!readed_idx_file.get(landmark)) {
+                            unreaded_landmark.add(landmark);
+                        }
+                    }
+
+                    long landmark = unreaded_landmark.get(r.nextInt(unreaded_landmark.size()));
+                    readed_idx_file.put(landmark, true); //mark this landmark is read. Don't read it again.
+                    File ldm_file = lamdmark_idx_file_mapping.get(landmark);
+
+                    BufferedReader b = new BufferedReader(new FileReader(ldm_file));
+                    String readLine = "";
+                    HashMap<Long, double[]> landmark_contents = new HashMap<>();
+                    while ((readLine = b.readLine()) != null) {
+                        String[] infos = readLine.split(" ");
+                        double[] costs = new double[infos.length - 1];
+
+                        long target_node = Long.parseLong(infos[0]);
+                        costs[0] = Double.parseDouble(infos[1]);
+                        costs[1] = Double.parseDouble(infos[2]);
+                        costs[2] = Double.parseDouble(infos[3]);
+
+                        landmark_contents.put(target_node, costs);
+                    }
+
+                    this.landmark_index.put(landmark, landmark_contents);
+                    System.out.println("Finished the reading of landmark index for node [" + landmark + "]");
+                }
+                System.out.println("End the process of reading the landmark index ........................................");
+            } else { //create the new landmark nodes
+                buildLandmarkIndex(num_landmarks, landmark_list_ids);
+                for (long landmark : this.landmark_index.keySet()) {
+                    HashMap<Long, double[]> mapping = landmark_index.get(landmark);
+                    String idx_file_name = landmark_index_folder + "/" + landmark + ".idx";
+                    writeLandmarkIndexToDisk(idx_file_name, mapping);
+                    System.out.println("Finished the writing index to disk [" + landmark + "]    ");
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void writeLandmarkIndexToDisk(String idx_file_name, HashMap<Long, double[]> mapping) {
+        FileWriter fileWriter = null;
+        try {
+
+            if (new File(idx_file_name).exists()) {
+                new File(idx_file_name).delete();
+            }
+
+            fileWriter = new FileWriter(idx_file_name);
+            PrintWriter printWriter = new PrintWriter(fileWriter);
+            for (Map.Entry<Long, double[]> landmark_element : mapping.entrySet()) {
+                long dest_node_id = landmark_element.getKey();
+                double[] costs = landmark_element.getValue();
+                printWriter.println(dest_node_id + " " + costs[0] + " " + costs[1] + " " + costs[2]);
+
+            }
+            printWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     private ArrayList<Node> getLandMarkNodeList(int num_landmarks, ArrayList<Long> landmark_list_ids, ArrayList<Node> nodelist) {
         ArrayList<Node> result_list = new ArrayList<>();
@@ -225,10 +354,9 @@ public class LandmarkBBS {
     private void updateThePathDestinationList(backbonePath p, ArrayList<backbonePath> results) {
         ArrayList<Long> deleted_dest_nodes = new ArrayList<>();
 
-        for (Map.Entry<Long, ArrayList<backbonePath>> dest_element : p.p.possible_destination.entrySet()) {
-            long dest_highway = dest_element.getKey();
+        for (long dest_highway_node_id : p.p.possible_destination.keySet()) {
 
-            ArrayList<backbonePath> dest_skyline = dest_element.getValue();
+            ArrayList<backbonePath> dest_skyline = p.p.possible_destination.get(dest_highway_node_id);
 
             //Todo: could be optimized by using the max or min values of the all the skyline paths from dest_highway to dest, so, it will not iterate all the skyline paths
             for (int dp_idx = 0; dp_idx < dest_skyline.size(); ) {
@@ -243,7 +371,9 @@ public class LandmarkBBS {
 
             //all of the skyline paths from dest_highway nodes to dest nodes can not be a candidate results from this path p to destination node
             if (dest_skyline.size() == 0) {
-                deleted_dest_nodes.add(dest_highway);
+                deleted_dest_nodes.add(dest_highway_node_id);
+//            } else {
+//                p.p.possible_destination.put(dest_highway, dest_skyline);
             }
         }
 
@@ -320,10 +450,6 @@ public class LandmarkBBS {
                     backbonePath upper_bp = new backbonePath(src, dest, to_dest_cost);
                     backbonePath init_bp = new backbonePath(src_to_bp, upper_bp, false);
 
-//                    System.out.println(src_to_bp);
-//                    System.out.println(dest_dp);
-//                    System.out.println(init_bp);
-//                    System.out.println("~~~~~~~~~~~~~~~~~~~~");
                     addToSkyline(init_result, init_bp);
                 }
             }

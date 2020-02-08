@@ -28,8 +28,8 @@ public class IndexPathBuild {
     public String city_name;
     //    public String base_db_name = "sub_ny_USA";
 //    public String base_db_name = "col_USA";
-    public String base_db_name = "sub_ny_USA_100K";
-    public String folder_name = "busline_sub_graph_NY_100K";
+    public String base_db_name = "sub_ny_USA";
+    public String folder_name = "busline_sub_graph_NY";
 
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
