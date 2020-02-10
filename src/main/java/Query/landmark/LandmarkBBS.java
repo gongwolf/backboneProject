@@ -16,6 +16,7 @@ import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Arabic;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class LandmarkBBS {
 
@@ -115,6 +116,11 @@ public class LandmarkBBS {
     }
 
     public void readLandmarkIndex(int num_landmarks, ArrayList<Long> landmark_list_ids, boolean createNew) {
+
+        if (landmark_list_ids.size() > num_landmarks) {
+            num_landmarks = landmark_list_ids.size();
+        }
+
         String landmark_index_folder_base = "/home/gqxwolf/mydata/projectData/BackBone/indexes/landmarks/";
 
         String landmark_index_folder = landmark_index_folder_base + this.neo4j.dbname;
@@ -166,6 +172,18 @@ public class LandmarkBBS {
 
             //random read the landmark index
             if (!createNew && idx_files.length >= num_landmarks) {
+
+                if (!null_landmark_list) {
+                    ArrayList<Long> remained_landmarks = landmark_list_ids.stream().filter(node_id -> !landmark_index.containsKey(node_id)).collect(Collectors.toCollection(ArrayList::new));
+                    buildLandmarkIndex(remained_landmarks);
+                    for (long landmark : remained_landmarks) {
+                        HashMap<Long, double[]> mapping = this.landmark_index.get(landmark);
+                        String idx_file_name = landmark_index_folder + "/" + landmark + ".idx";
+                        writeLandmarkIndexToDisk(idx_file_name, mapping);
+                        System.out.println("Finished the writing index to disk [" + landmark + "]    ");
+                    }
+                }
+
                 System.out.println("Begin to read the landmark index ........................................");
                 while (this.landmark_index.size() < num_landmarks) {
                     Random r = new Random(System.currentTimeMillis());
@@ -216,6 +234,54 @@ public class LandmarkBBS {
         }
     }
 
+    private void buildLandmarkIndex(ArrayList<Long> landmark_list_ids) {
+        try (Transaction tx = this.neo4j.graphDB.beginTx()) {
+
+            ArrayList<Node> nodelist = new ArrayList<>();
+
+            ResourceIterable<Node> nodes_iterable = this.neo4j.graphDB.getAllNodes();
+            ResourceIterator<Node> nodes_iter = nodes_iterable.iterator();
+            while (nodes_iter.hasNext()) {
+                Node node = nodes_iter.next();
+                nodelist.add(node);
+            }
+
+            ArrayList<Node> landmarks = getLandMarkNodeList(landmark_list_ids, nodelist);
+
+            for (Node lnode : landmarks) {
+                HashMap<Long, double[]> index_from_landmark_to_dest = new HashMap<>();
+                System.out.println("Build the index for the node " + lnode);
+                int index = 0;
+
+                for (Node destination : nodelist) {
+                    if ((++index) % 500 == 0) {
+                        System.out.println(lnode + "    " + index + " ..............................");
+                    }
+
+                    int i = 0;
+                    double[] min_costs = new double[3];
+                    for (String property_name : Neo4jDB.propertiesName) {
+                        PathFinder<WeightedPath> finder = GraphAlgoFactory.dijkstra(PathExpanders.forTypeAndDirection(Line.Linked, Direction.BOTH), property_name);
+                        WeightedPath paths = finder.findSinglePath(lnode, destination);
+                        if (paths != null) {
+                            min_costs[i] = paths.weight();
+                            i++;
+                        } else {
+                            System.out.println("Can not find a shortest path from " + lnode + " to " + destination);
+                            System.exit(0);
+                        }
+                    }
+
+                    index_from_landmark_to_dest.put(destination.getId(), min_costs);
+                }
+
+                this.landmark_index.put(lnode.getId(), index_from_landmark_to_dest);
+            }
+
+            tx.success();
+        }
+    }
+
     private void writeLandmarkIndexToDisk(String idx_file_name, HashMap<Long, double[]> mapping) {
         FileWriter fileWriter = null;
         try {
@@ -257,6 +323,26 @@ public class LandmarkBBS {
         } else {
             for (long ldm_id : landmark_list_ids) {
                 result_list.add(node_mapping.get(ldm_id));
+            }
+        }
+
+        return result_list;
+    }
+
+    private ArrayList<Node> getLandMarkNodeList(ArrayList<Long> landmark_list_ids, ArrayList<Node> nodelist) {
+        ArrayList<Node> result_list = new ArrayList<>();
+
+        HashMap<Long, Node> node_mapping = new HashMap<>();
+        for (Node n : nodelist) {
+            node_mapping.put(n.getId(), n);
+        }
+
+        if (landmark_list_ids != null && landmark_list_ids.size() != 0) {
+            for (long landmarks_node_id : landmark_list_ids) {
+                Node landmarks_node = node_mapping.get(landmarks_node_id);
+                if (!result_list.contains(landmarks_node)) {
+                    result_list.add(landmarks_node);
+                }
             }
         }
 
@@ -372,8 +458,6 @@ public class LandmarkBBS {
             //all of the skyline paths from dest_highway nodes to dest nodes can not be a candidate results from this path p to destination node
             if (dest_skyline.size() == 0) {
                 deleted_dest_nodes.add(dest_highway_node_id);
-//            } else {
-//                p.p.possible_destination.put(dest_highway, dest_skyline);
             }
         }
 
@@ -437,10 +521,16 @@ public class LandmarkBBS {
                         costs_upperbound[i] = value;
                     }
                 }
+
+                System.out.println(landmark+"    "+costs_upperbound[0] + " " + costs_upperbound[1] + " " + costs_upperbound[2]);
+
             }
 
+
             for (backbonePath src_to_bp : src_set.getValue()) {
+                System.out.println(src_to_bp);
                 for (backbonePath dest_dp : dest_set.get(dest)) {
+                    System.out.println("            " + dest_dp);
                     double[] to_dest_cost = new double[3];
 
                     for (int i = 0; i < to_dest_cost.length; i++) {

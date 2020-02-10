@@ -21,7 +21,7 @@ public class queryOnLevel {
 
     public static void main(String args[]) {
         queryOnLevel q = new queryOnLevel();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1; i++) {
             q.query(0, 3227l, 8222l);
         }
     }
@@ -68,7 +68,22 @@ public class queryOnLevel {
                 System.out.println("BBS query on the graph " + layer_bbs.neo4j.graphDB);
                 System.out.println("source list : " + source_list.keySet());
                 System.out.println("destination list : " + all_possible_dest_node_with_skypaths.keySet());
-                layer_bbs.readLandmarkIndex(3, null, false);
+                ArrayList<Long> landmark_nodes = new ArrayList<>();
+                //---------------1533
+//                landmark_nodes.add(2984l);
+//                landmark_nodes.add(9074l);
+//                landmark_nodes.add(3082l);
+                //--------------- 1596
+//                landmark_nodes.add(9748l);
+//                landmark_nodes.add(3082l);
+//                landmark_nodes.add(4981l);
+                //---------------1033
+                landmark_nodes.add(7854l);
+                landmark_nodes.add(6929l);
+                landmark_nodes.add(6444l);
+                landmark_nodes.add(3227l);
+                landmark_nodes.add(8222l);
+                layer_bbs.readLandmarkIndex(5, landmark_nodes, false);
 
                 ArrayList<Long> sorted_source_list = new ArrayList<>(source_list.keySet());
                 Random random = new Random();
@@ -76,10 +91,11 @@ public class queryOnLevel {
                 Set<Map.Entry<Long, ArrayList<backbonePath>>> entrySet = source_list.entrySet();
                 ArrayList<Map.Entry<Long, ArrayList<backbonePath>>> listOfSources = new ArrayList<>(entrySet);
                 System.out.println("Choose the index with " + random_source_idx + "  ====>>>>  " + listOfSources.get(random_source_idx).getKey());
-                ArrayList<backbonePath> layer_init_paths = layer_bbs.initResultShortestPath(listOfSources.get(random_source_idx), all_possible_dest_node_with_skypaths);
+                ArrayList<backbonePath> layer_init_paths = layer_bbs.initResultLandMark(listOfSources.get(random_source_idx), all_possible_dest_node_with_skypaths);
                 for (backbonePath init_bp : layer_init_paths) {
                     addToSkyline(temp_result, init_bp);
                 }
+                printResult(temp_result);
 
                 long rt = System.currentTimeMillis();
                 layer_bbs.landmark_bbs(source_node, destination_node, source_list, all_possible_dest_node_with_skypaths, temp_result);
