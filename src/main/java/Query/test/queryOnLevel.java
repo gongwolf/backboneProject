@@ -91,7 +91,7 @@ public class queryOnLevel {
                 Set<Map.Entry<Long, ArrayList<backbonePath>>> entrySet = source_list.entrySet();
                 ArrayList<Map.Entry<Long, ArrayList<backbonePath>>> listOfSources = new ArrayList<>(entrySet);
                 System.out.println("Choose the index with " + random_source_idx + "  ====>>>>  " + listOfSources.get(random_source_idx).getKey());
-                ArrayList<backbonePath> layer_init_paths = layer_bbs.initResultLandMark(listOfSources.get(random_source_idx), all_possible_dest_node_with_skypaths);
+                ArrayList<backbonePath> layer_init_paths = layer_bbs.initResultShortestPath(listOfSources.get(random_source_idx), all_possible_dest_node_with_skypaths);
                 for (backbonePath init_bp : layer_init_paths) {
                     addToSkyline(temp_result, init_bp);
                 }
