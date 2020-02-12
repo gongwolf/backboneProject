@@ -83,7 +83,7 @@ public class nodeClusterCoefficient {
 
                     while (sec_rel_iter.hasNext()) {
                         Node sec_nb = sec_rel_iter.next().getOtherNode(n_node);
-                        if (!neighbors.contains(sec_nb) && sec_nb != c_node) {
+                        if (!neighbors.contains(sec_nb) && sec_nb.getId() != c_node.getId()) {
                             second_neighbors.add(sec_nb);
                         }
                     }
@@ -100,8 +100,9 @@ public class nodeClusterCoefficient {
                 double coefficient2 = 1.0 * num_connected_one_with_sec_neighbors / (neighbors.size() * (second_neighbors.size()));
                 double coefficient3 = 1.0 * num_connected_sec_neighbors / (second_neighbors.size() * (second_neighbors.size() - 1));
                 coefficient3 = Double.isNaN(coefficient3) ? -1 : coefficient3;
-                if (coefficient1 != -1)
-                    System.out.println(c_node.getId() + "  " + c_node.getDegree(Direction.BOTH) + "  " + coefficient1 + "  " + num_connected_one_with_sec_neighbors + " " + second_neighbors.size() + " " + coefficient3 + "   ");
+                if (coefficient1 != -1 && coefficient3 != -1)
+                    System.out.println(c_node.getId() + "  " + c_node.getDegree(Direction.BOTH) + "  " + coefficient1 + "  " + num_connected_one_with_sec_neighbors + " "
+                            + neighbors.size() + " " + second_neighbors.size() + " " + coefficient3 + "   ");
 
 
 //                if (distribution.containsKey(coefficient)) {
