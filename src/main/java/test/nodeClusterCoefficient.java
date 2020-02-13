@@ -9,7 +9,7 @@ import java.util.*;
 public class nodeClusterCoefficient {
     public static void main(String args[]) {
         nodeClusterCoefficient n = new nodeClusterCoefficient();
-        n.twohopCoefficient("sub_ny_USA_Level0");
+        n.twohopCoefficient("sub_ny_USA_100K_Level0");
     }
 
     private void onehopCoefficient(String dbname) {
@@ -97,12 +97,12 @@ public class nodeClusterCoefficient {
 
                 double coefficient1 = 1.0 * num_connected_neighbors / (neighbors.size() * (neighbors.size() - 1));
                 coefficient1 = Double.isNaN(coefficient1) ? -1 : coefficient1;
-                double coefficient2 = 1.0 * num_connected_one_with_sec_neighbors / (neighbors.size() * (second_neighbors.size()));
+                double coefficient2 = 1.0 * num_connected_one_with_sec_neighbors / (neighbors.size() * (neighbors.size()-1));
                 double coefficient3 = 1.0 * num_connected_sec_neighbors / (second_neighbors.size() * (second_neighbors.size() - 1));
                 coefficient3 = Double.isNaN(coefficient3) ? -1 : coefficient3;
                 if (coefficient1 != -1 && coefficient3 != -1)
                     System.out.println(c_node.getId() + "  " + c_node.getDegree(Direction.BOTH) + "  " + coefficient1 + "  " + num_connected_one_with_sec_neighbors + " "
-                            + neighbors.size() + " " + second_neighbors.size() + " " + coefficient3 + "   ");
+                            + neighbors.size() + " " + second_neighbors.size() + " " + coefficient3 + "   "+coefficient2);
 
 
 //                if (distribution.containsKey(coefficient)) {
