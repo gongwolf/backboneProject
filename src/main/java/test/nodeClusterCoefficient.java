@@ -9,7 +9,7 @@ import java.util.*;
 public class nodeClusterCoefficient {
     public static void main(String args[]) {
         nodeClusterCoefficient n = new nodeClusterCoefficient();
-        n.twohopCoefficient("sub_ny_USA_100K_Level0");
+        n.twohopCoefficient("sub_ny_USA_50K_Level0");
     }
 
     private void onehopCoefficient(String dbname) {

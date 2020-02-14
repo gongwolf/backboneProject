@@ -10,12 +10,12 @@ public class convertNeo4jDBtoTextfile {
 
     private void convert() {
 
-        String number_of_node_str = 100 + "K";
+        String number_of_node_str = 50 + "K";
 
         String sub_db_name = "sub_ny_USA_" + number_of_node_str + "_Level0";
 //        sub_db_name = "sub_ny_USA_Level0";
         String prefix = "/home/gqxwolf/mydata/projectData/BackBone/";
-//        String textFilePath = prefix + "busline_sub_graph_NY/level0/";
+//        String textFilePath = prefix + "busline_sub_graph_NY/level1";
         String textFilePath = prefix + "busline_sub_graph_NY_" + number_of_node_str + "/level0/";
 
         Neo4jDB neo4j = new Neo4jDB(sub_db_name);

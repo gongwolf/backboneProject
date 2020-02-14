@@ -6,6 +6,7 @@ import configurations.ProgramProperty;
 import javafx.util.Pair;
 import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.*;
+import utilities.CollectionOperations;
 import v5LinkedList.DynamicForests;
 import v5LinkedList.PairComparator;
 import v5LinkedList.SpanningForests;
@@ -150,8 +151,40 @@ public class clusterVersion {
     }
 
     private boolean removeLowerDegreePairEdgesByThreshold(HashSet<Long> deletedNodes, HashSet<Long> deletedEdges) {
+
+        NodeClusters node_clusters = new NodeClusters();
+
         HashMap<Long, Double> node_coefficient_list = getNodesCoefficientList();
-        myClusterQueue queue = new myClusterQueue();
+        HashMap<Long, Double> sorted_coefficient = CollectionOperations.sortHashMapByValue(node_coefficient_list);
+
+        sorted_coefficient.forEach((k, v) -> System.out.println(k + "  " + v));
+
+        for (Map.Entry<Long, Double> node_coeff : sorted_coefficient.entrySet()) {
+
+            try (Transaction tx = this.neo4j.graphDB.beginTx()) {
+                long node_id = node_coeff.getKey();
+
+                if (node_clusters.isInClusters(node_id)) {
+                    continue;
+                }
+
+                double coefficient = node_coeff.getValue();
+
+                myNode m_node = new myNode(graphdb.getNodeById(node_id), coefficient);
+                myClusterQueue queue = new myClusterQueue();
+                queue.add(m_node);
+
+                while (!queue.isEmpty()) {
+                    myNode n = queue.pop();
+//                    System.out.println(n);
+                }
+
+
+                tx.success();
+
+            }
+        }
+
         return false;
     }
 
@@ -415,7 +448,7 @@ public class clusterVersion {
 //                            + neighbors.size() + " " + second_neighbors.size() + " " + coefficient3 + "   " + coefficient2);
 //                }
 
-                nodes_coefficient_list.put(c_node.getId(), coefficient2);
+                nodes_coefficient_list.put(c_node.getId(), 1 - coefficient2);
             }
 
             tx.success();
