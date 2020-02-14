@@ -38,6 +38,7 @@ public class clusterVersion {
     ArrayList<HashSet<Long>> deletedEdges_layer = new ArrayList<>();
 
     private int degree_pairs_sum;
+    private HashSet<Long> visited_nodes;
 
 
     public static void main(String args[]) throws CloneNotSupportedException {
@@ -152,38 +153,68 @@ public class clusterVersion {
 
     private boolean removeLowerDegreePairEdgesByThreshold(HashSet<Long> deletedNodes, HashSet<Long> deletedEdges) {
 
+        HashMap<Long, myNode> visited_nodes = new HashMap<>();
+
         NodeClusters node_clusters = new NodeClusters();
 
         HashMap<Long, Double> node_coefficient_list = getNodesCoefficientList();
         HashMap<Long, Double> sorted_coefficient = CollectionOperations.sortHashMapByValue(node_coefficient_list);
 
-        sorted_coefficient.forEach((k, v) -> System.out.println(k + "  " + v));
+//        sorted_coefficient.forEach((k, v) -> System.out.println(k + "  " + v));
 
+        System.out.println(sorted_coefficient.size());
+        long num_n = 0;
+        long num_1 = 0;
         for (Map.Entry<Long, Double> node_coeff : sorted_coefficient.entrySet()) {
+
+            num_n++;
 
             try (Transaction tx = this.neo4j.graphDB.beginTx()) {
                 long node_id = node_coeff.getKey();
 
-                if (node_clusters.isInClusters(node_id)) {
+                if (visited_nodes.containsKey(node_id)) {
                     continue;
                 }
 
                 double coefficient = node_coeff.getValue();
 
-                myNode m_node = new myNode(graphdb.getNodeById(node_id), coefficient);
+                NodeCluster cluster = new NodeCluster(node_clusters.getNextClusterID());
                 myClusterQueue queue = new myClusterQueue();
+
+                myNode m_node = new myNode(node_id, graphdb.getNodeById(node_id), coefficient);
+
                 queue.add(m_node);
+                visited_nodes.put(node_id, m_node);
+                cluster.addToCluster(m_node.id);
 
                 while (!queue.isEmpty()) {
                     myNode n = queue.pop();
-//                    System.out.println(n);
-                }
+//                    System.out.println(n.id);
+                    ArrayList<Node> neighbors = neo4j.getNeighborsNodeList(n.id);
 
+                    for (Node neighbor_node : neighbors) {
+                        long n_node_id = neighbor_node.getId();
+                        //Todo: add the condition to decide whether to add the node to this cluster
+                        if (!visited_nodes.containsKey(n_node_id)) {
+                            myNode next_node = new myNode(n_node_id, neighbor_node, sorted_coefficient.get(n_node_id));
+                            cluster.addToCluster(n_node_id);
+                            visited_nodes.put(n_node_id, next_node);
+                            if (!cluster.oversize()) {
+                                queue.add(next_node);
+                            }
+                        }
+                    }
+                }
+                node_clusters.clusters.put(cluster.cluster_id, cluster);
 
                 tx.success();
-
             }
         }
+
+        System.out.println(num_n);
+        System.out.println(visited_nodes.size());
+        System.out.println("found # of clusters : " + node_clusters.clusters.size());
+        node_clusters.clusters.forEach((k, v) -> System.out.println(k + "  " + v.node_list.size()));
 
         return false;
     }

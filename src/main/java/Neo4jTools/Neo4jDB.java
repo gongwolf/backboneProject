@@ -144,7 +144,7 @@ public class Neo4jDB {
         return r.nextInt((max - min) + 1) + min;
     }
 
-    public ArrayList<Long> getNeighbors(long id) {
+    public ArrayList<Long> getNeighborsIdList(long id) {
         ArrayList<Long> result = new ArrayList<>();
         try (Transaction tx = this.graphDB.beginTx()) {
             Node sn = graphDB.getNodeById(id);
@@ -154,17 +154,27 @@ public class Neo4jDB {
 
             while (relIter.hasNext()) {
                 Relationship rel = relIter.next();
-                System.out.println(rel);
-                Node en = null;
-                if (rel.getEndNode().getId() == id) {
-                    en = rel.getStartNode();
-                } else {
-                    en = rel.getEndNode();
-                }
-
-
-                result.add(en.getId());
+                result.add(rel.getOtherNode(sn).getId());
             }
+            tx.success();
+        }
+        return result;
+    }
+
+    public ArrayList<Node> getNeighborsNodeList(long id) {
+        ArrayList<Node> result = new ArrayList<>();
+        try (Transaction tx = this.graphDB.beginTx()) {
+
+            Node sn = graphDB.getNodeById(id);
+
+            Iterable<Relationship> relIterable = sn.getRelationships(Direction.BOTH);
+            Iterator<Relationship> relIter = relIterable.iterator();
+
+            while (relIter.hasNext()) {
+                Relationship rel = relIter.next();
+                result.add(rel.getOtherNode(sn));
+            }
+            tx.success();
         }
         return result;
     }
