@@ -1,13 +1,17 @@
 package v5LinkedList.clusterversion;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import Neo4jTools.Neo4jDB;
+import org.neo4j.graphdb.Transaction;
+
+import java.util.*;
 
 
 public class NodeCluster {
     int cluster_id;
     int max_size = 100;
     HashSet<Long> node_list = new HashSet<>();
+    HashSet<Long> border_node_list = new HashSet<>();
+    private ArrayList<Long> list_b;
 
     public NodeCluster(int id) {
         this.cluster_id = id;
@@ -23,6 +27,45 @@ public class NodeCluster {
 
     public boolean oversize() {
         return this.node_list.size() >= max_size;
+    }
+
+    public void updateBorderList(Neo4jDB neo4j) {
+        try (Transaction tx = neo4j.graphDB.beginTx()) {
+            for (long node_id : node_list) {
+                boolean connect_to_other_cluster = false;
+                ArrayList<Long> n_list = neo4j.getNeighborsIdList(node_id);
+                for (long n : n_list) {
+                    if (!this.node_list.contains(n)) {
+                        connect_to_other_cluster = true;
+                        break;
+                    }
+                }
+
+                if (connect_to_other_cluster) {
+                    this.border_node_list.add(node_id);
+                }
+            }
+            tx.success();
+        }
+        list_b = new ArrayList<>(this.border_node_list);
+    }
+
+    public HashSet<Long> getBorderList() {
+        return this.border_node_list;
+    }
+
+    public Long getRandomBorderNode() {
+        return list_b.get(getRandomNumberInRange(0, this.border_node_list.size() - 1));
+    }
+
+    private static int getRandomNumberInRange(int min, int max) {
+
+        if (min >= max) {
+            throw new IllegalArgumentException("max must be greater than min");
+        }
+
+        Random r = new Random();
+        return r.nextInt((max - min) + 1) + min;
     }
 }
 
