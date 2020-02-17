@@ -243,15 +243,21 @@ public class clusterVersion {
             }
         });
 
+        node_clusters.clusters.forEach((k, v) -> {
+            if (v.node_list.size() >= 100 && k!=0) {
+                v.border_node_list.forEach(b_id -> System.out.println(b_id));
+            }
+        });
 
-//        final int[] i = {0};
-//        node_clusters.clusters.forEach((k, v) -> {
-//            if (v.node_list.size() >= 100 && k!=0) {
-////                System.out.println(k + "  " + v.node_list.size() + "  " + v.getBorderList().size());
-//                v.node_list.forEach(node_id-> System.out.println(node_id+" "+ i[0]));
-//                i[0]++;
-//            }
-//        });
+
+        final int[] i = {0};
+        node_clusters.clusters.forEach((k, v) -> {
+            if (v.node_list.size() >= 100 && k != 0) {
+//                System.out.println(k + "  " + v.node_list.size() + "  " + v.getBorderList().size());
+                v.node_list.forEach(node_id -> System.out.println(node_id + " " + i[0]));
+                i[0]++;
+            }
+        });
 
         return false;
     }
