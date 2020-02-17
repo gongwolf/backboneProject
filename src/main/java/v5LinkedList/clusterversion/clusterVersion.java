@@ -166,56 +166,92 @@ public class clusterVersion {
         for (Map.Entry<Long, Double> node_coeff : sorted_coefficient.entrySet()) {
 
             long node_id = node_coeff.getKey();
+
+            if (node_coeff.getValue() == 1) {
+                node_clusters.clusters.get(0).addToCluster(node_id);
+            }
+
             if (visited_nodes.containsKey(node_id)) {
                 continue;
             }
 
             try (Transaction tx = this.neo4j.graphDB.beginTx()) {
-                do {
 
-                    double coefficient = sorted_coefficient.get(node_id);
+                double coefficient = sorted_coefficient.get(node_id);
 
-                    NodeCluster cluster = new NodeCluster(node_clusters.getNextClusterID());
-                    myClusterQueue queue = new myClusterQueue();
+                NodeCluster cluster = new NodeCluster(node_clusters.getNextClusterID());
 
-                    myNode m_node = new myNode(node_id, graphdb.getNodeById(node_id), coefficient);
+                myClusterQueue queue = new myClusterQueue();
 
-                    queue.add(m_node);
-                    visited_nodes.put(node_id, m_node);
-                    cluster.addToCluster(m_node.id);
+                myNode m_node = new myNode(node_id, graphdb.getNodeById(node_id), coefficient);
 
-                    while (!queue.isEmpty()) {
-                        myNode n = queue.pop();
-                        ArrayList<Node> neighbors = neo4j.getNeighborsNodeList(n.id);
-                        boolean can_add_to_queue = !cluster.oversize();
+                queue.add(m_node);
+                visited_nodes.put(node_id, m_node);
+                cluster.addToCluster(m_node.id);
 
-                        for (Node neighbor_node : neighbors) {
-                            long n_node_id = neighbor_node.getId();
+                while (!queue.isEmpty()) {
+                    myNode n = queue.pop();
+                    ArrayList<Node> neighbors = neo4j.getNeighborsNodeList(n.id);
 
-                            //Todo: add the condition to decide whether to add the node to this cluster
-                            if (!visited_nodes.containsKey(n_node_id)) {
-                                if (can_add_to_queue) {
-                                    myNode next_node = new myNode(n_node_id, neighbor_node, sorted_coefficient.get(n_node_id));
-                                    cluster.addToCluster(n_node_id);
-                                    visited_nodes.put(n_node_id, next_node);
+                    boolean can_add_to_queue = !cluster.oversize();
+//                    boolean can_add_to_queue = true;
+
+                    for (Node neighbor_node : neighbors) {
+
+                        long n_node_id = neighbor_node.getId();
+                        myNode next_node;
+
+                        if (!visited_nodes.containsKey(n_node_id)) {
+                            if (can_add_to_queue) {
+                                next_node = new myNode(n_node_id, neighbor_node, sorted_coefficient.get(n_node_id));
+                                cluster.addToCluster(n_node_id);
+                                visited_nodes.put(n_node_id, next_node);
+
+                                if (sorted_coefficient.get(n_node_id) != 1) {
                                     queue.add(next_node);
                                 }
+
+                            }
+
+
+                        } else if (visited_nodes.containsKey(n_node_id) && node_clusters.clusters.get(0).node_list.contains(n_node_id)) {
+                            next_node = visited_nodes.get(n_node_id);
+                            node_clusters.clusters.get(0).node_list.remove(n_node_id);
+                            cluster.addToCluster(n_node_id);
+
+                            if (sorted_coefficient.get(n_node_id) != 1) {
+                                queue.add(next_node);
                             }
                         }
                     }
+                }
 
-                    cluster.updateBorderList(neo4j);
-                    node_clusters.clusters.put(cluster.cluster_id, cluster);
-                    node_id = cluster.getRandomBorderNode();
-                    tx.success();
-                } while ();
+                cluster.updateBorderList(neo4j);
+                node_clusters.clusters.put(cluster.cluster_id, cluster);
+//                node_id = cluster.getRandomBorderNode();
+                tx.success();
             }
         }
 
         System.out.println("found # of clusters : " + node_clusters.clusters.size());
 
-//        node_clusters.clusters.forEach((k, v) -> v.updateBorderList(neo4j));
-        node_clusters.clusters.forEach((k, v) -> System.out.println(k + "  " + v.node_list.size() + "  " + v.getBorderList().size()));
+        node_clusters.clusters.forEach((k, v) -> v.updateBorderList(neo4j));
+
+        node_clusters.clusters.forEach((k, v) -> {
+            if (v.node_list.size() >= 100) {
+                System.out.println(k + "  " + v.node_list.size() + "  " + v.border_node_list.size());
+            }
+        });
+
+
+//        final int[] i = {0};
+//        node_clusters.clusters.forEach((k, v) -> {
+//            if (v.node_list.size() >= 100 && k!=0) {
+////                System.out.println(k + "  " + v.node_list.size() + "  " + v.getBorderList().size());
+//                v.node_list.forEach(node_id-> System.out.println(node_id+" "+ i[0]));
+//                i[0]++;
+//            }
+//        });
 
         return false;
     }

@@ -8,7 +8,8 @@ import java.util.*;
 
 public class NodeCluster {
     int cluster_id;
-    int max_size = 100;
+    int max_size = 300;
+
     HashSet<Long> node_list = new HashSet<>();
     HashSet<Long> border_node_list = new HashSet<>();
     private ArrayList<Long> list_b;
@@ -74,8 +75,8 @@ class NodeClusters {
 
     public NodeClusters() {
         //add a noise cluster to store the noise nodes
-        NodeCluster noise_cluster = new NodeCluster(-1);
-        this.clusters.put(-1, noise_cluster);
+        NodeCluster noise_cluster = new NodeCluster(0);
+        this.clusters.put(noise_cluster.cluster_id, noise_cluster);
 
     }
 
@@ -90,7 +91,7 @@ class NodeClusters {
     }
 
     public int getNextClusterID() {
-        return clusters.size() - 1;
+        return clusters.size();
     }
 }
 
