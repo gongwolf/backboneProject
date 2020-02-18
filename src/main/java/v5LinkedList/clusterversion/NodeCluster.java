@@ -8,7 +8,7 @@ import java.util.*;
 
 public class NodeCluster {
     int cluster_id;
-    int max_size = 300;
+    int max_size = 200;
 
     HashSet<Long> node_list = new HashSet<>();
     HashSet<Long> border_node_list = new HashSet<>();

@@ -157,27 +157,33 @@ public class clusterVersion {
 
         NodeClusters node_clusters = new NodeClusters();
 
-        HashMap<Long, Double> node_coefficient_list = getNodesCoefficientList();
-        HashMap<Long, Double> sorted_coefficient = CollectionOperations.sortHashMapByValue(node_coefficient_list);
+        HashMap<Long, NodeCoefficient> node_coefficient_list = getNodesCoefficientList();
+        HashMap<Long, NodeCoefficient> sorted_coefficient = CollectionOperations.sortHashMapByValue(node_coefficient_list);
 
 //        sorted_coefficient.forEach((k, v) -> System.out.println(k + "  " + v));
 
         System.out.println(sorted_coefficient.size());
-        for (Map.Entry<Long, Double> node_coeff : sorted_coefficient.entrySet()) {
-
-            long node_id = node_coeff.getKey();
-
-            if (node_coeff.getValue() == 1) {
-                node_clusters.clusters.get(0).addToCluster(node_id);
-            }
-
-            if (visited_nodes.containsKey(node_id)) {
-                continue;
-            }
-
+        for (Map.Entry<Long, NodeCoefficient> node_coeff : sorted_coefficient.entrySet()) {
             try (Transaction tx = this.neo4j.graphDB.beginTx()) {
 
-                double coefficient = sorted_coefficient.get(node_id);
+                long node_id = node_coeff.getKey();
+
+
+                if (visited_nodes.containsKey(node_id)) {
+                    continue;
+                }
+                if (node_coeff.getValue().getNumberOfTwoHopNeighbors() <= 4) {
+                    myNode next_node = new myNode(node_id, this.neo4j.graphDB.getNodeById(node_id), sorted_coefficient.get(node_id).coefficient);
+                    visited_nodes.put(node_id, next_node);
+                    node_clusters.clusters.get(0).addToCluster(node_id);
+                    continue;
+                }
+                if (node_clusters.isInClusters(node_id)) {
+                    continue;
+                }
+
+
+                double coefficient = sorted_coefficient.get(node_id).coefficient;
 
                 NodeCluster cluster = new NodeCluster(node_clusters.getNextClusterID());
 
@@ -201,26 +207,32 @@ public class clusterVersion {
                         long n_node_id = neighbor_node.getId();
                         myNode next_node;
 
-                        if (!visited_nodes.containsKey(n_node_id)) {
-                            if (can_add_to_queue) {
-                                next_node = new myNode(n_node_id, neighbor_node, sorted_coefficient.get(n_node_id));
-                                cluster.addToCluster(n_node_id);
-                                visited_nodes.put(n_node_id, next_node);
+                        if (node_clusters.clusters.get(0).node_list.contains(n_node_id)) {
 
-                                if (sorted_coefficient.get(n_node_id) != 1) {
-                                    queue.add(next_node);
-                                }
-
-                            }
-
-
-                        } else if (visited_nodes.containsKey(n_node_id) && node_clusters.clusters.get(0).node_list.contains(n_node_id)) {
                             next_node = visited_nodes.get(n_node_id);
                             node_clusters.clusters.get(0).node_list.remove(n_node_id);
                             cluster.addToCluster(n_node_id);
+                            NodeCoefficient n_coff = sorted_coefficient.get(n_node_id);
 
-                            if (sorted_coefficient.get(n_node_id) != 1) {
+                            if (n_coff.getNumberOfTwoHopNeighbors() > 4) {
                                 queue.add(next_node);
+                            }
+                        }
+
+                        if (node_clusters.isInClusters(n_node_id)) {
+                            continue;
+                        }
+
+                        if (!visited_nodes.containsKey(n_node_id)) {
+                            next_node = new myNode(n_node_id, neighbor_node, sorted_coefficient.get(n_node_id).coefficient);
+                            cluster.addToCluster(n_node_id);
+                            visited_nodes.put(n_node_id, next_node);
+
+                            if (can_add_to_queue) {
+                                NodeCoefficient n_coff = sorted_coefficient.get(n_node_id);
+                                if (n_coff.getNumberOfTwoHopNeighbors() > 4) {
+                                    queue.add(next_node);
+                                }
                             }
                         }
                     }
@@ -238,13 +250,13 @@ public class clusterVersion {
         node_clusters.clusters.forEach((k, v) -> v.updateBorderList(neo4j));
 
         node_clusters.clusters.forEach((k, v) -> {
-            if (v.node_list.size() >= 100) {
+            if (v.node_list.size() >= 0) {
                 System.out.println(k + "  " + v.node_list.size() + "  " + v.border_node_list.size());
             }
         });
 
         node_clusters.clusters.forEach((k, v) -> {
-            if (v.node_list.size() >= 100 && k!=0) {
+            if (v.node_list.size() >= 100 && k != 0) {
                 v.border_node_list.forEach(b_id -> System.out.println(b_id));
             }
         });
@@ -252,11 +264,11 @@ public class clusterVersion {
 
         final int[] i = {0};
         node_clusters.clusters.forEach((k, v) -> {
-            if (v.node_list.size() >= 100 && k != 0) {
+//            if (v.node_list.size() >= 100 && k != 0) {
 //                System.out.println(k + "  " + v.node_list.size() + "  " + v.getBorderList().size());
-                v.node_list.forEach(node_id -> System.out.println(node_id + " " + i[0]));
-                i[0]++;
-            }
+            v.node_list.forEach(node_id -> System.out.println(node_id + " " + i[0]));
+            i[0]++;
+//            }
         });
 
         return false;
@@ -475,8 +487,9 @@ public class clusterVersion {
         }
     }
 
-    public HashMap<Long, Double> getNodesCoefficientList() {
-        HashMap<Long, Double> nodes_coefficient_list = new HashMap<>();
+    public HashMap<Long, NodeCoefficient> getNodesCoefficientList() {
+
+        HashMap<Long, NodeCoefficient> nodes_coefficient_list = new HashMap<>();
         try (Transaction tx = graphdb.beginTx()) {
 
             ResourceIterator<Node> nodes_iter = graphdb.getAllNodes().iterator();
@@ -513,16 +526,16 @@ public class clusterVersion {
                 double coefficient2 = 1.0 * num_connected_one_with_sec_neighbors / (neighbors.size() * (neighbors.size() - 1));
                 double coefficient3 = 1.0 * num_connected_sec_neighbors / (second_neighbors.size() * (second_neighbors.size() - 1));
 
-                coefficient1 = Double.isNaN(coefficient1) ? -1 : coefficient1;
-                coefficient2 = Double.isNaN(coefficient2) ? -1 : coefficient2;
-                coefficient3 = Double.isNaN(coefficient3) ? -1 : coefficient3;
+                coefficient1 = Double.isNaN(coefficient1) ? 1 : coefficient1;
+                coefficient2 = Double.isNaN(coefficient2) ? 1 : 1 - coefficient2; // the lower the better.
+                coefficient3 = Double.isNaN(coefficient3) ? 1 : coefficient3;
 
 //                if (coefficient1 != -1 && coefficient2 != -1 && coefficient3 != -1) {
 //                    System.out.println(c_node.getId() + "  " + c_node.getDegree(Direction.BOTH) + "  " + coefficient1 + "  " + num_connected_one_with_sec_neighbors + " "
 //                            + neighbors.size() + " " + second_neighbors.size() + " " + coefficient3 + "   " + coefficient2);
 //                }
-
-                nodes_coefficient_list.put(c_node.getId(), 1 - coefficient2);
+                NodeCoefficient n_coff = new NodeCoefficient(coefficient2, neighbors.size(), second_neighbors.size());
+                nodes_coefficient_list.put(c_node.getId(), n_coff);
             }
 
             tx.success();
