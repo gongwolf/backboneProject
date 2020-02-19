@@ -57,10 +57,10 @@ public class ClusterSpanningTree {
      * each node whose root is the node id
      */
     private void initialization() {
-        System.out.println(neo4j.DB_PATH);
+//        System.out.println(neo4j.DB_PATH);
         long nn = this.N_nodes.size();
         this.rels = new HashSet<>(neo4j.getEdges(this.N_nodes));
-        System.out.println("number of nodes :" + nn + "   number of edges :" + rels.size());
+//        System.out.println("number of nodes :" + nn + "   number of edges :" + rels.size());
 
         this.N = (int) nn;
         this.E = (int) (nn - 1);
@@ -78,16 +78,16 @@ public class ClusterSpanningTree {
 
     public String EulerTourStringWiki() {
         KruskalMST();
-        System.out.println("number of nodes in the sp tree :" + this.N_nodes.size());
-        System.out.println("number of component :" + this.connect_component_number);
-        System.out.println("number of rels in sp :" + this.SpTree.size());
-        System.out.println("Finished the calling of the KruskalMST() function");
-        long start_euler_finding = System.currentTimeMillis();
+//        System.out.println("number of nodes in the sp tree :" + this.N_nodes.size());
+//        System.out.println("number of component :" + this.connect_component_number);
+//        System.out.println("number of rels in sp :" + this.SpTree.size());
+//        System.out.println("Finished the calling of the KruskalMST() function");
+//        long start_euler_finding = System.currentTimeMillis();
         FindEulerTourStringWiki();
-        long end_euler_finding = System.currentTimeMillis();
-        System.out.println("There are " + this.ettree.n + " extended Relationship in the linked list et tree");
-        System.out.println("Finished the calling of the elurtourString() function in " + (end_euler_finding - start_euler_finding) + " ms");
-        System.out.println("======================================================================================");
+//        long end_euler_finding = System.currentTimeMillis();
+//        System.out.println("There are " + this.ettree.n + " extended Relationship in the linked list et tree");
+//        System.out.println("Finished the calling of the elurtourString() function in " + (end_euler_finding - start_euler_finding) + " ms");
+//        System.out.println("======================================================================================");
         return null;
     }
 

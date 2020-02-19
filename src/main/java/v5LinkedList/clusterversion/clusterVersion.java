@@ -22,7 +22,7 @@ public class clusterVersion {
     private GraphDatabaseService graphdb;
     private long cn; //number of graph nodes
     private long numberOfEdges; // number of edges ;
-    private DynamicForests dforests;
+    //    private DynamicForests dforests;
     private double percentage;
     public ProgramProperty prop = new ProgramProperty();
     public String city_name;
@@ -75,8 +75,9 @@ public class clusterVersion {
             //handle the degrees pairs
             nodes_deleted = handleUpperLevelGraph(upperlevel);
 
+            currentLevel = upperlevel;
         } while (nodes_deleted);
-//        } while (cn != 0 && threshold != null);
+//        } while (currentLevel != 2);
 
         System.out.println("finish the index finding, the current level is " + currentLevel + "  with number of nodes :" + cn);
     }
@@ -103,19 +104,21 @@ public class clusterVersion {
         if (currentLevel == 1) {
             getDegreePairs();
             deletedEdges.addAll(removeSingletonEdges(neo4j, deletedEdges));
-            dforests = new DynamicForests();
-            SpanningTree sptree_base = new SpanningTree(neo4j, true);
-            System.out.println("=======================================");
-            sptree_base.EulerTourStringWiki(0);
-            this.dforests.createBase(sptree_base);
+//            dforests = new DynamicForests();
+//            SpanningTree sptree_base = new SpanningTree(neo4j, true);
+//            System.out.println("=======================================");
+//            sptree_base.EulerTourStringWiki(0);
+//            this.dforests.createBase(sptree_base);
             System.out.println("Finish finding the level 0 spanning tree..........");
         } else {
-            updateNeb4jConnectorInDynamicForests();
+//            updateNeb4jConnectorInDynamicForests();
             System.out.println("Updated the neo4j database object ................");
         }
 
         System.out.println("#####");
 
+        String textFilePath = prefix + folder_name + "/non-single/level" + currentLevel + "/";
+        neo4j.saveGraphToTextFormation(textFilePath);
 
         boolean deleted = removeLowerDegreePairEdgesByThreshold(deletedNodes, deletedEdges);
 
@@ -123,18 +126,18 @@ public class clusterVersion {
         long post_n = neo4j.getNumberofNodes();
         long post_e = neo4j.getNumberofEdges();
         System.out.println("~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
-        String textFilePath = prefix + folder_name + "/non-single/level" + currentLevel + "/";
-        neo4j.saveGraphToTextFormation(textFilePath);
+
 
         getDegreePairs();
         deletedEdges.addAll(removeSingletonEdgesInForests(deletedNodes));
         long numberOfNodes = neo4j.getNumberofNodes();
         post_n = neo4j.getNumberofNodes();
         post_e = neo4j.getNumberofEdges();
-//
+
         textFilePath = prefix + folder_name + "/level" + currentLevel + "/";
+        System.out.println(textFilePath);
         neo4j.saveGraphToTextFormation(textFilePath);
-//
+
         System.out.println(" ~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + deletedEdges.size());
         System.out.println("Add the deleted edges of the level " + currentLevel + "  to the deletedEdges_layer structure. ");
         neo4j.closeDB();
@@ -148,6 +151,7 @@ public class clusterVersion {
         if (deleted) {
             this.deletedEdges_layer.add(deletedEdges);
         }
+
         return deleted;
     }
 
@@ -160,7 +164,7 @@ public class clusterVersion {
         HashMap<Long, NodeCoefficient> node_coefficient_list = getNodesCoefficientList();
         HashMap<Long, NodeCoefficient> sorted_coefficient = CollectionOperations.sortHashMapByValue(node_coefficient_list);
 
-//        sorted_coefficient.forEach((k, v) -> System.out.println(k + "  " + v));
+//        sorted_coefficient.forEach((k, v) -> System.out.println(k + "  " + v.coefficient));
 
         System.out.println(sorted_coefficient.size());
         for (Map.Entry<Long, NodeCoefficient> node_coeff : sorted_coefficient.entrySet()) {
@@ -173,7 +177,7 @@ public class clusterVersion {
                     continue;
                 }
 
-                if (node_coeff.getValue().getNumberOfTwoHopNeighbors() <= 4 || node_coeff.getValue().coefficient == 1) {
+                if (node_coeff.getValue().getNumberOfTwoHopNeighbors() <= 4) {
                     myNode next_node = new myNode(node_id, this.neo4j.graphDB.getNodeById(node_id), sorted_coefficient.get(node_id).coefficient);
                     visited_nodes.put(node_id, next_node);
                     node_clusters.clusters.get(0).addToCluster(node_id);
@@ -215,7 +219,7 @@ public class clusterVersion {
                             cluster.addToCluster(n_node_id);
                             NodeCoefficient n_coff = sorted_coefficient.get(n_node_id);
 
-                            if (node_coeff.getValue().getNumberOfTwoHopNeighbors() > 4 && n_coff.coefficient != 1) {
+                            if (node_coeff.getValue().getNumberOfTwoHopNeighbors() > 4) {
                                 queue.add(next_node);
                             }
                         }
@@ -231,7 +235,7 @@ public class clusterVersion {
 
                             if (can_add_to_queue) {
                                 NodeCoefficient n_coff = sorted_coefficient.get(n_node_id);
-                                if (node_coeff.getValue().getNumberOfTwoHopNeighbors() > 4 && n_coff.coefficient != 1) {
+                                if (node_coeff.getValue().getNumberOfTwoHopNeighbors() > 4) {
                                     queue.add(next_node);
                                 }
                             }
@@ -250,34 +254,63 @@ public class clusterVersion {
 
         node_clusters.clusters.forEach((k, v) -> v.updateBorderList(neo4j));
 
-        node_clusters.clusters.forEach((k, v) -> {
-            if (v.node_list.size() >= 0) {
-                System.out.println(k + "  " + v.node_list.size() + "  " + v.border_node_list.size());
-            }
-        });
+//        node_clusters.clusters.forEach((k, v) -> {
+//            if (v.node_list.size() >= 0) {
+//                System.out.println(k + "  " + v.node_list.size() + "  " + v.border_node_list.size());
+//            }
+//        });
+//
+//        node_clusters.clusters.forEach((k, v) -> {
+//            if (v.node_list.size() >= 100 && k != 0) {
+//                v.border_node_list.forEach(b_id -> System.out.println(b_id));
+//            }
+//        });
+//
+//
+//        final int[] i = {0};
+//        node_clusters.clusters.forEach((k, v) -> {
+//            if (v.node_list.size() >= 100 && k != 0) {
+//                v.node_list.forEach(node_id -> System.out.println(node_id + " " + i[0]));
+//                i[0]++;
+//            }
+//        });
+
+        System.out.println(neo4j.getNumberofNodes() + "   " + neo4j.getNumberofEdges());
 
         node_clusters.clusters.forEach((k, v) -> {
             if (v.node_list.size() >= 100 && k != 0) {
-                v.border_node_list.forEach(b_id -> System.out.println(b_id));
-            }
-        });
-
-
-        final int[] i = {0};
-        node_clusters.clusters.forEach((k, v) -> {
-            if (v.node_list.size() >= 100 && k != 0) {
-                v.node_list.forEach(node_id -> System.out.println(node_id + " " + i[0]));
-                i[0]++;
-            }
-        });
-
-        node_clusters.clusters.forEach((k, v) -> {
-            if (v.node_list.size() >= 100 && k != 0) {
+//                System.out.println("=================================================================================");
+//                System.out.println("Cluster :"+k+"  "+v.node_list.size());
                 NodeCluster cluster = v;
                 ClusterSpanningTree tree = new ClusterSpanningTree(neo4j, true, v.node_list);
+                tree.EulerTourStringWiki();
+                try (Transaction tx = neo4j.graphDB.beginTx()) {
+//                    for (long rel_id : tree.SpTree) {
+//                        Relationship rel = neo4j.graphDB.getRelationshipById(rel_id);
+//                        double start_node_lat = (double) rel.getStartNode().getProperty("lat");
+//                        double start_node_lng = (double) rel.getStartNode().getProperty("log");
+//                        double end_node_lat = (double) rel.getEndNode().getProperty("lat");
+//                        double end_node_lng = (double) rel.getEndNode().getProperty("log");
+//                        System.out.println(start_node_lat + " " + start_node_lng + " " + end_node_lat + " " + end_node_lng);
+//                    }
+
+
+                    for (long rel_id : tree.rels) {
+                        Relationship rel = neo4j.graphDB.getRelationshipById(rel_id);
+                        if (!tree.SpTree.contains(rel.getId())) {
+                            deleteRelationshipFromDB(rel, deletedNodes);
+                            deletedEdges.add(rel.getId());
+                        }
+                    }
+
+                    tx.success();
+                }
             }
         });
-        return false;
+
+        System.out.println(neo4j.getNumberofNodes() + "   " + neo4j.getNumberofEdges());
+
+        return !deletedEdges.isEmpty();
     }
 
     private void initLevel() {
@@ -294,7 +327,7 @@ public class clusterVersion {
         numberOfEdges = neo4j.getNumberofEdges();
         neo4j.closeDB();
         //initialize the data structure that store multi-layer spanning forest.
-        this.dforests = new DynamicForests();
+//        this.dforests = new DynamicForests();
         System.out.println("Initialization: there are " + cn + " nodes and " + numberOfEdges + " edges");
     }
 
@@ -421,21 +454,21 @@ public class clusterVersion {
                         sum_single += e.getValue().size();
                         for (Long rel_id : e.getValue()) {
                             Relationship r = graphdb.getRelationshipById(rel_id);
-                            int edge_level = (int) r.getProperty("level");
-
-                            for (int l = edge_level; l >= 0; l--) {
-                                int sp_idx = this.dforests.dforests.get(l).findTreeIndex(r);
-
-                                SpanningTree sp_tree = this.dforests.dforests.get(l).trees.get(sp_idx);
-                                int remove_case = sp_tree.removeSingleEdge(r.getId());
-
-                                if (remove_case == 1) {
-                                    this.dforests.dforests.get(l).trees.remove(sp_idx);
-                                } else if (remove_case == 0) {
-                                    System.out.println("Remove single edge error !!!!!!!!!!!!!!!!!!!!!");
-                                    System.exit(0);
-                                }
-                            }
+//                            int edge_level = (int) r.getProperty("level");
+//
+//                            for (int l = edge_level; l >= 0; l--) {
+//                                int sp_idx = this.dforests.dforests.get(l).findTreeIndex(r);
+//
+//                                SpanningTree sp_tree = this.dforests.dforests.get(l).trees.get(sp_idx);
+//                                int remove_case = sp_tree.removeSingleEdge(r.getId());
+//
+//                                if (remove_case == 1) {
+//                                    this.dforests.dforests.get(l).trees.remove(sp_idx);
+//                                } else if (remove_case == 0) {
+//                                    System.out.println("Remove single edge error !!!!!!!!!!!!!!!!!!!!!");
+//                                    System.exit(0);
+//                                }
+//                            }
 
                             deleteRelationshipFromDB(r, deletedNodes);
                             deletedEdges.add(r.getId());
@@ -485,13 +518,13 @@ public class clusterVersion {
         }
     }
 
-    private void updateNeb4jConnectorInDynamicForests() {
-        for (Map.Entry<Integer, SpanningForests> sp_forests_e : this.dforests.dforests.entrySet()) {
-            for (SpanningTree sp_tree : sp_forests_e.getValue().trees) {
-                sp_tree.neo4j = this.neo4j;
-            }
-        }
-    }
+//    private void updateNeb4jConnectorInDynamicForests() {
+//        for (Map.Entry<Integer, SpanningForests> sp_forests_e : this.dforests.dforests.entrySet()) {
+//            for (SpanningTree sp_tree : sp_forests_e.getValue().trees) {
+//                sp_tree.neo4j = this.neo4j;
+//            }
+//        }
+//    }
 
     public HashMap<Long, NodeCoefficient> getNodesCoefficientList() {
 
