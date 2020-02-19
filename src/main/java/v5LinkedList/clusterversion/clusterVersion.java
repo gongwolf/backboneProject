@@ -172,7 +172,8 @@ public class clusterVersion {
                 if (visited_nodes.containsKey(node_id)) {
                     continue;
                 }
-                if (node_coeff.getValue().getNumberOfTwoHopNeighbors() <= 4) {
+
+                if (node_coeff.getValue().getNumberOfTwoHopNeighbors() <= 4 || node_coeff.getValue().coefficient == 1) {
                     myNode next_node = new myNode(node_id, this.neo4j.graphDB.getNodeById(node_id), sorted_coefficient.get(node_id).coefficient);
                     visited_nodes.put(node_id, next_node);
                     node_clusters.clusters.get(0).addToCluster(node_id);
@@ -214,7 +215,7 @@ public class clusterVersion {
                             cluster.addToCluster(n_node_id);
                             NodeCoefficient n_coff = sorted_coefficient.get(n_node_id);
 
-                            if (n_coff.getNumberOfTwoHopNeighbors() > 4) {
+                            if (node_coeff.getValue().getNumberOfTwoHopNeighbors() > 4 && n_coff.coefficient != 1) {
                                 queue.add(next_node);
                             }
                         }
@@ -230,7 +231,7 @@ public class clusterVersion {
 
                             if (can_add_to_queue) {
                                 NodeCoefficient n_coff = sorted_coefficient.get(n_node_id);
-                                if (n_coff.getNumberOfTwoHopNeighbors() > 4) {
+                                if (node_coeff.getValue().getNumberOfTwoHopNeighbors() > 4 && n_coff.coefficient != 1) {
                                     queue.add(next_node);
                                 }
                             }
@@ -264,13 +265,18 @@ public class clusterVersion {
 
         final int[] i = {0};
         node_clusters.clusters.forEach((k, v) -> {
-//            if (v.node_list.size() >= 100 && k != 0) {
-//                System.out.println(k + "  " + v.node_list.size() + "  " + v.getBorderList().size());
-            v.node_list.forEach(node_id -> System.out.println(node_id + " " + i[0]));
-            i[0]++;
-//            }
+            if (v.node_list.size() >= 100 && k != 0) {
+                v.node_list.forEach(node_id -> System.out.println(node_id + " " + i[0]));
+                i[0]++;
+            }
         });
 
+        node_clusters.clusters.forEach((k, v) -> {
+            if (v.node_list.size() >= 100 && k != 0) {
+                NodeCluster cluster = v;
+                ClusterSpanningTree tree = new ClusterSpanningTree(neo4j, true, v.node_list);
+            }
+        });
         return false;
     }
 
@@ -544,7 +550,8 @@ public class clusterVersion {
         return nodes_coefficient_list;
     }
 
-    private int getNumberOfConnectedNeighbors(HashSet<Node> neighbors, HashSet<Node> second_neighbors, Neo4jDB neo4j) {
+    private int getNumberOfConnectedNeighbors
+            (HashSet<Node> neighbors, HashSet<Node> second_neighbors, Neo4jDB neo4j) {
         int connections = 0;
 
         ArrayList<Node> n_list = new ArrayList<>(neighbors);

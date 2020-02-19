@@ -729,27 +729,3 @@ public class SpanningTree {
     }
 }
 
-class UFnode {
-    long parentID;
-    long nodeID;
-    int rank;
-    int size; //size of the subtree, include current node;
-
-    public UFnode(long nodeID) {
-        this.nodeID = nodeID;
-        this.parentID = nodeID;
-        this.rank = 0;
-        this.size = 1;
-    }
-
-    @Override
-    public String toString() {
-        return "UFnode{" +
-                "parentID=" + parentID +
-                ", nodeID=" + nodeID +
-                ", rank=" + rank +
-                ", size=" + size +
-                '}';
-    }
-}
-

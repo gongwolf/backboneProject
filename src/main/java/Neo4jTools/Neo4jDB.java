@@ -12,7 +12,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Neo4jDB {
     public GraphDatabaseService graphDB;
@@ -324,5 +323,23 @@ public class Neo4jDB {
             tx.success();
         }
         return node_list;
+    }
+
+    public HashSet<Long> getEdges(HashSet<Long> nodes_list) {
+        HashSet<Long> result = new HashSet<>();
+        try (Transaction tx = this.graphDB.beginTx()) {
+            for (long n : nodes_list) {
+                Iterator<Relationship> r = this.graphDB.getNodeById(n).getRelationships(Line.Linked, Direction.BOTH).iterator();
+                while (r.hasNext()) {
+                    Relationship rel = r.next();
+                    if (nodes_list.contains(rel.getStartNodeId()) && nodes_list.contains(rel.getEndNodeId())) {
+                        result.add(rel.getId());
+                    }
+                }
+
+            }
+            tx.success();
+        }
+        return result;
     }
 }
