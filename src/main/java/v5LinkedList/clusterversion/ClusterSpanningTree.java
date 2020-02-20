@@ -83,7 +83,7 @@ public class ClusterSpanningTree {
 //        System.out.println("number of rels in sp :" + this.SpTree.size());
 //        System.out.println("Finished the calling of the KruskalMST() function");
 //        long start_euler_finding = System.currentTimeMillis();
-        FindEulerTourStringWiki();
+//        FindEulerTourStringWiki();
 //        long end_euler_finding = System.currentTimeMillis();
 //        System.out.println("There are " + this.ettree.n + " extended Relationship in the linked list et tree");
 //        System.out.println("Finished the calling of the elurtourString() function in " + (end_euler_finding - start_euler_finding) + " ms");

@@ -2,13 +2,14 @@ package v5LinkedList.clusterversion;
 
 import Neo4jTools.Neo4jDB;
 import org.neo4j.graphdb.Transaction;
+import sun.font.DelegatingShape;
 
 import java.util.*;
 
 
 public class NodeCluster {
     int cluster_id;
-    int max_size = 200;
+    int max_size = 300;
 
     HashSet<Long> node_list = new HashSet<>();
     HashSet<Long> border_node_list = new HashSet<>();
@@ -68,6 +69,20 @@ public class NodeCluster {
         Random r = new Random();
         return r.nextInt((max - min) + 1) + min;
     }
+
+    public boolean oversize(int cluster_size) {
+        double threshold = Math.max(cluster_size, max_size);
+        return this.node_list.size() >= threshold;
+    }
+
+    public void addAll(NodeCluster other) {
+        cluster_id = other.cluster_id;
+        max_size = other.max_size;
+
+        node_list = new HashSet<>(other.node_list);
+        border_node_list = new HashSet<>(other.border_node_list);
+        list_b = new ArrayList<>(other.list_b);
+    }
 }
 
 class NodeClusters {
@@ -92,6 +107,15 @@ class NodeClusters {
 
     public int getNextClusterID() {
         return clusters.size();
+    }
+
+    public int getClusterIdByRelId(Long rel_id) {
+        for (int cluster_id : clusters.keySet()) {
+            if (this.clusters.get(cluster_id).isInCluster(rel_id)) {
+                return cluster_id;
+            }
+        }
+        return -1;
     }
 }
 
