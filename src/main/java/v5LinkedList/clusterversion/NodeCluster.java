@@ -117,6 +117,10 @@ class NodeClusters {
         }
         return -1;
     }
+
+    public int getNumberOfClusters() {
+        return this.clusters.size();
+    }
 }
 
 

@@ -6,10 +6,8 @@ import DataStructure.RelationshipExt;
 import Neo4jTools.Neo4jDB;
 import configurations.ProgramProperty;
 import javafx.util.Pair;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.*;
+import v5LinkedList.PairComparator;
 import v5LinkedList.UFnode;
 
 import java.util.*;
@@ -201,7 +199,7 @@ public class ClusterSpanningTree {
                     first.put(sid, edge_pair);
                 }
             }
-            
+
             Pair<Long, Long> firstEdge = edgeList.get(0);
             Pair<Long, Long> currentEdge = edgeList.get(0);
             do {
@@ -232,5 +230,39 @@ public class ClusterSpanningTree {
             } while (firstEdge != currentEdge);
             tx.success();
         }
+    }
+
+    public TreeMap<Pair<Integer, Integer>, ArrayList<Long>> getDegreepair() {
+        TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
+        try (Transaction tx = this.neo4j.graphDB.beginTx()) {
+
+            for (long r_id: this.rels) {
+                Relationship rels = this.neo4j.graphDB.getRelationshipById(r_id);
+                int start_r = rels.getStartNode().getDegree(Direction.BOTH);
+                int end_r = rels.getEndNode().getDegree(Direction.BOTH);
+
+                if (start_r > end_r) {
+                    int t = end_r;
+                    end_r = start_r;
+                    start_r = t;
+                }
+
+                Long rel_id = rels.getId();
+                Pair<Integer, Integer> p = new Pair<>(start_r, end_r);
+                if (degree_pairs.containsKey(p)) {
+                    ArrayList<Long> a = degree_pairs.get(p);
+                    a.add(rel_id);
+                    degree_pairs.put(p, a);
+                } else {
+                    ArrayList<Long> a = new ArrayList<>();
+                    a.add(rel_id);
+                    degree_pairs.put(p, a);
+                }
+            }
+
+            tx.success();
+        }
+
+        return degree_pairs;
     }
 }
