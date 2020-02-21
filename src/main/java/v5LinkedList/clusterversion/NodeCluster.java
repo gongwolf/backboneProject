@@ -14,6 +14,7 @@ public class NodeCluster {
     HashSet<Long> node_list = new HashSet<>();
     HashSet<Long> border_node_list = new HashSet<>();
     private ArrayList<Long> list_b;
+    private HashSet<Long> rels = new HashSet<>();
 
     public NodeCluster(int id) {
         this.cluster_id = id;
@@ -82,6 +83,10 @@ public class NodeCluster {
         node_list = new HashSet<>(other.node_list);
         border_node_list = new HashSet<>(other.border_node_list);
         list_b = new ArrayList<>(other.list_b);
+    }
+
+    public void addRels(HashSet<Long> rels) {
+        this.rels.addAll(rels);
     }
 }
 
