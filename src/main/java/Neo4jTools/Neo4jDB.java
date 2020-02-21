@@ -336,7 +336,6 @@ public class Neo4jDB {
                         result.add(rel.getId());
                     }
                 }
-
             }
             tx.success();
         }

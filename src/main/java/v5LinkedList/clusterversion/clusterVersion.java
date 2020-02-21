@@ -27,10 +27,10 @@ public class clusterVersion {
     //    public String base_db_name = "sub_ny_USA";
     //    public String base_db_name = "col_USA";
 //
-    public String base_db_name = "sub_ny_USA_50K";
-    public String folder_name = "busline_sub_graph_NY_50K";
-//    public String base_db_name = "sub_ny_USA";
-//    public String folder_name = "busline_sub_graph_NY";
+//    public String base_db_name = "sub_ny_USA_50K";
+//    public String folder_name = "busline_sub_graph_NY_50K";
+    public String base_db_name = "sub_ny_USA";
+    public String folder_name = "busline_sub_graph_NY";
 
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
@@ -153,14 +153,14 @@ public class clusterVersion {
 
             deletedEdges.addAll(sub_step_deletedEdges);
             deletedNodes.addAll(sub_step_deletedNodes);
-
-            checkIndexFolderExisted(currentLevel - 1);
-
-            for (Map.Entry<Integer, NodeCluster> cluster_entry : process_clusters.clusters.entrySet()) {
-                int cluster_id = cluster_entry.getKey();
-                NodeCluster cluster = cluster_entry.getValue();
-                indexBuildAtLevel(currentLevel, sub_step_deletedEdges, cluster);
-            }
+//
+//            checkIndexFolderExisted(currentLevel - 1);
+//
+//            for (Map.Entry<Integer, NodeCluster> cluster_entry : process_clusters.clusters.entrySet()) {
+//                int cluster_id = cluster_entry.getKey();
+//                NodeCluster cluster = cluster_entry.getValue();
+//                indexBuildAtLevel(currentLevel, sub_step_deletedEdges, cluster);
+//            }
 
         } while (deleted && deletedEdges.size() <= this.percentage * this.numberOfEdges);
 
@@ -254,29 +254,27 @@ public class clusterVersion {
         NodeClusters node_clusters = new NodeClusters();
 
         HashMap<Long, NodeCoefficient> node_coefficient_list = getNodesCoefficientList();
+
 //        HashMap<Long, NodeCoefficient> sorted_coefficient = CollectionOperations.sortHashMapByValue(node_coefficient_list);
 
 //        sorted_coefficient.forEach((k, v) -> System.out.println(k + "  " + v.coefficient));
 
         System.out.println(node_coefficient_list.size());
         for (Map.Entry<Long, NodeCoefficient> node_coeff : node_coefficient_list.entrySet()) {
-            try (Transaction tx = this.neo4j.graphDB.beginTx()) {
 
+            try (Transaction tx = this.neo4j.graphDB.beginTx()) {
                 long node_id = node_coeff.getKey();
 
-//
-//                if (visited_nodes.containsKey(node_id)) {
-//                    continue;
-//                }
-
-                if (node_coeff.getValue().getNumberOfTwoHopNeighbors() <= 4) {
-                    myNode next_node = new myNode(node_id, this.neo4j.graphDB.getNodeById(node_id), node_coefficient_list.get(node_id).coefficient);
-                    visited_nodes.put(node_id, next_node);
-                    node_clusters.clusters.get(0).addToCluster(node_id);
+                if (node_clusters.isInClusters(node_id)) {
                     continue;
                 }
 
-                if (node_clusters.isInClusters(node_id)) {
+                if (node_coeff.getValue().getNumberOfTwoHopNeighbors() <= 4) {
+                    if (!visited_nodes.containsKey(node_id)) {
+                        myNode next_node = new myNode(node_id, this.neo4j.graphDB.getNodeById(node_id), node_coefficient_list.get(node_id).coefficient);
+                        visited_nodes.put(node_id, next_node);
+                    }
+                    node_clusters.clusters.get(0).addToCluster(node_id);
                     continue;
                 }
 
@@ -291,46 +289,43 @@ public class clusterVersion {
 
                 queue.add(m_node);
                 visited_nodes.put(node_id, m_node);
-                cluster.addToCluster(m_node.id);
 
                 while (!queue.isEmpty()) {
                     myNode n = queue.pop();
+
+                    if (node_clusters.clusters.get(0).node_list.contains(n.id)) { // change the label of the node from noise to label c
+                        node_clusters.clusters.get(0).node_list.remove(n.id);
+                        cluster.addToCluster(n.id);
+                    } else if (node_clusters.isInClusters(n.id) || cluster.isInCluster(n.id)) { // if n already has label
+                        continue;
+                    } else {
+                        cluster.addToCluster(n.id);
+                    }
+
                     ArrayList<Node> neighbors = neo4j.getNeighborsNodeList(n.id);
 
                     boolean can_add_to_queue = !cluster.oversize(this.min_size);
-//                    boolean can_add_to_queue = true;
 
                     for (Node neighbor_node : neighbors) {
-
-                        long n_node_id = neighbor_node.getId();
-                        myNode next_node;
-
-                        /**
-                         * The noise not can gurantee don't need to put back to the queue
-                         */
-                        if (node_clusters.clusters.get(0).node_list.contains(n_node_id)) {
-                            node_clusters.clusters.get(0).node_list.remove(n_node_id);
-                            cluster.addToCluster(n_node_id);
-                        } else if (node_clusters.isInClusters(n_node_id)) {
-                            continue;
-                        }
-
-                        next_node = new myNode(n_node_id, neighbor_node, node_coefficient_list.get(n_node_id).coefficient);
-                        cluster.addToCluster(n_node_id);
-                        visited_nodes.put(n_node_id, next_node);
-
                         if (can_add_to_queue) {
-                            NodeCoefficient n_coff = node_coefficient_list.get(n_node_id);
-                            if (node_coeff.getValue().getNumberOfTwoHopNeighbors() > 4) {
+                            NodeCoefficient n_coff = node_coefficient_list.get(neighbor_node.getId());
+
+                            myNode next_node;
+                            if (visited_nodes.containsKey(neighbor_node.getId())) {
+                                next_node = visited_nodes.get(neighbor_node.getId());
+                            } else {
+                                next_node = new myNode(neighbor_node.getId(), neighbor_node, n_coff.coefficient);
+                                visited_nodes.put(next_node.id, next_node);
+                            }
+
+                            if (n_coff.getNumberOfTwoHopNeighbors() > 4) {
                                 queue.add(next_node);
                             }
                         }
                     }
                 }
 
-                cluster.updateBorderList(neo4j);
                 node_clusters.clusters.put(cluster.cluster_id, cluster);
-//                node_id = cluster.getRandomBorderNode();
                 tx.success();
             }
         }
@@ -339,11 +334,11 @@ public class clusterVersion {
 
         node_clusters.clusters.forEach((k, v) -> v.updateBorderList(neo4j));
 
-//        node_clusters.clusters.forEach((k, v) -> {
+        node_clusters.clusters.forEach((k, v) -> {
 //            if (v.node_list.size() >= this.min_size && k != 0) {
-//                System.out.println(k + "  " + v.node_list.size() + "  " + v.border_node_list.size());
+                System.out.println(k + "  " + v.node_list.size() + "  " + v.border_node_list.size());
 //            }
-//        });
+        });
 //
 //        node_clusters.clusters.forEach((k, v) -> {
 //            if (v.node_list.size() >= 100 && k != 0) {
@@ -359,6 +354,11 @@ public class clusterVersion {
 //                i[0]++;
 //            }
 //        });
+
+//        node_clusters.clusters.forEach((k, v) -> v.node_list.forEach(node_id -> System.out.println(node_id + " " + k)));
+//
+//
+//        System.exit(0);
 //
 //        final int[] i = {0};
 //        node_clusters.clusters.forEach((k, v) -> {
@@ -373,8 +373,6 @@ public class clusterVersion {
 
         System.out.println(neo4j.getNumberofNodes() + "   " + neo4j.getNumberofEdges());
 
-//        int threshold_t = threshold.getKey() + threshold.getValue();
-
         node_clusters.clusters.forEach((k, v) -> {
             if (v.node_list.size() >= this.min_size && k != 0) {
                 System.out.println("=================================================================================");
@@ -387,13 +385,6 @@ public class clusterVersion {
                 cluster.addAll(v);
                 cluster.addRels(tree.rels);
                 result_clusters.clusters.put(k, cluster);
-
-
-//                TreeMap<Pair<Integer, Integer>, ArrayList<Long>> cluster_degree_pair = tree.getDegreepair();
-//                for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> d : cluster_degree_pair.entrySet()) {
-//                    System.out.println(d.getKey() + "  :   " + d.getValue().size());
-//                }
-//                System.out.println("size of spanning tree : "+tree.SpTree.size()+" ---- removed "+(tree.rels.size()-tree.SpTree.size()));
 
                 try (Transaction tx = neo4j.graphDB.beginTx()) {
 
@@ -410,22 +401,8 @@ public class clusterVersion {
                     for (long rel_id : tree.rels) {
                         Relationship rel = neo4j.graphDB.getRelationshipById(rel_id);
                         if (!tree.SpTree.contains(rel.getId())) {
-                            int sd = rel.getStartNode().getDegree(); // the first number of the degree pair
-                            int ed = rel.getEndNode().getDegree(); // the second number of the degree pair
-                            int ct = sd + ed; //summation of the degree pair.
-
-//                            if (sd == 2 || ed == 2) {
-//                                continue;
-//                            }
-
-//
-//                            if ((ct < threshold_t) || (threshold_t == ct && sd < threshold.getKey()) ||
-//                                    (sd == threshold.getKey() && ed == threshold.getValue()) ||
-//                                    (ed == threshold.getKey() && sd == threshold.getValue())) {
-
                             deletedEdges.add(rel.getId());
                             deleteRelationshipFromDB(rel, deletedNodes);
-//                            }
                         }
                     }
 
@@ -453,7 +430,7 @@ public class clusterVersion {
         numberOfEdges = neo4j.getNumberofEdges();
         neo4j.closeDB();
 //        this.min_size = (int) (this.percentage * this.numberOfEdges);
-        this.min_size = 300;
+        this.min_size = 100;
         //initialize the data structure that store multi-layer spanning forest.
 //        this.dforests = new DynamicForests();
         System.out.println("Initialization: there are " + cn + " nodes and " + numberOfEdges + " edges" + "   " + this.min_size);
