@@ -13,8 +13,8 @@ public class NodeCluster {
 
     HashSet<Long> node_list = new HashSet<>();
     HashSet<Long> border_node_list = new HashSet<>();
-    private ArrayList<Long> list_b;
-    private HashSet<Long> rels = new HashSet<>();
+    public ArrayList<Long> list_b;
+    public HashSet<Long> rels = new HashSet<>();
 
     public NodeCluster(int id) {
         this.cluster_id = id;
@@ -33,6 +33,10 @@ public class NodeCluster {
     }
 
     public void updateBorderList(Neo4jDB neo4j) {
+
+        this.border_node_list.clear();
+        this.list_b.clear();
+
         try (Transaction tx = neo4j.graphDB.beginTx()) {
             for (long node_id : node_list) {
                 boolean connect_to_other_cluster = false;

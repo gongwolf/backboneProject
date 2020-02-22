@@ -122,6 +122,25 @@ public class path {
         return result;
     }
 
+    public ArrayList<path> expand(Neo4jDB neo4j, HashSet<Long> de, HashSet<Long> cluster_rels) {
+        ArrayList<path> result = new ArrayList<>();
+        try (Transaction tx = neo4j.graphDB.beginTx()) {
+            Iterable<Relationship> rels = neo4j.graphDB.getNodeById(this.endNode).getRelationships(Line.Linked, Direction.BOTH);
+            Iterator<Relationship> rel_Iter = rels.iterator();
+            while (rel_Iter.hasNext()) {
+                Relationship rel = rel_Iter.next();
+                if (de.contains(rel.getId()) && cluster_rels.contains(rel)) {
+                    path nPath = new path(this, rel);
+                    if (!nPath.hasCycle()) {
+                        result.add(nPath);
+                    }
+                }
+            }
+            tx.success();
+        }
+        return result;
+    }
+
     private boolean hasCycle() {
 //        Long nextNodeId = nodes.get(nodes.size() - 1);
 //        int occurrences = Collections.frequency(this.nodes, nextNodeId);

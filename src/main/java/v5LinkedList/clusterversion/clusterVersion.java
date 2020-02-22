@@ -2,16 +2,14 @@ package v5LinkedList.clusterversion;
 
 import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
+import Query.backbonePath;
 import configurations.ProgramProperty;
 import javafx.util.Pair;
 import org.apache.commons.io.FileUtils;
 import org.neo4j.graphdb.*;
 import v5LinkedList.*;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public class clusterVersion {
@@ -103,9 +101,14 @@ public class clusterVersion {
         HashSet<Long> deletedEdges = new HashSet<>();
         boolean deleted = false;
 
+        HashSet<Long> sub_step_deletedEdges = new HashSet<>(); // the deleted edges in this sub step
+        HashSet<Long> sub_step_deletedNodes = new HashSet<>(); // the deleted nodes in this sub step
+
         do {
-            HashSet<Long> sub_step_deletedEdges = new HashSet<>(); // the deleted edges in this sub step
-            HashSet<Long> sub_step_deletedNodes = new HashSet<>(); // the deleted nodes in this sub step
+
+            sub_step_deletedEdges.clear();
+            sub_step_deletedNodes.clear();
+
 
             if (currentLevel == 1) {
                 getDegreePairs();
@@ -154,22 +157,25 @@ public class clusterVersion {
             deletedEdges.addAll(sub_step_deletedEdges);
             deletedNodes.addAll(sub_step_deletedNodes);
 //
-//            checkIndexFolderExisted(currentLevel - 1);
+            int level = currentLevel - 1;
+            checkIndexFolderExisted(level);
 //
-//            for (Map.Entry<Integer, NodeCluster> cluster_entry : process_clusters.clusters.entrySet()) {
-//                int cluster_id = cluster_entry.getKey();
-//                NodeCluster cluster = cluster_entry.getValue();
-//                indexBuildAtLevel(currentLevel, sub_step_deletedEdges, cluster);
-//            }
+            for (Map.Entry<Integer, NodeCluster> cluster_entry : process_clusters.clusters.entrySet()) {
+                int cluster_id = cluster_entry.getKey();
+                NodeCluster cluster = cluster_entry.getValue();
+                indexBuildAtLevel(level, sub_step_deletedEdges, cluster);
+            }
 
-        } while (deleted && deletedEdges.size() <= this.percentage * this.numberOfEdges);
+        } while (deleted && deletedEdges.size() <= this.percentage * this.numberOfEdges && sub_step_deletedEdges.size() != 0);
 
         neo4j.closeDB();
 
-        if (!deletedEdges.isEmpty()) {
+        if (!deletedEdges.isEmpty() && sub_step_deletedEdges.size() != 0) {
             this.deletedEdges_layer.add(deletedEdges);
+            System.out.println("Deleted # of edges in this level " + deletedEdges.size() + "  the # of edges are removed in the last step in this level is " + sub_step_deletedEdges.size());
             return true;
         } else {
+            System.out.println("Can not delete the edges in this level, stop the abstraction of the graph.   " + deletedEdges.size() + "  " + sub_step_deletedEdges.size());
             return false;
         }
     }
@@ -187,19 +193,25 @@ public class clusterVersion {
     /**
      * Find the index at @level, which means the information that is abstracted from previous level to current level
      *
-     * @param current_level the level of the current index
-     * @param deletedEdges  the edges are deleted in current sub step
-     * @param cluster       which cluster the index needs to be built in
+     * @param level   the level of the current index
+     * @param de      the edges are deleted in current sub step
+     * @param cluster which cluster the index needs to be built in
      */
-    private void indexBuildAtLevel(int current_level, HashSet<Long> deletedEdges, NodeCluster cluster) {
-        int previous_level = current_level - 1;
+    private void indexBuildAtLevel(int level, HashSet<Long> de, NodeCluster cluster) {
+        int previous_level = level;
+
         String graph_db_folder = this.base_db_name + "_Level" + previous_level;
         Neo4jDB neo4j_level = new Neo4jDB(graph_db_folder);
         neo4j_level.startDB(true);
         GraphDatabaseService graphdb_level = neo4j_level.graphDB;
 
+        HashSet<Long> remained_nodes = getNodeListAtLevel(level + 1);
+
         try (Transaction tx = graphdb_level.beginTx()) {
             for (long n_id : cluster.node_list) {
+
+                HashMap<Long, ArrayList<double[]>> skylines = readIndex(n_id, level);
+
                 HashMap<Long, myQueueNode> tmpStoreNodes = new HashMap();
                 Node n = neo4j_level.graphDB.getNodeById(n_id);
 
@@ -208,42 +220,117 @@ public class clusterVersion {
                 tmpStoreNodes.put(snode.id, snode);
                 mqueue.add(snode);
 
-                //TODO:Finish the code
-//                while (!mqueue.isEmpty()) {
-//                    myQueueNode v = mqueue.pop();
-//                    for (int i = 0; i < v.skyPaths.size(); i++) {
-//                        path p = v.skyPaths.get(i);
-//                        if (!p.expaned) {
-//                            p.expaned = true;
-//
-//                            ArrayList<path> new_paths;
-//                            if (de != null) {
-//                                new_paths = p.expand(neo4j_level, de);
-//                            } else {
-//                                new_paths = p.expand(neo4j_level);
-//                            }
-//
-//                            for (path np : new_paths) {
-//                                myQueueNode next_n;
-//                                if (tmpStoreNodes.containsKey(np.endNode)) {
-//                                    next_n = tmpStoreNodes.get(np.endNode);
-//                                } else {
-//                                    next_n = new myQueueNode(snode, np.endNode, neo4j_level);
-//                                    tmpStoreNodes.put(next_n.id, next_n);
-//                                }
-//
-//                                if (next_n.addToSkyline(np) && !next_n.inqueue) {
-//                                    mqueue.add(next_n);
-//                                    next_n.inqueue = true;
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
+                while (!mqueue.isEmpty()) {
+                    myQueueNode v = mqueue.pop();
+                    for (int i = 0; i < v.skyPaths.size(); i++) {
+                        path p = v.skyPaths.get(i);
+                        if (!p.expaned) {
+                            p.expaned = true;
+
+                            ArrayList<path> new_paths;
+                            new_paths = p.expand(neo4j_level, de, cluster.rels);
+
+                            for (path np : new_paths) {
+                                myQueueNode next_n;
+                                if (tmpStoreNodes.containsKey(np.endNode)) {
+                                    next_n = tmpStoreNodes.get(np.endNode);
+                                } else {
+                                    next_n = new myQueueNode(snode, np.endNode, neo4j_level);
+                                    tmpStoreNodes.put(next_n.id, next_n);
+                                }
+
+                                if (next_n.addToSkyline(np) && !next_n.inqueue) {
+                                    mqueue.add(next_n);
+                                    next_n.inqueue = true;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                int sum = 0;
+                for (Map.Entry<Long, myQueueNode> e : tmpStoreNodes.entrySet()) {
+                    ArrayList<path> sk = e.getValue().skyPaths;
+                    //remove the index of the self connection that node only has one skyline path and the skyline path is to itself
+                    if (!(sk.size() == 1 && sk.get(0).costs[0] == 0 && sk.get(0).costs[1] == 0 && sk.get(0).costs[2] == 0)) {
+                        for (path p : sk) {
+                            //Todo: find the remained node
+                            if (remind_nodes.contains(p.endNode)) { // not the max_level graph, have reminding nodes on next level
+                                sum++;
+                            }
+                        }
+                    }
+                }
+
+                if (sum != 0) {
+                    /**clean the built index file*/
+                    String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/" + this.folder_name + "/level" + level;
+                    File idx_file = new File(sub_folder_str + "/" + n_id + ".idx");
+
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(idx_file.getAbsolutePath()));
+                    for (Map.Entry<Long, myQueueNode> e : tmpStoreNodes.entrySet()) {
+                        long nodeid = e.getKey();
+                        myQueueNode node_obj = e.getValue();
+                        ArrayList<path> skys = node_obj.skyPaths;
+                        for (path p : skys) {
+                            /** the end node of path is a highway, the node is still appear in next level, also, the path is not a dummy path of source node **/
+                            if (p.endNode != nodeID) {
+                                if (l != maxlevel && remind_nodes.size() != 0 && remind_nodes.contains(p.endNode)) { // not the max_level graph, have reminding nodes on next level
+                                    writer.write(nodeid + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
+                                } else if (l != maxlevel && remind_nodes.size() == 0) { // the max_level-1 level graph and the next level (the max_level) graph is empty, find the skyline paths between all the nodes
+                                    writer.write(nodeid + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
+                                } else if (l == maxlevel && have_nodes_last_graph) { // the max_level graph is not empty, find the skyline paths between all the nodes.
+                                    writer.write(nodeid + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
+                                }
+                            }
+                        }
+                    }
+                    writer.close();
+                }
             }
             tx.success();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         neo4j_level.closeDB();
+    }
+
+    private HashMap<Long, ArrayList<double[]>> readIndex(long n_id, int level) {
+        HashMap<Long, ArrayList<double[]>> skylines = new HashMap<>();
+        String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/" + this.folder_name + "/level" + level;
+        File idx_file = new File(sub_folder_str + "/" + n_id + ".idx");
+        try {
+            if (idx_file.exists()) {
+                BufferedReader b = new BufferedReader(new FileReader(idx_file));
+                String readLine = "";
+                while ((readLine = b.readLine()) != null) {
+                    String[] infos = readLine.split(" ");
+                    double[] costs = new double[infos.length - 1];
+                    long target_node = Long.parseLong(infos[0]);
+                    costs[0] = Double.parseDouble(infos[1]);
+                    costs[1] = Double.parseDouble(infos[2]);
+                    costs[2] = Double.parseDouble(infos[3]);
+
+                    if (skylines.containsKey(target_node)) {
+                        ArrayList<double[]> skyline_costs = skylines.get(target_node);
+                        addToSkyline(skyline_costs, costs);
+                        skylines.put(target_node, skyline_costs);
+                    } else {
+                        ArrayList<double[]> skyline_costs = new ArrayList<>();
+                        skyline_costs.add(costs);
+                        skylines.put(target_node, skyline_costs);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if (skylines.size() != 0) {
+            return skylines;
+        } else {
+            return null;
+        }
     }
 
     private NodeClusters removeLowerDegreePairEdgesByThreshold(HashSet<Long> deletedNodes, HashSet<Long> deletedEdges) {
@@ -259,17 +346,42 @@ public class clusterVersion {
 
 //        sorted_coefficient.forEach((k, v) -> System.out.println(k + "  " + v.coefficient));
 
-        System.out.println(node_coefficient_list.size());
+        TreeMap<Integer, Integer> node_neighbor_number_distribution = new TreeMap<>();
+
+
+        for (Map.Entry<Long, NodeCoefficient> node_coeff : node_coefficient_list.entrySet()) {
+            if (node_neighbor_number_distribution.containsKey(node_coeff.getValue().getNumberOfTwoHopNeighbors())) {
+                node_neighbor_number_distribution.put(node_coeff.getValue().getNumberOfTwoHopNeighbors(), node_neighbor_number_distribution.get(node_coeff.getValue().getNumberOfTwoHopNeighbors()) + 1);
+            } else {
+                node_neighbor_number_distribution.put(node_coeff.getValue().getNumberOfTwoHopNeighbors(), 1);
+            }
+        }
+
+        int dis_indicator = 0;
+        int noise_indicator = 0;
+        for (Map.Entry<Integer, Integer> e : node_neighbor_number_distribution.entrySet()) {
+            dis_indicator += e.getValue();
+            if ((1.0 * dis_indicator / node_coefficient_list.size()) * 100 > 30) {
+                break;
+            } else {
+                noise_indicator = e.getKey();
+            }
+        }
+
+        System.out.println(node_coefficient_list.size() + "            indicator ::: " + noise_indicator);
+
+
         for (Map.Entry<Long, NodeCoefficient> node_coeff : node_coefficient_list.entrySet()) {
 
             try (Transaction tx = this.neo4j.graphDB.beginTx()) {
                 long node_id = node_coeff.getKey();
 
+
                 if (node_clusters.isInClusters(node_id)) {
                     continue;
                 }
 
-                if (node_coeff.getValue().getNumberOfTwoHopNeighbors() <= 4) {
+                if (node_coeff.getValue().getNumberOfTwoHopNeighbors() <= noise_indicator) {
                     if (!visited_nodes.containsKey(node_id)) {
                         myNode next_node = new myNode(node_id, this.neo4j.graphDB.getNodeById(node_id), node_coefficient_list.get(node_id).coefficient);
                         visited_nodes.put(node_id, next_node);
@@ -318,7 +430,7 @@ public class clusterVersion {
                                 visited_nodes.put(next_node.id, next_node);
                             }
 
-                            if (n_coff.getNumberOfTwoHopNeighbors() > 4) {
+                            if (n_coff.getNumberOfTwoHopNeighbors() > noise_indicator) {
                                 queue.add(next_node);
                             }
                         }
@@ -332,11 +444,13 @@ public class clusterVersion {
 
         System.out.println("found # of clusters : " + node_clusters.clusters.size());
 
+        node_neighbor_number_distribution.forEach((k, v) -> System.out.println(k + "  " + v));
+
         node_clusters.clusters.forEach((k, v) -> v.updateBorderList(neo4j));
 
         node_clusters.clusters.forEach((k, v) -> {
 //            if (v.node_list.size() >= this.min_size && k != 0) {
-                System.out.println(k + "  " + v.node_list.size() + "  " + v.border_node_list.size());
+            System.out.println(k + "  " + v.node_list.size() + "  " + v.border_node_list.size());
 //            }
         });
 //
@@ -995,4 +1109,40 @@ public class clusterVersion {
         return null;
     }
 
+    public boolean addToSkyline(ArrayList<double[]> skyline_costs, double[] costs) {
+        int i = 0;
+
+        if (skyline_costs.isEmpty()) {
+            skyline_costs.add(costs);
+            return true;
+        } else {
+            boolean can_insert_np = true;
+            for (; i < skyline_costs.size(); ) {
+                if (checkDominated(skyline_costs.get(i), costs)) {
+                    can_insert_np = false;
+                    break;
+                } else {
+                    if (checkDominated(costs, skyline_costs.get(i))) {
+                        skyline_costs.remove(i);
+                    } else {
+                        i++;
+                    }
+                }
+            }
+            if (can_insert_np) {
+                skyline_costs.add(costs);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkDominated(double[] costs, double[] estimatedCosts) {
+        for (int i = 0; i < costs.length; i++) {
+            if (costs[i] > estimatedCosts[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
 }
