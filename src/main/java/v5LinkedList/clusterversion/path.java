@@ -129,7 +129,7 @@ public class path {
             Iterator<Relationship> rel_Iter = rels.iterator();
             while (rel_Iter.hasNext()) {
                 Relationship rel = rel_Iter.next();
-                if (de.contains(rel.getId()) && cluster_rels.contains(rel)) {
+                if (de.contains(rel.getId()) && cluster_rels.contains(rel.getId())) {
                     path nPath = new path(this, rel);
                     if (!nPath.hasCycle()) {
                         result.add(nPath);

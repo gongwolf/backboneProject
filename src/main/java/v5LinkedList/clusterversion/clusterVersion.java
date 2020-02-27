@@ -111,6 +111,7 @@ public class clusterVersion {
 
 
             if (currentLevel == 1) {
+                //Todo: build the index for level 1
                 getDegreePairs();
                 sub_step_deletedEdges.addAll(removeSingletonEdges(neo4j, sub_step_deletedNodes));
                 System.out.println("Finish finding the level 0 spanning tree..........");
@@ -144,7 +145,7 @@ public class clusterVersion {
             neo4j.saveGraphToTextFormation(textFilePath);
 
 
-            System.out.println(" ~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + sub_step_deletedEdges.size() + "   " + min_size + "  " + deleted);
+            System.out.println(" ~~~~~~~~~~~~~ pre:" + pre_n + " " + pre_e + "  post:" + post_n + " " + post_e + "   # of deleted Edges:" + sub_step_deletedEdges.size() + " in the level   (" + min_size + ")  " + deleted);
             System.out.println("Add the deleted edges of the level " + currentLevel + "  to the deletedEdges_layer structure. ");
 
             cn = numberOfNodes;
@@ -161,8 +162,8 @@ public class clusterVersion {
             checkIndexFolderExisted(level);
 //
             for (Map.Entry<Integer, NodeCluster> cluster_entry : process_clusters.clusters.entrySet()) {
-                int cluster_id = cluster_entry.getKey();
                 NodeCluster cluster = cluster_entry.getValue();
+                System.out.println("---" + cluster.cluster_id + "   " + cluster.node_list.size() + "   " + cluster.rels.size() + "   " + cluster.border_node_list.size());
                 indexBuildAtLevel(level, sub_step_deletedEdges, cluster);
             }
 
@@ -200,25 +201,28 @@ public class clusterVersion {
     private void indexBuildAtLevel(int level, HashSet<Long> de, NodeCluster cluster) {
         int previous_level = level;
 
+        //find all the information in previous level graph, because the information is removed in current layer graph
         String graph_db_folder = this.base_db_name + "_Level" + previous_level;
         Neo4jDB neo4j_level = new Neo4jDB(graph_db_folder);
         neo4j_level.startDB(true);
         GraphDatabaseService graphdb_level = neo4j_level.graphDB;
 
-        HashSet<Long> remained_nodes = getNodeListAtLevel(level + 1);
+        //check the node remained in after the deletion (remained in current layer graph)
+        HashSet<Long> remained_nodes = getNodeListAtLevel(cluster.node_list);
 
         try (Transaction tx = graphdb_level.beginTx()) {
+
             for (long n_id : cluster.node_list) {
 
                 HashMap<Long, ArrayList<double[]>> skylines = readIndex(n_id, level);
 
                 HashMap<Long, myQueueNode> tmpStoreNodes = new HashMap();
-                Node n = neo4j_level.graphDB.getNodeById(n_id);
-
                 myQueueNode snode = new myQueueNode(n_id, neo4j_level);
                 myNodePriorityQueue mqueue = new myNodePriorityQueue();
                 tmpStoreNodes.put(snode.id, snode);
                 mqueue.add(snode);
+
+//                System.out.println(snode + "   " + (skylines == null));
 
                 while (!mqueue.isEmpty()) {
                     myQueueNode v = mqueue.pop();
@@ -231,6 +235,7 @@ public class clusterVersion {
                             new_paths = p.expand(neo4j_level, de, cluster.rels);
 
                             for (path np : new_paths) {
+//                                System.out.println("            "+np);
                                 myQueueNode next_n;
                                 if (tmpStoreNodes.containsKey(np.endNode)) {
                                     next_n = tmpStoreNodes.get(np.endNode);
@@ -254,8 +259,7 @@ public class clusterVersion {
                     //remove the index of the self connection that node only has one skyline path and the skyline path is to itself
                     if (!(sk.size() == 1 && sk.get(0).costs[0] == 0 && sk.get(0).costs[1] == 0 && sk.get(0).costs[2] == 0)) {
                         for (path p : sk) {
-                            //Todo: find the remained node
-                            if (remind_nodes.contains(p.endNode)) { // not the max_level graph, have reminding nodes on next level
+                            if (remained_nodes.contains(p.endNode)) {
                                 sum++;
                             }
                         }
@@ -267,25 +271,71 @@ public class clusterVersion {
                     String sub_folder_str = "/home/gqxwolf/mydata/projectData/BackBone/indexes/" + this.folder_name + "/level" + level;
                     File idx_file = new File(sub_folder_str + "/" + n_id + ".idx");
 
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(idx_file.getAbsolutePath()));
-                    for (Map.Entry<Long, myQueueNode> e : tmpStoreNodes.entrySet()) {
-                        long nodeid = e.getKey();
-                        myQueueNode node_obj = e.getValue();
-                        ArrayList<path> skys = node_obj.skyPaths;
-                        for (path p : skys) {
-                            /** the end node of path is a highway, the node is still appear in next level, also, the path is not a dummy path of source node **/
-                            if (p.endNode != nodeID) {
-                                if (l != maxlevel && remind_nodes.size() != 0 && remind_nodes.contains(p.endNode)) { // not the max_level graph, have reminding nodes on next level
-                                    writer.write(nodeid + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
-                                } else if (l != maxlevel && remind_nodes.size() == 0) { // the max_level-1 level graph and the next level (the max_level) graph is empty, find the skyline paths between all the nodes
-                                    writer.write(nodeid + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
-                                } else if (l == maxlevel && have_nodes_last_graph) { // the max_level graph is not empty, find the skyline paths between all the nodes.
-                                    writer.write(nodeid + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
+                    //previous has the skyline information from n_id to other nodes (deleted in previous sub step)
+                    if (skylines != null) {
+
+                        for (Map.Entry<Long, myQueueNode> e : tmpStoreNodes.entrySet()) {
+                            long target_node_id = e.getKey();
+                            myQueueNode node_obj = e.getValue();
+                            ArrayList<path> skys = node_obj.skyPaths;
+                            for (path p : skys) {
+                                /** the end node of path is a highway, the node is still appear in next level, also, the path is not a dummy path of source node **/
+                                if (p.endNode != n_id) {
+                                    if (remained_nodes.size() != 0 && remained_nodes.contains(p.endNode)) { // not the max_level graph, have reminding nodes on next level
+                                        double[] costs = new double[3];
+                                        costs[0] = p.costs[0];
+                                        costs[1] = p.costs[1];
+                                        costs[2] = p.costs[2];
+
+                                        if (skylines.containsKey(target_node_id)) {
+                                            ArrayList<double[]> skyline_costs = skylines.get(target_node_id);
+                                            addToSkyline(skyline_costs, costs);
+                                            skylines.put(target_node_id, skyline_costs);
+                                        } else {
+                                            ArrayList<double[]> skyline_costs = new ArrayList<>();
+                                            skyline_costs.add(costs);
+                                            skylines.put(target_node_id, skyline_costs);
+                                        }
+
+                                    }
                                 }
                             }
                         }
+
+                        BufferedWriter writer = new BufferedWriter(new FileWriter(idx_file.getAbsolutePath()));
+                        for (Map.Entry<Long, ArrayList<double[]>> e : skylines.entrySet()) {
+                            long target_node_id = e.getKey();
+                            ArrayList<double[]> skys = e.getValue();
+                            for (double[] costs : skys) {
+                                if (target_node_id != n_id) {
+                                    if (remained_nodes.size() != 0 && remained_nodes.contains(target_node_id)) {
+                                        writer.write(target_node_id + " " + costs[0] + " " + costs[1] + " " + costs[2] + "\n");
+                                        System.out.println(n_id + " " + target_node_id + " " + costs[0] + " " + costs[1] + " " + costs[2]);
+                                    }
+                                }
+                            }
+                        }
+                        writer.close();
+
+
+                    } else {
+                        BufferedWriter writer = new BufferedWriter(new FileWriter(idx_file.getAbsolutePath()));
+                        for (Map.Entry<Long, myQueueNode> e : tmpStoreNodes.entrySet()) {
+                            long target_node_id = e.getKey();
+                            myQueueNode node_obj = e.getValue();
+                            ArrayList<path> skys = node_obj.skyPaths;
+                            for (path p : skys) {
+                                /** the end node of path is a highway, the node is still appear in next level, also, the path is not a dummy path of source node **/
+                                if (p.endNode != n_id) {
+                                    if (remained_nodes.size() != 0 && remained_nodes.contains(p.endNode)) { // not the max_level graph, have reminding nodes on next level
+                                        writer.write(target_node_id + " " + p.costs[0] + " " + p.costs[1] + " " + p.costs[2] + "\n");
+                                    }
+                                }
+                            }
+                        }
+                        writer.close();
+
                     }
-                    writer.close();
                 }
             }
             tx.success();
@@ -313,7 +363,7 @@ public class clusterVersion {
 
                     if (skylines.containsKey(target_node)) {
                         ArrayList<double[]> skyline_costs = skylines.get(target_node);
-                        addToSkyline(skyline_costs, costs);
+                        skyline_costs.add(costs);
                         skylines.put(target_node, skyline_costs);
                     } else {
                         ArrayList<double[]> skyline_costs = new ArrayList<>();
@@ -1061,6 +1111,33 @@ public class clusterVersion {
         }
         neo4j_level.closeDB();
         return nodeList;
+    }
+
+    /**
+     * Find the list of node that is remained in current layer, by given a specific cluster
+     *
+     * @param node_list the node list in a cluster
+     * @return the list of node that is remained in current layer.
+     */
+    private HashSet<Long> getNodeListAtLevel(HashSet<Long> node_list) {
+        HashSet<Long> result = new HashSet<>();
+//        long src_node_id = -1;
+//        int i = 1;
+        try (Transaction tx = neo4j.graphDB.beginTx()) {
+            for (long node_id_in_list : node_list) {
+//                src_node_id = node_id_in_list;
+                try {
+                    long node_id = neo4j.graphDB.getRelationshipById(node_id_in_list).getId();
+//                    System.out.println(i++ + "  " + node_id);
+                    result.add(node_id);
+                } catch (NotFoundException nofundexpection) {
+//                    System.err.println("Can not find the node (" + i++ + ")" + src_node_id + " in the cluster in " + neo4j.graphDB);
+                }
+            }
+            tx.success();
+        }
+
+        return result;
     }
 
     private Pair<Integer, Integer> updateThreshold(double percentage) {

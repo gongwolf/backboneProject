@@ -24,6 +24,15 @@ public class myQueueNode {
 
     }
 
+    @Override
+    public String toString() {
+        return "myQueueNode{" +
+                "id=" + id +
+                ", distance_q=" + distance_q +
+                ", inqueue=" + inqueue +
+                '}';
+    }
+
     public myQueueNode(long nodeid, Neo4jDB neo4j) {
         this.id = nodeid;
         this.locations = new double[2];

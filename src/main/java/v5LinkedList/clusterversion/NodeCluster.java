@@ -13,7 +13,7 @@ public class NodeCluster {
 
     HashSet<Long> node_list = new HashSet<>();
     HashSet<Long> border_node_list = new HashSet<>();
-    public ArrayList<Long> list_b;
+    public ArrayList<Long> list_b = new ArrayList<>();
     public HashSet<Long> rels = new HashSet<>();
 
     public NodeCluster(int id) {
