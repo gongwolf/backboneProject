@@ -37,7 +37,7 @@ public class QueryProcess {
         bbs = new LandmarkBBS(sub_db_name, index.flatindex);
 
         index.buildFlatIndex();
-        index.buildHighestFlatIndex(bbs.node_list, true);
+//        index.buildHighestFlatIndex(bbs.node_list, true);
 
         ArrayList<Long> ldms = new ArrayList<>();
 //        ldms.add(131l);
@@ -48,7 +48,12 @@ public class QueryProcess {
 //        ldms.add(5901l);
 
 //
-        bbs.buildLandmarkIndex(3, ldms);
+//        bbs.buildLandmarkIndex(3, ldms);
+
+        ldms.add(5699l);
+        ldms.add(4069l);
+        ldms.add(270l);
+        bbs.readLandmarkIndex(3, ldms, false);
 
         this.monitor = new Monitor();
 
@@ -63,7 +68,7 @@ public class QueryProcess {
         for (int i = 0; i < 1; i++) {
             QueryProcess query = new QueryProcess();
             long running_time = System.nanoTime();
-            query.query(3227, 8222, true);
+            query.query(3227, 8222, false);
             System.out.println("Total Runningt time is " + (System.nanoTime() - running_time) / 1000000 + " ms ");
             resultset_number.add(query.result.size());
             query.bbs.closeDB();
@@ -377,11 +382,13 @@ public class QueryProcess {
     private void printNodeToHighway(HashMap<Long, ArrayList<backbonePath>> source_to_highway_results) {
         System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ " + source_to_highway_results.size());
         for (Map.Entry<Long, ArrayList<backbonePath>> e : source_to_highway_results.entrySet()) {
-            if (bbs.node_list.contains(e.getKey())) {
-                for (backbonePath bp : e.getValue()) {
-                    System.out.println(e.getKey() + " ############  " + bp + "  " + bbs.node_list.contains(e.getKey()));
-                }
-            }
+            System.out.println(e.getKey()+"   "+bbs.node_list.contains(e.getKey()));
+//            if (bbs.node_list.contains(e.getKey())) {
+//                System.out.println(e.getKey());
+////                for (backbonePath bp : e.getValue()) {
+////                    System.out.println(e.getKey() + " ############  " + bp + "  " + bbs.node_list.contains(e.getKey()));
+////                }
+//            }
         }
         System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
     }

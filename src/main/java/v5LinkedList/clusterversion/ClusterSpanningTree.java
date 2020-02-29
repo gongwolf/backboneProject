@@ -95,10 +95,14 @@ public class ClusterSpanningTree {
      * Get the relationships that consists of the spanning tree
      */
     public void KruskalMST() {
+
+        ArrayList<Long> degree_pair = getDegreePairs();
+
         try (Transaction tx = this.neo4j.graphDB.beginTx()) {
             SpTree = new HashSet<>();
             int e = 0;
-            Iterator<Long> rel_iterator = rels.iterator();
+//            Iterator<Long> rel_iterator = rels.iterator();
+            Iterator<Long> rel_iterator = degree_pair.iterator();
 
             while (e < N - 1 && rel_iterator.hasNext()) {
                 Relationship rel = this.neo4j.graphDB.getRelationshipById(rel_iterator.next());
@@ -232,11 +236,11 @@ public class ClusterSpanningTree {
         }
     }
 
-    public TreeMap<Pair<Integer, Integer>, ArrayList<Long>> getDegreepair() {
-        TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
+    public ArrayList<Long> getDegreePairs() {
+        TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator("desc"));
         try (Transaction tx = this.neo4j.graphDB.beginTx()) {
 
-            for (long r_id: this.rels) {
+            for (long r_id : this.rels) {
                 Relationship rels = this.neo4j.graphDB.getRelationshipById(r_id);
                 int start_r = rels.getStartNode().getDegree(Direction.BOTH);
                 int end_r = rels.getEndNode().getDegree(Direction.BOTH);
@@ -263,6 +267,17 @@ public class ClusterSpanningTree {
             tx.success();
         }
 
-        return degree_pairs;
+
+        ArrayList<Long> sorted_degree_pair_rel_list = new ArrayList<>();
+
+        for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> e : degree_pairs.entrySet()) {
+            for (long rel_id : e.getValue()) {
+                sorted_degree_pair_rel_list.add(rel_id);
+            }
+        }
+
+
+        return sorted_degree_pair_rel_list;
     }
+
 }

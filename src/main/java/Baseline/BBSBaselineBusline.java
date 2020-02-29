@@ -3,6 +3,7 @@ package Baseline;
 import DataStructure.Monitor;
 import Neo4jTools.Line;
 import Neo4jTools.Neo4jDB;
+import javafx.animation.KeyFrame;
 import org.neo4j.graphalgo.GraphAlgoFactory;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
@@ -30,6 +31,8 @@ public class BBSBaselineBusline {
 
 
     public static void main(String args[]) {
+        long source = 3227;
+        long destination = 8222;
         BBSBaselineBusline bbs = new BBSBaselineBusline("sub_ny_USA_Level0");
 //        int number_of_hops_1 = bbs.findShortestPath(3227l, 8222l, Neo4jDB.propertiesName.get(0)).length();
 //        int number_of_hops_2 = bbs.findShortestPath(3227l, 8222l, Neo4jDB.propertiesName.get(1)).length();
@@ -37,10 +40,15 @@ public class BBSBaselineBusline {
 //        System.out.println(Neo4jDB.propertiesName.get(0)+"  "+number_of_hops_1+" | "+Neo4jDB.propertiesName.get(1)+"  "+number_of_hops_2+" | "+Neo4jDB.propertiesName.get(2)+"  "+number_of_hops_3+" ");
         bbs.buildLandmarkIndex(3);
         long start_rt = System.currentTimeMillis();
-        ArrayList<path> results = bbs.queryOnline(3227, 8222);
+        ArrayList<path> results = bbs.queryOnline(source, destination);
         System.out.println(results.size() + "   " + (System.currentTimeMillis() - start_rt));
+
+        for (path p : results) {
+            System.out.println(p);
+        }
         String path_name = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/results";
-        bbs.saveToDisk(path_name + "/bbs_3227_8222_10K.txt");
+        Date date = new Date();
+        bbs.saveToDisk(path_name + "/bbs_" + source + "_" + destination + "_" + date.getTime() + ".txt");
         bbs.closeDB();
     }
 

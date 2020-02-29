@@ -41,7 +41,7 @@ public class BackBoneIndex {
                 level = c_level;
             }
         }
-        return level;
+        return level+1;
     }
 
 
