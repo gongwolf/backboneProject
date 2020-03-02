@@ -25,10 +25,10 @@ public class clusterVersion {
     //    public String base_db_name = "sub_ny_USA";
     //    public String base_db_name = "col_USA";
 //
-//    public String base_db_name = "sub_ny_USA_50K";
-//    public String folder_name = "busline_sub_graph_NY_50K";
-    public String base_db_name = "sub_ny_USA";
-    public String folder_name = "busline_sub_graph_NY";
+    public String base_db_name = "sub_ny_USA_50K";
+    public String folder_name = "busline_sub_graph_NY_50K";
+//    public String base_db_name = "sub_ny_USA";
+//    public String folder_name = "busline_sub_graph_NY";
 
     //Pair <sid_degree,did_degree> -> list of the relationship id that the degrees of the start node and end node are the response given pair of key
     TreeMap<Pair<Integer, Integer>, ArrayList<Long>> degree_pairs = new TreeMap(new PairComparator());
@@ -113,11 +113,11 @@ public class clusterVersion {
                 getDegreePairs();
                 sub_step_deletedEdges.addAll(removeSingletonEdges(neo4j, sub_step_deletedNodes));
                 System.out.println("Finish finding the level 0 spanning tree..........");
-                checkIndexFolderExisted(0);
-                indexBuildAtLevel0(sub_step_deletedEdges, sub_step_deletedNodes);
-            } else {
-                System.out.println("Updated the neo4j database object ................");
             }
+
+            checkIndexFolderExisted(0);
+            indexBuildSingleEdgesAtLevel(currentLevel - 1, sub_step_deletedEdges, sub_step_deletedNodes);
+
 
             System.out.println("#####");
 
@@ -136,6 +136,32 @@ public class clusterVersion {
 
             getDegreePairs();
             sub_step_deletedEdges.addAll(removeSingletonEdgesInForests(sub_step_deletedNodes));
+
+//
+            int level = currentLevel - 1;
+            checkIndexFolderExisted(level);
+
+
+            System.out.println("Add the deleted edges of the level " + currentLevel + "  to the deletedEdges_layer structure. Build the index for level " + level);
+
+            for (Map.Entry<Integer, NodeCluster> cluster_entry : process_clusters.clusters.entrySet()) {
+                //jump the noise cluster
+                if (cluster_entry.getKey() == 0) {
+                    continue;
+                }
+                NodeCluster cluster = cluster_entry.getValue();
+
+//                HashSet<Long> cluster_deletedEdges = removeSingletonEdgesInCluster(cluster.node_list, sub_step_deletedNodes);
+
+                long rt_index_build_st = System.currentTimeMillis();
+                indexBuildAtLevel(level, sub_step_deletedEdges, cluster);
+                long rt_index_build = System.currentTimeMillis() - rt_index_build_st;
+                System.out.println("index building " + rt_index_build + "(ms) --- on cluster:" + cluster.cluster_id + "   cluster size: " + cluster.node_list.size() + "   # of rels in cluster:" + cluster.rels.size() + "   # of border nodes:" + cluster.border_node_list.size());
+
+//                sub_step_deletedEdges.addAll(cluster_deletedEdges);
+            }
+
+
             long numberOfNodes = neo4j.getNumberofNodes();
             post_n = neo4j.getNumberofNodes();
             post_e = neo4j.getNumberofEdges();
@@ -157,25 +183,6 @@ public class clusterVersion {
             deletedEdges.addAll(sub_step_deletedEdges);
             deletedNodes.addAll(sub_step_deletedNodes);
 
-//
-            int level = currentLevel - 1;
-            checkIndexFolderExisted(level);
-
-
-            System.out.println("Add the deleted edges of the level " + currentLevel + "  to the deletedEdges_layer structure. Build the index for level " + level);
-
-            for (Map.Entry<Integer, NodeCluster> cluster_entry : process_clusters.clusters.entrySet()) {
-                //jump the noise cluster
-                if (cluster_entry.getKey() == 0) {
-                    continue;
-                }
-
-                NodeCluster cluster = cluster_entry.getValue();
-                long rt_index_build_st = System.currentTimeMillis();
-                indexBuildAtLevel(level, sub_step_deletedEdges, cluster);
-                long rt_index_build = System.currentTimeMillis() - rt_index_build_st;
-                System.out.println("index building " + rt_index_build + "(ms) --- on cluster:" + cluster.cluster_id + "   cluster size: " + cluster.node_list.size() + "   # of rels in cluster:" + cluster.rels.size() + "   # of border nodes:" + cluster.border_node_list.size());
-            }
 
         } while (deleted && deletedEdges.size() <= this.percentage * this.numberOfEdges && sub_step_deletedEdges.size() != 0);
 
@@ -183,7 +190,7 @@ public class clusterVersion {
 
         if (!deletedEdges.isEmpty() && sub_step_deletedEdges.size() != 0) {
             this.deletedEdges_layer.add(deletedEdges);
-            System.out.println("Deleted # of edges in this level " + deletedEdges.size() + "  the # of edges are removed in the last step in this level is " + sub_step_deletedEdges.size());
+            System.out.println("Deleted # of edges in this level : " + deletedEdges.size() + "  \nthe # of edges are removed in the last step in this level is : " + sub_step_deletedEdges.size());
             return true;
         } else {
             System.out.println("Can not delete the edges in this level, stop the abstraction of the graph.   " + deletedEdges.size() + "  " + sub_step_deletedEdges.size());
@@ -299,7 +306,6 @@ public class clusterVersion {
 
                     //previous has the skyline information from n_id to other nodes (deleted in previous sub step)
                     if (skylines != null) {
-
                         for (Map.Entry<Long, myQueueNode> e : tmpStoreNodes.entrySet()) {
                             long target_node_id = e.getKey();
                             myQueueNode node_obj = e.getValue();
@@ -372,16 +378,16 @@ public class clusterVersion {
     }
 
 
-    private void indexBuildAtLevel0(HashSet<Long> sub_step_deletedEdges, HashSet<Long> sub_step_deletedNodes) {
-        int level = 0;
+    private void indexBuildSingleEdgesAtLevel(int level, HashSet<Long> sub_step_deletedEdges, HashSet<Long> sub_step_deletedNodes) {
+        System.out.println("Build single edge index at level " + level + " ===============================================================  ");
         //find all the information in previous level graph, because the information is removed in current layer graph
-        String graph_db_folder = this.base_db_name + "_Level0";
+        String graph_db_folder = this.base_db_name + "_Level" + level;
         Neo4jDB neo4j_level = new Neo4jDB(graph_db_folder);
         neo4j_level.startDB(true);
         GraphDatabaseService graphdb_level = neo4j_level.graphDB;
 
         //check the node remained in after the deletion (remained in current layer graph)
-        HashSet<Long> remained_nodes = getNodeListAtLevel();
+        HashSet<Long> remained_nodes = getNodeListAtCurrentLevel();
 
         try (Transaction tx = graphdb_level.beginTx()) {
             for (long n_id : sub_step_deletedNodes) {
@@ -539,7 +545,7 @@ public class clusterVersion {
                 noise_indicator = e.getKey();
             }
         }
-
+        System.out.println("-------------------------------------------------------------------------------");
         System.out.println(node_coefficient_list.size() + "            indicator ::: " + noise_indicator);
 
 
@@ -618,6 +624,7 @@ public class clusterVersion {
 
         System.out.println("The distribution of the two-hop node coefficient :   ");
         node_neighbor_number_distribution.forEach((k, v) -> System.out.println(k + "  " + v));
+        System.out.println("=================================================================================");
 
         node_clusters.clusters.forEach((k, v) -> v.updateBorderList(neo4j));
 
@@ -672,9 +679,11 @@ public class clusterVersion {
                 cluster.addAll(v);
                 cluster.addRels(tree.rels);
                 result_clusters.clusters.put(k, cluster);
+//                cluster.printAllNodes();
 
                 try (Transaction tx = neo4j.graphDB.beginTx()) {
 
+                    //print the information of the spanning tree
 //                    for (long rel_id : tree.SpTree) {
 //                        Relationship rel = neo4j.graphDB.getRelationshipById(rel_id);
 //                        double start_node_lat = (double) rel.getStartNode().getProperty("lat");
@@ -695,6 +704,7 @@ public class clusterVersion {
 
                     tx.success();
                 }
+//                System.exit(0);
             }
         });
 
@@ -831,22 +841,34 @@ public class clusterVersion {
     }
 
 
-    private HashSet<Long> removeSingletonEdgesInForests(HashSet<Long> deletedNodes) {
+    private HashSet<Long> removeSingletonEdgesInCluster(HashSet<Long> node_list, HashSet<Long> deletedNodes) {
+        int sum_single = 0;
+
+        long pre_edge_num = neo4j.getNumberofEdges();
+        long pre_node_num = neo4j.getNumberofNodes();
+        long pre_degree_num = degree_pairs.size();
+
+        getDegreePairs();
         HashSet<Long> deletedEdges = new HashSet<>();
-        while (hasSingletonPairs()) {
-            long pre_edge_num = neo4j.getNumberofEdges();
-            long pre_node_num = neo4j.getNumberofNodes();
-            long pre_degree_num = degree_pairs.size();
-            int sum_single = 0;
+
+        int pre_deleted = deletedEdges.size();
+        int count = -1;
+
+        while (count != 0) {
+
             try (Transaction tx = graphdb.beginTx()) {
                 //if the degree pair whose key or value is equal to 1, it means it is a single edge
                 for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> e : degree_pairs.entrySet()) {
                     if (e.getKey().getValue() == 1 || e.getKey().getKey() == 1) {
-                        sum_single += e.getValue().size();
+
                         for (Long rel_id : e.getValue()) {
                             Relationship r = graphdb.getRelationshipById(rel_id);
-                            deleteRelationshipFromDB(r, deletedNodes);
-                            deletedEdges.add(r.getId());
+
+                            //Only remove the edges in the cluster
+                            if (node_list.contains(r.getStartNodeId()) && node_list.contains(r.getEndNodeId())) {
+                                deleteRelationshipFromDB(r, deletedNodes);
+                                deletedEdges.add(r.getId());
+                            }
                         }
                     }
                 }
@@ -855,12 +877,64 @@ public class clusterVersion {
                 System.out.println("no property found exception ");
                 System.exit(0);
             }
+            int after_deleted = deletedEdges.size();
+            count = after_deleted - pre_deleted;
+            pre_deleted = after_deleted;
             getDegreePairs();
-            System.out.println("delete single : pre:" + pre_node_num + " " + pre_edge_num + " " + pre_degree_num + " " +
-                    "single_edges:" + sum_single + " " +
-                    "post:" + neo4j.getNumberofNodes() + " " + neo4j.getNumberofEdges() + " " +
-                    "dgr_paris:" + degree_pairs.size());
         }
+
+        System.out.println("delete single : pre:" + pre_node_num + " " + pre_edge_num + " " + pre_degree_num + " " +
+                "single_edges:" + sum_single + " " +
+                "post:" + neo4j.getNumberofNodes() + " " + neo4j.getNumberofEdges() + " " +
+                "dgr_paris:" + degree_pairs.size());
+
+        return deletedEdges;
+    }
+
+
+    private HashSet<Long> removeSingletonEdgesInForests(HashSet<Long> deletedNodes) {
+        int sum_single = 0;
+
+        long pre_edge_num = neo4j.getNumberofEdges();
+        long pre_node_num = neo4j.getNumberofNodes();
+        long pre_degree_num = degree_pairs.size();
+
+        getDegreePairs();
+        HashSet<Long> deletedEdges = new HashSet<>();
+
+        while (hasSingletonPairs()) {
+
+            try (Transaction tx = graphdb.beginTx()) {
+                //if the degree pair whose key or value is equal to 1, it means it is a single edge
+                for (Map.Entry<Pair<Integer, Integer>, ArrayList<Long>> e : degree_pairs.entrySet()) {
+                    if (e.getKey().getValue() == 1 || e.getKey().getKey() == 1) {
+
+                        for (Long rel_id : e.getValue()) {
+                            Relationship r = graphdb.getRelationshipById(rel_id);
+
+                            deleteRelationshipFromDB(r, deletedNodes);
+                            deletedEdges.add(r.getId());
+
+                        }
+                    }
+                }
+
+                System.out.println("delete single : pre:" + pre_node_num + " " + pre_edge_num + " " + pre_degree_num + " " +
+                        "single_edges:" + sum_single + " " +
+                        "post:" + neo4j.getNumberofNodes() + " " + neo4j.getNumberofEdges() + " " +
+                        "dgr_paris:" + degree_pairs.size());
+
+                tx.success();
+            } catch (NotFoundException e) {
+                System.out.println("no property found exception ");
+                System.exit(0);
+            }
+
+            getDegreePairs();
+        }
+
+
+
         return deletedEdges;
     }
 
@@ -1236,7 +1310,7 @@ public class clusterVersion {
     }
 
 
-    private HashSet<Long> getNodeListAtLevel() {
+    private HashSet<Long> getNodeListAtCurrentLevel() {
         HashSet<Long> nodeList = new HashSet<>();
 
         GraphDatabaseService graphdb_level = this.neo4j.graphDB;
@@ -1267,7 +1341,7 @@ public class clusterVersion {
             for (long node_id_in_list : node_list) {
 //                src_node_id = node_id_in_list;
                 try {
-                    long node_id = neo4j.graphDB.getRelationshipById(node_id_in_list).getId();
+                    long node_id = neo4j.graphDB.getNodeById(node_id_in_list).getId();
 //                    System.out.println(i++ + "  " + node_id);
                     result.add(node_id);
                 } catch (NotFoundException nofundexpection) {

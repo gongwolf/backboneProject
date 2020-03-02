@@ -92,6 +92,14 @@ public class NodeCluster {
     public void addRels(HashSet<Long> rels) {
         this.rels.addAll(rels);
     }
+
+    public void printAllNodes() {
+        System.out.println("Node id list ====================================================================================");
+        for (long node_id: this.node_list) {
+            System.out.println(node_id);
+        }
+        System.out.println("==================================================================================================");
+    }
 }
 
 class NodeClusters {
