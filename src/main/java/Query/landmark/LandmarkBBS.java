@@ -128,6 +128,7 @@ public class LandmarkBBS {
         System.out.println("Read the landmark index from the foler ====>> " + landmark_index_folder);
 
         boolean null_landmark_list = false;
+
         if (landmark_list_ids == null || landmark_list_ids.size() == 0) {
             null_landmark_list = true;
         }

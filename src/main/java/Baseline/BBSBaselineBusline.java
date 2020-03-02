@@ -31,9 +31,13 @@ public class BBSBaselineBusline {
 
 
     public static void main(String args[]) {
+
+
+
+
         long source = 3227;
         long destination = 8222;
-        BBSBaselineBusline bbs = new BBSBaselineBusline("sub_ny_USA_Level0");
+        BBSBaselineBusline bbs = new BBSBaselineBusline("sub_ny_USA_50K_Level0");
 //        int number_of_hops_1 = bbs.findShortestPath(3227l, 8222l, Neo4jDB.propertiesName.get(0)).length();
 //        int number_of_hops_2 = bbs.findShortestPath(3227l, 8222l, Neo4jDB.propertiesName.get(1)).length();
 //        int number_of_hops_3 = bbs.findShortestPath(3227l, 8222l, Neo4jDB.propertiesName.get(2)).length();
@@ -46,7 +50,7 @@ public class BBSBaselineBusline {
         for (path p : results) {
             System.out.println(p);
         }
-        String path_name = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY/results";
+        String path_name = "/home/gqxwolf/mydata/projectData/BackBone/busline_sub_graph_NY_50K/results";
         Date date = new Date();
         bbs.saveToDisk(path_name + "/bbs_" + source + "_" + destination + "_" + date.getTime() + ".txt");
         bbs.closeDB();

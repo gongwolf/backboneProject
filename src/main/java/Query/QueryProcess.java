@@ -64,20 +64,25 @@ public class QueryProcess {
 
     public static void main(String args[]) {
 
-        ArrayList<Integer> resultset_number = new ArrayList<>();
-        for (int i = 0; i < 1; i++) {
-            QueryProcess query = new QueryProcess();
-            long running_time = System.nanoTime();
-            query.query(3227, 8222, false);
-            System.out.println("Total Runningt time is " + (System.nanoTime() - running_time) / 1000000 + " ms ");
-            resultset_number.add(query.result.size());
-            query.bbs.closeDB();
-        }
+        String sub_db_name = "sub_ny_USA_50K_Level0";
+        LandmarkBBS build_ldm_bbs = new LandmarkBBS(sub_db_name);
+        build_ldm_bbs.readLandmarkIndex(3, new ArrayList<>(), true);
+        build_ldm_bbs.neo4j.closeDB();
 
-        System.out.println("===========================================================================================");
-        for (int size : resultset_number) {
-            System.out.print(size + "  ");
-        }
+//        ArrayList<Integer> resultset_number = new ArrayList<>();
+//        for (int i = 0; i < 1; i++) {
+//            QueryProcess query = new QueryProcess();
+////            long running_time = System.nanoTime();
+////            query.query(3227, 8222, false);
+////            System.out.println("Total Runningt time is " + (System.nanoTime() - running_time) / 1000000 + " ms ");
+////            resultset_number.add(query.result.size());
+////            query.bbs.closeDB();
+//        }
+//
+//        System.out.println("===========================================================================================");
+//        for (int size : resultset_number) {
+//            System.out.print(size + "  ");
+//        }
 
     }
 
